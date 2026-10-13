@@ -124,6 +124,8 @@ export interface AIProvider {
 export interface EquipmentItem {
   id: string;
   name: string;
+  /** Where the record came from, for example an installer registration */
+  source: string;
   installYear: number;
   typicalLifeYears: number;
   replaceLow: number;
@@ -148,6 +150,10 @@ export interface WaterHeaterRecord {
   /** Field keys that were low confidence and the human has not confirmed yet */
   unconfirmed: string[];
   photo: Photo | null;
+  /** Where we got these details, shown on the house record */
+  source: string;
+  /** True once the owner checked the details against a label photo */
+  verified?: boolean;
 }
 
 export interface RentFormState {
@@ -181,9 +187,16 @@ export interface DemoState {
   role: Role | null;
   request: RepairRequest | null;
   triage: TriageResult | null;
+  /** The owner's label check of the heater, if they did one. Otherwise the seeded record is used. */
   houseRecord: WaterHeaterRecord | null;
   quoteCheck: QuoteCheckResult | null;
   rent: RentFormState;
   approval: Approval | null;
+  /** The tenant's answers to the follow-up questions, or null if not sent yet */
+  tenantAnswers: string[] | null;
+  /** Whether the tenant confirmed the visit window */
+  tenantAccess: "confirmed" | "needs-change" | null;
+  /** When the plumber finished the job (simulated), which adds the new heater to the record */
+  jobCompletedAt: string | null;
   feedback: FeedbackNote[];
 }

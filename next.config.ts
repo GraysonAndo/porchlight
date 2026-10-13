@@ -1,6 +1,23 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  // Only bundle the icons that are used.
+  experimental: {
+    optimizePackageImports: ["@phosphor-icons/react"],
+  },
+  // Old links from earlier versions of the prototype keep working.
+  async redirects() {
+    return [
+      { source: "/triage", destination: "/tenant/safety", permanent: false },
+      { source: "/label", destination: "/owner/label", permanent: false },
+      { source: "/record", destination: "/owner/record", permanent: false },
+      { source: "/quote", destination: "/owner/quote", permanent: false },
+      { source: "/decide", destination: "/owner/decide", permanent: false },
+      { source: "/approve", destination: "/owner/book", permanent: false },
+      { source: "/forecast", destination: "/owner/forecast", permanent: false },
+      { source: "/rent", destination: "/owner/rent", permanent: false },
+    ];
+  },
   // Stop `next dev` from generating AGENTS.md in the repo.
   agentRules: false,
   turbopack: {

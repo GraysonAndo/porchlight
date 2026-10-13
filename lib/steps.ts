@@ -1,8 +1,17 @@
-// The 9 screens of the demo, in order. Used by the stepper, demo guide,
-// Back and Next controls, and the feedback sheet.
+// The screens of the demo, grouped by who is using them.
+//
+//  tenant   : the person living in the home. Reports a problem, stays safe, follows progress.
+//  owner    : the person who owns the home. Decides and approves spending.
+//  tools    : owner "plan ahead" tools that are not part of one repair.
+//  optional : owner side tool for older equipment, not part of the main flow.
+//
+// Porchlight itself plays the AI property manager in between.
+
+export type FlowId = "tenant" | "owner" | "tools" | "optional";
 
 export interface Step {
-  n: number;
+  id: string;
+  flow: FlowId;
   path: string;
   short: string;
   title: string;
@@ -10,82 +19,195 @@ export interface Step {
   why: string;
 }
 
+export interface FlowInfo {
+  id: FlowId;
+  label: string;
+  blurb: string;
+  /** Numbered flows show "Step 2 of 5" and a progress bar */
+  numbered: boolean;
+  /** Where Back goes from the first screen, and Next goes from the last */
+  home: string;
+  homeLabel: string;
+}
+
+export const FLOWS: Record<FlowId, FlowInfo> = {
+  tenant: {
+    id: "tenant",
+    label: "Tenant",
+    blurb: "Reports a problem, stays safe, follows progress",
+    numbered: true,
+    home: "/",
+    homeLabel: "Back to home",
+  },
+  owner: {
+    id: "owner",
+    label: "Owner",
+    blurb: "Reviews the request, decides, and books",
+    numbered: true,
+    home: "/owner",
+    homeLabel: "Back to owner home",
+  },
+  tools: {
+    id: "tools",
+    label: "Plan ahead",
+    blurb: "Owner tools that are not part of one repair",
+    numbered: false,
+    home: "/owner",
+    homeLabel: "Back to owner home",
+  },
+  optional: {
+    id: "optional",
+    label: "Optional",
+    blurb: "For older equipment the record does not have",
+    numbered: false,
+    home: "/owner/record",
+    homeLabel: "Back to the house record",
+  },
+};
+
 export const STEPS: Step[] = [
+  // ---- Tenant ----
   {
-    n: 1,
+    id: "tenant-report",
+    flow: "tenant",
     path: "/tenant/request",
     short: "Report",
-    title: "Report a repair",
-    why: "Tenants describe the problem in their own words and attach a photo. This replaces a long thread of texts and phone calls.",
+    title: "Report a problem",
+    why: "Tenants describe the problem in their own words and attach a photo. This replaces a long thread of texts and phone calls. The tenant does not choose or pay for the repair. The owner does.",
   },
   {
-    n: 2,
-    path: "/triage",
-    short: "Triage",
-    title: "AI triage",
-    why: "Owners should not have to guess how serious a problem is. Triage sorts it by urgency and gives the tenant safe next steps right away.",
+    id: "tenant-safety",
+    flow: "tenant",
+    path: "/tenant/safety",
+    short: "Safety",
+    title: "What to do right now",
+    why: "While the owner decides what to do, the tenant needs to stay safe and limit the damage. Each step has simple instructions, so nobody has to search the web in a stressful moment.",
   },
   {
-    n: 3,
-    path: "/label",
-    short: "Label",
-    title: "Read the equipment label",
-    why: "Model, serial number, and age are the facts that decide repair or replace. Taking a photo of the label is faster than typing them in.",
+    id: "tenant-status",
+    flow: "tenant",
+    path: "/tenant/status",
+    short: "Status",
+    title: "Request status",
+    why: "Tenants should never have to chase anyone to find out what is happening. This shows each stage, and asks the tenant to confirm the time the plumber can come.",
+  },
+  // ---- Owner repair flow ----
+  {
+    id: "owner-request",
+    flow: "owner",
+    path: "/owner/request",
+    short: "Request",
+    title: "Review the request",
+    why: "Porchlight has already read the tenant's report and photo, sorted the urgency, and told the tenant what to do. The owner sees a clear summary and decides what happens next.",
   },
   {
-    n: 4,
-    path: "/record",
+    id: "owner-record",
+    flow: "owner",
+    path: "/owner/record",
     short: "Record",
     title: "House record",
-    why: "One place for what is in the house and how old it is. Later answers, like the forecast, are built on this.",
+    why: "Everything about the home in one place. Equipment details are recorded automatically when something is installed, so the owner never has to type serial numbers or hunt for paperwork.",
   },
   {
-    n: 5,
-    path: "/quote",
+    id: "owner-quote",
+    flow: "owner",
+    path: "/owner/quote",
     short: "Quote",
     title: "Quote check",
     why: "Most small owners have no way to tell if a quote is fair. This compares it to a typical price range and lists what to ask the vendor.",
   },
   {
-    n: 6,
-    path: "/decide",
+    id: "owner-decide",
+    flow: "owner",
+    path: "/owner/decide",
     short: "Decide",
     title: "Repair or replace",
     why: "A clear recommendation, with the rule shown so the owner can see why. The tool recommends and the owner decides.",
   },
   {
-    n: 7,
-    path: "/forecast",
+    id: "owner-book",
+    flow: "owner",
+    path: "/owner/book",
+    short: "Book",
+    title: "Approve and book",
+    why: "The last step turns a decision into action: pick a vendor, set a spending limit, and notify the vendor and the tenant. When the job is done, the new equipment goes into the house record on its own.",
+  },
+  // ---- Plan ahead tools ----
+  {
+    id: "tools-forecast",
+    flow: "tools",
+    path: "/owner/forecast",
     short: "Forecast",
     title: "5-year forecast",
     why: "Big repairs should not be a surprise. This shows what is likely to wear out soon and how much to set aside each year.",
   },
   {
-    n: 8,
-    path: "/rent",
+    id: "tools-rent",
+    flow: "tools",
+    path: "/owner/rent",
     short: "Rent",
     title: "Rent increase",
     why: "Rent rules in California are easy to get wrong. This checks the state cap and drafts the notice, so the owner starts from a safe place.",
   },
+  // ---- Optional ----
   {
-    n: 9,
-    path: "/approve",
-    short: "Book",
-    title: "Approve and book",
-    why: "The last step turns a decision into action: pick a vendor, set a spending limit, and notify the vendor and the tenant.",
+    id: "optional-label",
+    flow: "optional",
+    path: "/owner/label",
+    short: "Label",
+    title: "Add equipment from a label",
+    why: "Most equipment is recorded automatically at install. This is for older items that were installed before Porchlight, or for double checking a record that looks wrong.",
   },
 ];
+
+export function stepById(id: string): Step {
+  const step = STEPS.find((s) => s.id === id);
+  if (!step) throw new Error(`Unknown step: ${id}`);
+  return step;
+}
 
 export function stepForPath(pathname: string): Step | undefined {
   const clean = pathname.length > 1 ? pathname.replace(/\/+$/, "") : pathname;
   return STEPS.find((s) => s.path === clean);
 }
 
+export function flowSteps(flow: FlowId): Step[] {
+  return STEPS.filter((s) => s.flow === flow);
+}
+
+/** Position inside the flow, starting at 1. */
+export function positionOf(step: Step): { index: number; total: number } {
+  const steps = flowSteps(step.flow);
+  return { index: steps.findIndex((s) => s.id === step.id) + 1, total: steps.length };
+}
+
+/** The screen before and after this one, within its flow only. */
+export function neighbors(step: Step): { prev?: Step; next?: Step } {
+  const steps = flowSteps(step.flow);
+  const i = steps.findIndex((s) => s.id === step.id);
+  return { prev: steps[i - 1], next: steps[i + 1] };
+}
+
 /** A readable screen name for the feedback notes. */
 export function screenNameFor(pathname: string): string {
   const step = stepForPath(pathname);
-  if (step) return `Screen ${step.n} of ${STEPS.length}: ${step.title}`;
+  if (step) {
+    const flow = FLOWS[step.flow];
+    if (flow.numbered) {
+      const { index, total } = positionOf(step);
+      return `${flow.label}, screen ${index} of ${total}: ${step.title}`;
+    }
+    return `${flow.label}: ${step.title}`;
+  }
   if (pathname.startsWith("/feedback")) return "Feedback notes";
+  if (pathname === "/owner") return "Owner home";
   if (pathname === "/") return "Home";
   return pathname;
+}
+
+/** Which side of the demo a path belongs to, for the header. */
+export function roleForPath(pathname: string): "tenant" | "owner" | null {
+  if (pathname.startsWith("/tenant")) return "tenant";
+  if (pathname.startsWith("/owner")) return "owner";
+  return null;
 }

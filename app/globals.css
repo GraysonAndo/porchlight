@@ -21,6 +21,7 @@
 
 @theme inline {
   --font-sans: var(--font-nunito), ui-sans-serif, system-ui, sans-serif;
+  --font-display: var(--font-fraunces), Georgia, ui-serif, serif;
 }
 
 html {

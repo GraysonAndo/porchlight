@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Nunito_Sans } from "next/font/google";
+import { Fraunces, Nunito_Sans } from "next/font/google";
 import "./globals.css";
 import { StoreProvider } from "@/lib/store";
 import { Banner } from "@/components/Banner";
@@ -15,6 +15,12 @@ const nunito = Nunito_Sans({
   display: "swap",
 });
 
+const fraunces = Fraunces({
+  variable: "--font-fraunces",
+  subsets: ["latin"],
+  display: "swap",
+});
+
 export const metadata: Metadata = {
   title: "Porchlight: AI property manager (prototype)",
   description:
@@ -23,7 +29,7 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" className={nunito.variable}>
+    <html lang="en" className={`${nunito.variable} ${fraunces.variable}`}>
       <body className="flex min-h-screen flex-col">
         <StoreProvider>
           <a

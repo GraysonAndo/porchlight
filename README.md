@@ -38,21 +38,37 @@ The app is fully static and makes no network requests at runtime. The font (Nuni
 
 ## The demo flow
 
-Use the **Demo guide** at the top of any screen to jump to a step. Every screen has a progress stepper, Back and Next, and a collapsible "Why this screen exists" line for interviews.
+There are two sides to the story, and each side only sees what it needs. **Porchlight** is the AI property manager in the middle.
+
+- The **tenant** lives in the home. They report a problem, stay safe, and follow progress. They do **not** choose or pay for the repair.
+- The **owner** owns the home. They review the request, check the house record, compare a quote, and approve the spending.
+
+The **Demo guide** at the top of any screen jumps to any screen, grouped by side. Every screen has a collapsible "Why this screen exists" line for interviews. The header always says "Tenant view" or "Owner view", with a "Switch role" link.
+
+**Tenant side (3 screens)**
 
 | Step | Screen | What it shows |
 | --- | --- | --- |
-| Home | `/` | Pick "I am a tenant" or "I am an owner". Owners see the property card, open request, equipment count, and shortcuts. |
-| 1 | `/tenant/request` | Tenant reports a leaking water heater, with a sample photo button. |
-| 2 | `/triage` | AI triage: urgency, summary, likely cause, safety checklist with a "How to do this" guide under every step, tenant questions, "Owner notified", and a note on what happens next. |
-| 3 | `/label` | Explains what the step is for, where to find the label, and what to do. Then the photo is scanned, fields are editable, and the low confidence serial can be confirmed or fixed. |
-| 4 | `/record` | House record with the water heater, a lifespan bar, and the other equipment. |
-| 5 | `/quote` | Vendor quote compared to a typical price range, with flagged lines, questions, and possible savings. |
-| 6 | `/decide` | Repair vs replace with the rules and real numbers shown ("How we decided"). |
-| 7 | `/forecast` | 5-year replacement forecast, CSS bar chart, and a "set aside per year" figure. |
-| 8 | `/rent` | California AB 1482 rent increase screen with a copyable notice draft. |
-| 9 | `/approve` | Pick one of 3 vendors, set a not-to-exceed amount and access window, preview both messages, approve. |
+| 1 | `/tenant/request` | Report a leaking water heater, with a sample photo button. Says plainly that the owner makes the repair decision. |
+| 2 | `/tenant/safety` | Urgency in plain words, who handles the repair, safety steps with a "How to do this" guide under every step, follow-up questions the tenant answers, "Owner notified". |
+| 3 | `/tenant/status` | A status timeline (reported, owner notified, owner choosing a plumber, plumber booked, confirm the time, fixed), the owner's message, and "That time works" or "I need a different time". |
+
+**Owner side (5 screens), then planning tools**
+
+| Step | Screen | What it shows |
+| --- | --- | --- |
+| 0 | `/owner` | Owner home: the property, the tenant's new request and its status, and shortcuts. |
+| 1 | `/owner/request` | The tenant's report and photo, urgency, what Porchlight found, the equipment involved (already in the record), what the tenant was told, and the tenant's answers. |
+| 2 | `/owner/record` | The house record. The heater is **already on file** with brand, model, serial number, and where the details came from. Nothing to type or photograph. |
+| 3 | `/owner/quote` | Vendor quote compared to a typical price range, with flagged lines, questions, and possible savings. |
+| 4 | `/owner/decide` | Repair vs replace with the rules and real numbers shown ("How we decided"). |
+| 5 | `/owner/book` | Pick one of 3 vendors, set a not-to-exceed amount and access window, preview both messages, approve. Then a demo button, "the plumber finishes the job", adds the new heater to the house record automatically. |
+| Tool | `/owner/forecast` | 5-year replacement forecast, CSS bar chart, and a "set aside per year" figure. |
+| Tool | `/owner/rent` | California AB 1482 rent increase screen with a copyable notice draft. |
+| Optional | `/owner/label` | Add or check older equipment from a label photo. It compares what it reads with the record. Most owners will never need it. |
 | Extra | `/feedback` | Saved interview notes, "Copy all as text", "Clear all". |
+
+Old links from earlier versions (`/triage`, `/label`, `/record`, `/quote`, `/decide`, `/approve`, `/forecast`, `/rent`) redirect to the new pages.
 
 Every page also has a floating **Leave feedback** button (1 to 5 clarity rating plus a note), a **Reset demo** button in the footer, and supports `?reset=1` on any URL.
 
@@ -65,7 +81,7 @@ Every page also has a floating **Leave feedback** button (1 to 5 clarity rating 
 | AB 1482 math, notice period, notice text (`lib/rent.ts`) | Vendor data, vendor names, licenses, and quotes |
 | Quote comparison and verdict thresholds (`lib/quote.ts`) | Every price, market range, typical lifespan, and the CPI figure |
 | Saving to localStorage, Reset demo, feedback notes | Sending messages. "Approve and send" sends nothing. |
-| | "Owner notified" and the confirmation timeline times |
+| | "Owner notified", the confirmation timeline times, and the installer's automatic record (the integration is simulated) |
 
 ## Assumptions
 
@@ -75,15 +91,19 @@ I made these calls without asking. Please check the ones that matter to you.
 - **Branch name.** Work was done on the branch the build environment assigned (`claude/porchlight-tmp-122-prototype-0ig6fp`) instead of a branch named `prototype-v1`. The PR goes from that branch into `main`. Nothing was pushed to `main`.
 - **Next.js version.** The latest stable (16.4) was used. The generated config turned on two experimental options (`cacheComponents`, `partialPrefetching`). I removed them to keep classic App Router behavior. I also set `agentRules: false` so `next dev` does not write an `AGENTS.md` file into the repo.
 - **Dev dependency.** `@types/node` is pinned to 22 to match the Node version and satisfy Vitest.
+- **Icons and fonts.** Icons are [Phosphor Icons](https://github.com/phosphor-icons/react) (MIT license), in the duotone style. Headlines use Fraunces and body text uses Nunito Sans, both from Google Fonts through `next/font` (open font license).
 - **Security scan.** An automated DAST scan hook was suggested, but it needs an API key that is not set in this environment, so no scan was run. The app has no backend, so there is little to scan.
 
 **Product**
 - The tenant's description box is **pre-filled** with the seed text so interview demos do not need typing. It is editable.
 - A photo is optional on the request form.
-- Screens opened directly (for example by the Demo guide) fall back to the seed scenario, so any screen works on its own.
-- On the triage screen, "Skip" goes to the house record (step 4).
+- Screens opened directly (for example by the Demo guide) fall back to the seed scenario, so any screen works on its own. The owner side always has a sample request from the sample tenant waiting.
+- **Roles.** The tenant side has only what a tenant needs: report, safety steps, status. Quote check, repair or replace, the forecast, and rent are owner decisions and are not shown to tenants. Forecast and rent are planning tools, not part of one repair, so they sit outside the numbered owner flow.
+- **The house record already knows the equipment.** The seeded water heater (brand, model, serial, size, fuel, date) is "on file from the installer's warranty registration", so nobody photographs or types it. When a plumber finishes a job, the new equipment is added automatically (the "Demo: the plumber finishes the job" button simulates this). The label photo tool is kept only as an optional way to add or check older equipment, and it compares what it reads with the record.
+- The tenant's answers to the follow-up questions are saved and shown to the owner. The tenant's "That time works" is shown on the owner home.
+- The demo "plumber finishes the job" button is not a real feature. It exists to show the record updating by itself.
 - The label reading is the same for any photo. Triage uses plain keyword rules (`lib/triage.ts`): gas, carbon monoxide, smoke or sparks, and flooding always give an EMERGENCY result with safety steps (for a gas smell: leave the home, no sparks, call 911 or the gas company). A water heater problem gives the seeded scenario. Other problems get a short generic result for their category (plumbing, HVAC, electrical, appliance, and so on). It is a keyword match, not real understanding.
-- Water heater age is `2026 minus the manufacture year` (March 2015 gives 11 years). If the owner edits the date, the forecast, record, and decision all update.
+- Water heater age is `2026 minus the manufacture year` (March 2015 gives 11 years). If the owner corrects the date in the label tool, the forecast, record, and decision all update. After the replacement, the forecast uses the new heater (installed 2026, due 2036).
 - The repair estimate on screen 6 is $450, and the "replace" cost is the Bayside quote ($2,850). A leaking tank cannot really be repaired, so the repair number is for comparison only.
 - Per-line market ranges for the quote (unit, permit, and so on) were invented so each line can be compared. Only labor is flagged "high" for the seed quote. The expansion tank is flagged "ask" by the mock AI, not by the math.
 - Possible savings are shown only when the quote is above the top of the range. Low is the amount over the top, high is double that. For the seed quote that is $250 to $500.
@@ -92,9 +112,9 @@ I made these calls without asking. Please check the ones that matter to you.
 - The sample contact uses a reserved fictional phone range (555 01xx) and `example.com`.
 
 **Safety guides**
-- Each safety step on the triage screen has a "How to do this" guide (`lib/safetyGuides.ts`): time needed, what you need, why, numbered steps, a "Stop and get help if" list, and a valve diagram where it helps.
+- Each safety step on the tenant's safety screen has a "How to do this" guide (`lib/safetyGuides.ts`): time needed, what you need, why, numbered steps, a "Stop and get help if" list, and a valve diagram where it helps.
 - The guides are **written by hand, not generated by the AI**, because safety advice should be reviewed. The AI only chooses which safety steps apply.
-- Guides use the house record. If the saved fuel type is electric, the "gas valve" step becomes "turn off the power at the breaker". If the heater is not in the record yet, the screen says so and the guide covers both gas and electric.
+- Guides use the house record. The seeded heater is a natural gas heater, so the guide shows the gas steps. If the record says electric (for example after checking a label), the "gas valve" step becomes "turn off the power at the breaker".
 - Guides do not name real utilities. They tell the tenant to use the emergency number on their gas bill or meter, and to call 911.
 - **Before real use**, have a licensed plumber, electrician, and your gas utility review every guide. They are general information, not professional advice.
 
@@ -119,16 +139,16 @@ Everything below is "Illustrative placeholder, not market data" and is labeled t
 
 | Number | Where it appears |
 | --- | --- |
-| Market range for a 40 gallon gas water heater swap: $1,600 to $2,600 | Quote check (5), Repair or replace (6), vendor badges on Approve (9) |
-| Labor range $700 to $1,100 and other line ranges: unit $600 to $1,000, permit $100 to $250, haul away $50 to $150, expansion tank $150 to $300, fittings $100 to $250, seismic kit $25 to $75 | Quote check (5) |
-| Vendor quotes: Bayside $2,850 (7 lines), Willow Glen $2,450, A1 Rapid $2,100 | Quote check (5), Repair or replace (6), Approve (9) |
-| Possible savings $250 to $500 | Quote check (5) |
-| Repair estimate $450 | Repair or replace (6) |
-| Typical life and replace cost: water heater 10 yrs, $1,600 to $2,600; furnace 18 yrs, $4,500 to $7,000; air conditioner 15 yrs, $5,500 to $8,500; dishwasher 10 yrs, $700 to $1,200; refrigerator 14 yrs, $1,100 to $1,900; roof 25 yrs, $9,000 to $15,000 | House record (4), Repair or replace (6, water heater), Forecast (7) |
-| Forecast totals and "set aside per year" (computed from the row above) | Forecast (7) |
-| Local CPI change 3.0% | Rent increase (8) |
-| AI confidence 82% (triage) and 86% (label) | Triage (2), Label (3) |
-| Sample times in the confirmation timeline | Approve (9) |
+| Market range for a 40 gallon gas water heater swap: $1,600 to $2,600 | Owner quote check, repair or replace, vendor badges on approve and book |
+| Labor range $700 to $1,100 and other line ranges: unit $600 to $1,000, permit $100 to $250, haul away $50 to $150, expansion tank $150 to $300, fittings $100 to $250, seismic kit $25 to $75 | Owner quote check |
+| Vendor quotes: Bayside $2,850 (7 lines), Willow Glen $2,450, A1 Rapid $2,100 | Owner quote check, repair or replace, approve and book |
+| Possible savings $250 to $500 | Owner quote check |
+| Repair estimate $450 | Owner repair or replace |
+| Typical life and replace cost: water heater 10 yrs, $1,600 to $2,600; furnace 18 yrs, $4,500 to $7,000; air conditioner 15 yrs, $5,500 to $8,500; dishwasher 10 yrs, $700 to $1,200; refrigerator 14 yrs, $1,100 to $1,900; roof 25 yrs, $9,000 to $15,000 | Owner house record, repair or replace (water heater), forecast |
+| Forecast totals and "set aside per year" (computed from the row above) | Owner forecast |
+| Local CPI change 3.0% | Owner rent increase |
+| AI confidence 82% (triage) and 86% (label) | Owner request (1), Label tool |
+| Sample times in the confirmation timeline | Approve and book, tenant status |
 
 Not placeholders but fictional sample data: rent $3,200 per month, proposed rent default $3,360, tenant since 2023, the address, and all names.
 

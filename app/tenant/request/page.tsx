@@ -24,11 +24,11 @@ function RequestForm({ initialText, initialPhotos }: { initialText: string; init
     setError("");
     actions.setRole("tenant");
     actions.submitRequest(description.trim(), photos);
-    router.push("/triage");
+    router.push("/tenant/safety");
   }
 
   return (
-    <StepShell step={1} nextLabel="Submit" onNext={submit} narrow>
+    <StepShell stepId="tenant-report" nextLabel="Submit" onNext={submit} narrow>
       <Card>
         <div className="space-y-5">
           <div>
@@ -84,7 +84,7 @@ function RequestForm({ initialText, initialPhotos }: { initialText: string; init
             sample={SAMPLE_PHOTO}
             sampleButtonLabel="Use sample photo"
             multiple
-            hint="A photo helps us judge how serious this is."
+            hint="A photo helps us judge how serious this is. Your owner makes the repair decision, so you do not need to find or call anyone."
           />
         </div>
       </Card>
@@ -98,7 +98,7 @@ export default function TenantRequestPage() {
   // Wait for saved state before filling the form, so a returning visitor sees their own request.
   if (!hydrated) {
     return (
-      <StepShell step={1} nextLabel="Submit" nextDisabled narrow>
+      <StepShell stepId="tenant-report" nextLabel="Submit" nextDisabled narrow>
         <p className="text-ink-soft">Loading...</p>
       </StepShell>
     );

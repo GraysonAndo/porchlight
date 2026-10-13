@@ -8,6 +8,7 @@ import type {
   QuoteItem,
   RentFormState,
   VendorQuote,
+  WaterHeaterRecord,
 } from "./types";
 
 export const PLACEHOLDER_LABEL = "Illustrative placeholder, not market data";
@@ -39,15 +40,46 @@ export const SEED_REQUEST = { description: SEED_REQUEST_TEXT, photos: [SAMPLE_PH
 
 /** Equipment for the forecast. Typical life and replace cost are placeholders. */
 export const EQUIPMENT: EquipmentItem[] = [
-  { id: "water-heater", name: "Water heater", installYear: 2015, typicalLifeYears: 10, replaceLow: 1600, replaceHigh: 2600 },
-  { id: "furnace", name: "Furnace", installYear: 2012, typicalLifeYears: 18, replaceLow: 4500, replaceHigh: 7000 },
-  { id: "air-conditioner", name: "Air conditioner", installYear: 2012, typicalLifeYears: 15, replaceLow: 5500, replaceHigh: 8500 },
-  { id: "dishwasher", name: "Dishwasher", installYear: 2018, typicalLifeYears: 10, replaceLow: 700, replaceHigh: 1200 },
-  { id: "refrigerator", name: "Refrigerator", installYear: 2016, typicalLifeYears: 14, replaceLow: 1100, replaceHigh: 1900 },
-  { id: "roof", name: "Roof", installYear: 2009, typicalLifeYears: 25, replaceLow: 9000, replaceHigh: 15000 },
+  { id: "water-heater", name: "Water heater", source: "Installer warranty registration", installYear: 2015, typicalLifeYears: 10, replaceLow: 1600, replaceHigh: 2600 },
+  { id: "furnace", source: "Home inspection report", name: "Furnace", installYear: 2012, typicalLifeYears: 18, replaceLow: 4500, replaceHigh: 7000 },
+  { id: "air-conditioner", source: "Home inspection report", name: "Air conditioner", installYear: 2012, typicalLifeYears: 15, replaceLow: 5500, replaceHigh: 8500 },
+  { id: "dishwasher", source: "Installer warranty registration", name: "Dishwasher", installYear: 2018, typicalLifeYears: 10, replaceLow: 700, replaceHigh: 1200 },
+  { id: "refrigerator", source: "Added by owner", name: "Refrigerator", installYear: 2016, typicalLifeYears: 14, replaceLow: 1100, replaceHigh: 1900 },
+  { id: "roof", source: "Home inspection report", name: "Roof", installYear: 2009, typicalLifeYears: 25, replaceLow: 9000, replaceHigh: 15000 },
 ];
 
 export const WATER_HEATER = EQUIPMENT[0];
+
+/**
+ * What the house record already knows about the water heater. It was recorded
+ * when the heater was installed, so nobody has to type or photograph it.
+ */
+export const SEED_HEATER_RECORD: WaterHeaterRecord = {
+  manufacturer: "Hearthline",
+  model: "HL-40G-NG",
+  serial: "15C0412-X",
+  capacityGallons: 40,
+  fuelType: "Natural gas",
+  manufactureDate: "2015-03",
+  ageYears: 11,
+  unconfirmed: [],
+  photo: null,
+  source: "Installer warranty registration, 2015 (sample)",
+};
+
+/** The replacement heater, added to the record automatically when the plumber finishes. */
+export const NEW_HEATER_RECORD: WaterHeaterRecord = {
+  manufacturer: "Hearthline",
+  model: "HL-40G-NG",
+  serial: "26J0007-A",
+  capacityGallons: 40,
+  fuelType: "Natural gas",
+  manufactureDate: "2026-09",
+  ageYears: 0,
+  unconfirmed: [],
+  photo: null,
+  source: "Added automatically by the installer when the job was finished (sample)",
+};
 
 /** The job we are quoting, with placeholder market ranges (total and per line). */
 export const WATER_HEATER_JOB: QuoteItem = {
@@ -146,5 +178,8 @@ export const INITIAL_STATE: DemoState = {
   quoteCheck: null,
   rent: DEFAULT_RENT_FORM,
   approval: null,
+  tenantAnswers: null,
+  tenantAccess: null,
+  jobCompletedAt: null,
   feedback: [],
 };

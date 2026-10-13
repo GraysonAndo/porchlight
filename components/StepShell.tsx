@@ -2,11 +2,12 @@
 
 import Link from "next/link";
 import type { ReactNode } from "react";
-import { STEPS } from "@/lib/steps";
+import { FLOWS, neighbors, stepById } from "@/lib/steps";
 import { Stepper } from "./Stepper";
 
 interface StepShellProps {
-  step: number;
+  /** Which screen this is, from lib/steps.ts */
+  stepId: string;
   children: ReactNode;
   /** Label for the Next button. Defaults to the next screen's name. */
   nextLabel?: string;
@@ -23,7 +24,7 @@ interface StepShellProps {
 }
 
 export function StepShell({
-  step,
+  stepId,
   children,
   nextLabel,
   nextHref,
@@ -34,22 +35,20 @@ export function StepShell({
   skipHref,
   narrow,
 }: StepShellProps) {
-  const info = STEPS[step - 1];
-  const previous = STEPS[step - 2];
-  const next = STEPS[step];
-  const back = backHref ?? previous?.path ?? "/";
-  const forwardHref = nextHref ?? next?.path ?? "/";
-  const forwardLabel = nextLabel ?? (next ? `Next: ${next.title}` : "Back to home");
+  const info = stepById(stepId);
+  const flow = FLOWS[info.flow];
+  const { prev, next } = neighbors(info);
+  const back = backHref ?? prev?.path ?? flow.home;
+  const forwardHref = nextHref ?? next?.path ?? flow.home;
+  const forwardLabel = nextLabel ?? (next ? `Next: ${next.title}` : flow.homeLabel);
 
   return (
     <div className={narrow ? "mx-auto max-w-2xl" : ""}>
-      <Stepper current={step} />
-      <h1 className="text-3xl font-extrabold leading-tight sm:text-5xl">{info.title}</h1>
+      <Stepper step={info} />
+      <h1 className="font-display text-3xl font-extrabold leading-tight sm:text-5xl">{info.title}</h1>
 
       <details className="mt-3 rounded-2xl border border-glow/30 bg-glow-tint/70 px-4">
-        <summary className="flex min-h-11 cursor-pointer items-center font-bold">
-          Why this screen exists
-        </summary>
+        <summary className="flex min-h-11 cursor-pointer items-center font-bold">Why this screen exists</summary>
         <p className="pb-3 text-ink">{info.why}</p>
       </details>
 

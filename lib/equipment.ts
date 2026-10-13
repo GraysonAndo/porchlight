@@ -1,5 +1,5 @@
-import { EQUIPMENT } from "./seed";
-import type { EquipmentItem, WaterHeaterRecord } from "./types";
+import { EQUIPMENT, NEW_HEATER_RECORD, SEED_HEATER_RECORD } from "./seed";
+import type { DemoState, EquipmentItem, WaterHeaterRecord } from "./types";
 
 /** Year from an ISO "YYYY-MM" date, or null if it does not parse. */
 export function yearOf(isoMonth: string): number | null {
@@ -8,12 +8,31 @@ export function yearOf(isoMonth: string): number | null {
 }
 
 /**
- * The equipment list for the forecast and record screens. If the owner saved a
- * label read, the water heater uses that manufacture year instead of the seed.
+ * The heater that is leaking. The house record already knows it (from the
+ * installer's registration). If the owner checked it against a label photo,
+ * that checked copy is used instead.
  */
-export function equipmentFor(record: WaterHeaterRecord | null): EquipmentItem[] {
-  const year = record ? yearOf(record.manufactureDate) : null;
+export function heaterBeforeRepair(state: Pick<DemoState, "houseRecord">): WaterHeaterRecord {
+  return state.houseRecord ?? SEED_HEATER_RECORD;
+}
+
+/**
+ * The heater in the home right now. After the plumber finishes the job (simulated),
+ * the new heater is added to the record automatically.
+ */
+export function currentHeater(state: Pick<DemoState, "houseRecord" | "jobCompletedAt">): WaterHeaterRecord {
+  return state.jobCompletedAt ? NEW_HEATER_RECORD : heaterBeforeRepair(state);
+}
+
+/**
+ * The equipment list for the record and forecast screens. The water heater uses
+ * the details from the given record (manufacture year and source).
+ */
+export function equipmentFor(record: WaterHeaterRecord): EquipmentItem[] {
+  const year = yearOf(record.manufactureDate);
   return EQUIPMENT.map((item) =>
-    item.id === "water-heater" && year !== null ? { ...item, installYear: year } : item,
+    item.id === "water-heater"
+      ? { ...item, installYear: year ?? item.installYear, source: record.source }
+      : item,
   );
 }

@@ -37,7 +37,7 @@ export function Badge({
 }) {
   return (
     <span
-      className={`inline-flex items-center gap-1.5 rounded-full border font-extrabold ${
+      className={`inline-flex max-w-full items-center gap-1.5 rounded-full border font-extrabold ${
         size === "lg" ? "px-4 py-1 text-lg" : "px-3 py-0.5 text-sm"
       } ${BADGE_STYLES[tone]}`}
     >

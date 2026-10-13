@@ -120,6 +120,9 @@ export interface DemoActions {
   setRent(patch: Partial<RentFormState>): void;
   approve(approval: Approval): void;
   clearApproval(): void;
+  setTenantAnswers(answers: string[]): void;
+  confirmAccess(value: "confirmed" | "needs-change"): void;
+  completeJob(): void;
   addFeedback(input: { screen: string; rating: number; note: string }): void;
   clearFeedback(): void;
   reset(): void;
@@ -131,14 +134,27 @@ export const actions: DemoActions = {
   submitRequest: (description, photos) =>
     update((s) => {
       const request: RepairRequest = { description, photos, submittedAt: new Date().toISOString() };
-      return { ...s, request, triage: null, houseRecord: null, approval: null };
+      // The house record belongs to the home, not to one request, so it is kept.
+      return {
+        ...s,
+        request,
+        triage: null,
+        approval: null,
+        tenantAnswers: null,
+        tenantAccess: null,
+        jobCompletedAt: null,
+      };
     }),
   setTriage: (triage) => update((s) => ({ ...s, triage })),
   saveHouseRecord: (houseRecord) => update((s) => ({ ...s, houseRecord })),
   setQuoteCheck: (quoteCheck) => update((s) => ({ ...s, quoteCheck })),
   setRent: (patch) => update((s) => ({ ...s, rent: { ...s.rent, ...patch } })),
   approve: (approval) => update((s) => ({ ...s, approval })),
-  clearApproval: () => update((s) => ({ ...s, approval: null })),
+  clearApproval: () =>
+    update((s) => ({ ...s, approval: null, tenantAccess: null, jobCompletedAt: null })),
+  setTenantAnswers: (tenantAnswers) => update((s) => ({ ...s, tenantAnswers })),
+  confirmAccess: (tenantAccess) => update((s) => ({ ...s, tenantAccess })),
+  completeJob: () => update((s) => ({ ...s, jobCompletedAt: new Date().toISOString() })),
   addFeedback: ({ screen, rating, note }) =>
     update((s) => {
       const entry: FeedbackNote = {
