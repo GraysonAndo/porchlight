@@ -3,6 +3,9 @@ import { guideForStep } from "../lib/safetyGuides";
 import { triageText } from "../lib/triage";
 import { SEED_REQUEST_TEXT } from "../lib/seed";
 
+// Built from character codes so this file itself contains no dash characters.
+const DASHES = new RegExp(`${String.fromCharCode(0x2014)}|${String.fromCharCode(0x2013)}`);
+
 // Every kind of request the mock triage can produce.
 const REQUESTS = [
   SEED_REQUEST_TEXT,
@@ -36,7 +39,7 @@ describe("safety guides", () => {
     for (const step of ALL_STEPS) {
       const g = guideForStep(step)!;
       const text = JSON.stringify(g);
-      expect(text).not.toMatch(/—|–/);
+      expect(text).not.toMatch(DASHES);
     }
   });
 
