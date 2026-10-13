@@ -7,7 +7,7 @@
 //
 // Porchlight itself plays the AI property manager in between.
 
-export type FlowId = "tenant" | "owner" | "tools" | "optional";
+export type FlowId = "live" | "tenant" | "owner" | "tools" | "optional";
 
 export interface Step {
   id: string;
@@ -31,6 +31,14 @@ export interface FlowInfo {
 }
 
 export const FLOWS: Record<FlowId, FlowInfo> = {
+  live: {
+    id: "live",
+    label: "Watch it work",
+    blurb: "Both phones and the agent, side by side",
+    numbered: false,
+    home: "/",
+    homeLabel: "Back to home",
+  },
   tenant: {
     id: "tenant",
     label: "Tenant",
@@ -66,6 +74,15 @@ export const FLOWS: Record<FlowId, FlowInfo> = {
 };
 
 export const STEPS: Step[] = [
+  // ---- Live ----
+  {
+    id: "live-watch",
+    flow: "live",
+    path: "/live",
+    short: "Live",
+    title: "Watch Porchlight work",
+    why: "This shows the whole idea in two minutes. A tenant texts at 4 AM, and Porchlight handles it while the owner sleeps. The owner only wakes up to one decision. The two phones show what each person sees at the same moment, and the log shows which parts the AI did and which parts plain code did.",
+  },
   // ---- Tenant ----
   {
     id: "tenant-report",
@@ -82,6 +99,14 @@ export const STEPS: Step[] = [
     short: "Safety",
     title: "What to do right now",
     why: "While the owner decides what to do, the tenant needs to stay safe and limit the damage. Each step has simple instructions, so nobody has to search the web in a stressful moment.",
+  },
+  {
+    id: "tenant-label",
+    flow: "tenant",
+    path: "/tenant/label",
+    short: "Photo",
+    title: "One quick photo",
+    why: "Porchlight builds the house record from the label on the equipment, so the owner never has to hunt for paperwork. The tenant is only asked when the record is missing the details, and only once. If the label is hard to reach, they can skip it and the owner adds it instead.",
   },
   {
     id: "tenant-status",
@@ -106,7 +131,7 @@ export const STEPS: Step[] = [
     path: "/owner/record",
     short: "Record",
     title: "House record",
-    why: "Everything about the home in one place. Equipment details are recorded automatically when something is installed, so the owner never has to type serial numbers or hunt for paperwork.",
+    why: "Everything about the home in one place. The first label photo (from the tenant, or the owner) starts the record. After that, new equipment is recorded automatically by the installer, so nobody types serial numbers or hunts for paperwork.",
   },
   {
     id: "owner-quote",
@@ -114,7 +139,7 @@ export const STEPS: Step[] = [
     path: "/owner/quote",
     short: "Quote",
     title: "Quote check",
-    why: "Most small owners have no way to tell if a quote is fair. This compares it to a typical price range and lists what to ask the vendor.",
+    why: "Most small owners have no way to tell if a quote is fair. Porchlight collects quotes and checks each one against a typical price range with plain code. The owner can also paste a quote they got themselves.",
   },
   {
     id: "owner-decide",
@@ -130,7 +155,7 @@ export const STEPS: Step[] = [
     path: "/owner/book",
     short: "Book",
     title: "Approve and book",
-    why: "The last step turns a decision into action: pick a vendor, set a spending limit, and notify the vendor and the tenant. When the job is done, the new equipment goes into the house record on its own.",
+    why: "The last step turns a decision into action. Porchlight already picked the best quote and set a spending limit. The owner taps once to approve, or picks a different vendor. When the job is done, the new equipment goes into the house record on its own.",
   },
   // ---- Plan ahead tools ----
   {
@@ -155,8 +180,8 @@ export const STEPS: Step[] = [
     flow: "optional",
     path: "/owner/label",
     short: "Label",
-    title: "Add equipment from a label",
-    why: "Most equipment is recorded automatically at install. This is for older items that were installed before Porchlight, or for double checking a record that looks wrong.",
+    title: "Add equipment details",
+    why: "Most equipment is recorded automatically at install, or from a tenant's label photo. This is for adding an older item yourself, by photo or by typing, or for double checking a record that looks wrong.",
   },
 ];
 

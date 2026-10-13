@@ -26,6 +26,20 @@ const NOTE: Record<"tenant" | "owner", Record<Urgency, string>> = {
   },
 };
 
+function noteFor(triage: TriageResult, audience: "tenant" | "owner"): string {
+  if (triage.alertOwnerNow && triage.safetySteps.length === 0) {
+    return audience === "tenant"
+      ? "This needs a professional soon. Your owner is being called right now. There is nothing for you to fix."
+      : "Porchlight called you because this cannot wait. The tenant was given no fix steps.";
+  }
+  if (triage.alertOwnerNow && triage.urgency !== "emergency") {
+    return audience === "tenant"
+      ? "This needs fast attention. Your owner is being called right now."
+      : "Porchlight alerted you right away because this cannot wait.";
+  }
+  return NOTE[audience][triage.urgency];
+}
+
 /** The big urgency banner at the top of a triage result. */
 export function UrgencyHero({ triage, audience }: { triage: TriageResult; audience: "tenant" | "owner" }) {
   const good = triage.urgency === "routine";
@@ -47,7 +61,7 @@ export function UrgencyHero({ triage, audience }: { triage: TriageResult; audien
         <p className={`text-4xl font-extrabold leading-none ${good ? "text-good-ink" : "text-urgent"}`}>
           {URGENCY_LABEL[triage.urgency]}
         </p>
-        <p className="mt-1 font-bold text-ink">{NOTE[audience][triage.urgency]}</p>
+        <p className="mt-1 font-bold text-ink">{noteFor(triage, audience)}</p>
       </div>
     </div>
   );
@@ -68,6 +82,28 @@ interface SafetyChecklistProps {
 /** Safety steps with a "How to do this" guide under each one. */
 export function SafetyChecklist({ steps, context, interactive }: SafetyChecklistProps) {
   const [checked, setChecked] = useState<boolean[]>([]);
+  if (steps.length === 0) {
+    return (
+      <Card
+        title={
+          <span className="flex items-center gap-2">
+            <ShieldIcon /> {interactive ? "Safety steps for you" : "What the tenant was told to do"}
+          </span>
+        }
+      >
+        <p className="text-lg font-bold">
+          {interactive
+            ? "There is nothing for you to fix. Please do not try to repair this yourself."
+            : "No fix steps were given. Porchlight does not ask tenants to repair this kind of problem."}
+        </p>
+        <p className="mt-1 text-ink-soft">
+          {interactive
+            ? "Your owner has been told and will send a professional. Keep warm, keep clear of the area, and stay reachable by phone."
+            : "The tenant was told to stay clear and keep their phone on."}
+        </p>
+      </Card>
+    );
+  }
   const heater = aboutHeater(steps);
   const recordName = [context.manufacturer, context.model].filter(Boolean).join(" ");
 

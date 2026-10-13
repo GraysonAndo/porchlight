@@ -35,6 +35,8 @@ export interface TriageResult {
   suggestedTrade: string;
   /** 0 to 1 */
   confidence: number;
+  /** True when the owner must be alerted right away, and fix steps are skipped or kept to safety only */
+  alertOwnerNow?: boolean;
 }
 
 export interface LabelInput {
@@ -198,5 +200,7 @@ export interface DemoState {
   tenantAccess: "confirmed" | "needs-change" | null;
   /** When the plumber finished the job (simulated), which adds the new heater to the record */
   jobCompletedAt: string | null;
+  /** True if the tenant could not photograph the label, so the owner is asked to add it */
+  tenantSkippedLabel: boolean;
   feedback: FeedbackNote[];
 }

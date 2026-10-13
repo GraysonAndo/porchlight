@@ -2,10 +2,15 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ChartIcon, DocIcon, HomeIcon, WrenchIcon } from "@/components/icons";
+import { EngineChip } from "@/components/Agent";
+import { ChartIcon, DocIcon, HomeIcon, MoonIcon, PlayIcon, WrenchIcon } from "@/components/icons";
 import { Badge, Card } from "@/components/ui";
 import { PROPERTY, EQUIPMENT, SEED_REQUEST_TEXT, VENDORS } from "@/lib/seed";
 import { usd } from "@/lib/format";
+import { isHeaterJob, triageEvents } from "@/lib/agentLog";
+import { buildForecast } from "@/lib/forecast";
+import { PLAN } from "@/lib/plan";
+import type { Engine } from "@/lib/scenario";
 import { useDemo } from "@/lib/store";
 
 export default function OwnerHomePage() {
@@ -17,6 +22,23 @@ export default function OwnerHomePage() {
   const urgency = state.triage?.urgency;
   const vendor = state.approval ? VENDORS.find((v) => v.id === state.approval?.vendorId) : null;
   const done = state.jobCompletedAt !== null;
+  const forecast = buildForecast(EQUIPMENT);
+  const triage = state.triage;
+  const heaterJob = !state.request || isHeaterJob(state.request.description, triage);
+  const work: [Engine, string][] = heaterJob
+    ? [
+        ["ai", "Read the tenant's photo and sorted the urgency"],
+        ["code", "Checked the emergency rules (not an emergency, so no 4 AM call)"],
+        ["ai", "Asked the tenant for a photo of the heater label"],
+        ["action", `Collected ${PLAN.skipped.length + 1} quotes and checked each one`],
+        ["code", `Picked ${PLAN.vendorName} at ${usd(PLAN.total)}`],
+        state.approval
+          ? ["action", "Booked the visit and told the tenant"]
+          : ["human", "Waiting for your tap to approve"],
+      ]
+    : state.request && triage
+      ? triageEvents({ request: state.request, triage, record: state.houseRecord }).map((e): [Engine, string] => [e.engine, e.title])
+      : [];
 
   return (
     <div className="mx-auto max-w-4xl space-y-6">
@@ -39,6 +61,43 @@ export default function OwnerHomePage() {
           </div>
         </div>
       </Card>
+
+      <div className="hero-ink">
+        <p className="eyebrow !text-cream/70 flex items-center gap-2">
+          <MoonIcon size={18} /> While you were away
+        </p>
+        <p className="mt-2 text-2xl font-extrabold leading-snug sm:text-4xl">
+          {!heaterJob
+            ? triage?.alertOwnerNow
+              ? "Porchlight sorted a new request and called you, because it cannot wait."
+              : "Porchlight sorted a new request for you."
+            : done
+              ? "The new heater is in and the house record updated itself."
+              : state.approval
+                ? "Booked. Porchlight is watching the visit for you."
+                : "Porchlight handled the leak. It needs one tap from you."}
+        </p>
+        <ul className="mt-4 grid gap-2 sm:grid-cols-2">
+          {work.map(([engine, text]) => (
+            <li key={text} className="flex items-start gap-2 rounded-2xl bg-white/10 p-3 text-cream">
+              <span className="mt-0.5 shrink-0">
+                <EngineChip engine={engine} />
+              </span>
+              <span>{text}</span>
+            </li>
+          ))}
+        </ul>
+        <div className="mt-4 flex flex-wrap items-center gap-3">
+          {heaterJob && (
+            <span className="rounded-2xl bg-glow px-4 py-2 font-extrabold text-ink">
+              {usd(PLAN.savedVsHighest)} {state.approval ? "saved" : "to save"} on this repair
+            </span>
+          )}
+          <Link href="/live" className="btn btn-lg bg-white font-extrabold text-ink">
+            <PlayIcon size={20} /> Watch how it went
+          </Link>
+        </div>
+      </div>
 
       <Card
         title={
@@ -93,7 +152,7 @@ export default function OwnerHomePage() {
             <ChartIcon />
           </span>
           <span className="mt-1 text-lg font-extrabold">5-year forecast</span>
-          <span className="text-sm text-ink-soft">What will wear out, and what to set aside</span>
+          <span className="text-sm text-ink-soft">What will wear out. Set aside about {usd(forecast.setAsideLowPerMonth)} to {usd(forecast.setAsideHighPerMonth)} a month</span>
         </Link>
         <Link href="/owner/rent" className="card card-lift flex flex-col gap-1 hover:border-ink">
           <span className="inline-flex h-11 w-11 items-center justify-center rounded-xl bg-ink text-glow">

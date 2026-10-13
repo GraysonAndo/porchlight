@@ -6,6 +6,8 @@ import { SafetyChecklist, UrgencyHero } from "@/components/TriageParts";
 import { StepShell } from "@/components/StepShell";
 import { BellIcon, PeopleIcon } from "@/components/icons";
 import { Badge, Callout, Card, Thinking } from "@/components/ui";
+import { AgentLogDetails } from "@/components/Agent";
+import { triageEvents } from "@/lib/agentLog";
 import { heaterBeforeRepair } from "@/lib/equipment";
 import { PROPERTY } from "@/lib/seed";
 import { useDemo } from "@/lib/store";
@@ -79,7 +81,7 @@ export default function TenantSafetyPage() {
   const heater = heaterBeforeRepair(state);
 
   return (
-    <StepShell stepId="tenant-safety" nextLabel="See request status" nextDisabled={!triage}>
+    <StepShell stepId="tenant-safety" nextLabel="Next: One quick photo" nextDisabled={!triage}>
       <Card title="Your report">
         <p className="text-lg">{request.description}</p>
         {request.photos.length > 0 && (
@@ -101,8 +103,11 @@ export default function TenantSafetyPage() {
             <p className="flex items-start gap-2">
               <PeopleIcon size={22} />
               <span>
-                <strong>{PROPERTY.owner}</strong> arranges and pays for the repair. You do not need to call a plumber.
-                Your part: stay safe, answer the questions below, and be home when the plumber comes.
+                <strong>{PROPERTY.owner}</strong> arranges and pays for the repair
+                {triage.urgency === "emergency" ? " once everyone is safe" : ""}. You do not need to call a plumber.{" "}
+                {triage.urgency === "emergency"
+                  ? "Your part: get safe, call for help, and keep your phone on."
+                  : "Your part: stay safe, answer the questions below, and be home when the plumber comes."}
               </span>
             </p>
           </Callout>
@@ -113,21 +118,25 @@ export default function TenantSafetyPage() {
 
           <SafetyChecklist
             steps={triage.safetySteps}
-            context={{ manufacturer: heater.manufacturer, model: heater.model, fuelType: heater.fuelType }}
+            context={{ manufacturer: heater?.manufacturer, model: heater?.model, fuelType: heater?.fuelType }}
             interactive
           />
 
           <Questions questions={triage.tenantQuestions} />
 
-          <Callout tone="good" title="✓ Owner notified" role="status">
+          <Callout tone="good" title={triage.alertOwnerNow ? "✓ Owner is being called" : "✓ Owner notified"} role="status">
             <p className="flex items-start gap-2">
               <BellIcon size={22} />
               <span>
-                {PROPERTY.owner} was told about this request and the urgency. (Simulated. Nothing was actually
-                sent.)
+                {triage.alertOwnerNow
+                  ? `${PROPERTY.owner} is being called right now because this cannot wait.`
+                  : `${PROPERTY.owner} got a quiet heads-up with the urgency. You do not need to call anyone.`}{" "}
+                (Simulated. Nothing was actually sent.)
               </span>
             </p>
           </Callout>
+
+          <AgentLogDetails events={triageEvents({ request, triage, record: heater })} summary="See what Porchlight did with your report" />
         </>
       )}
     </StepShell>

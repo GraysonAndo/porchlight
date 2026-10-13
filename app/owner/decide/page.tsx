@@ -1,18 +1,21 @@
 "use client";
 
 import { CheckIcon } from "@/components/icons";
+import { PlainCodeNote } from "@/components/Agent";
 import { StepShell } from "@/components/StepShell";
 import { Badge, Callout, Card, PlaceholderNote } from "@/components/ui";
 import { decideRepairOrReplace } from "@/lib/decision";
 import { equipmentFor, heaterBeforeRepair } from "@/lib/equipment";
 import { usd, usdRange } from "@/lib/format";
 import { ageOf } from "@/lib/life";
-import { BAYSIDE_QUOTE, REPAIR_ESTIMATE, WATER_HEATER_JOB } from "@/lib/seed";
+import { PLAN } from "@/lib/plan";
+import { REPAIR_ESTIMATE, WATER_HEATER_JOB } from "@/lib/seed";
 import { useDemo } from "@/lib/store";
 
 export default function DecidePage() {
   const { state } = useDemo();
-  const heater = equipmentFor(heaterBeforeRepair(state))[0];
+  const record = heaterBeforeRepair(state);
+  const heater = equipmentFor(record)[0];
 
   // Inputs for the rule. The failure mode comes from the triage on screen 2.
   const result = decideRepairOrReplace({
@@ -20,7 +23,7 @@ export default function DecidePage() {
     ageYears: ageOf(heater),
     typicalLifeYears: heater.typicalLifeYears,
     repairCost: REPAIR_ESTIMATE,
-    replaceCost: BAYSIDE_QUOTE.total,
+    replaceCost: PLAN.total,
     failureMode: "tank leak",
   });
 
@@ -51,6 +54,15 @@ export default function DecidePage() {
         <p className="mb-3 text-ink-soft">
           Replace if any one of these three rules is true. These are the actual rules, with the real numbers.
         </p>
+        <div className="mb-3">
+          <PlainCodeNote>This is arithmetic on the numbers below. The AI did not make this call.</PlainCodeNote>
+        </div>
+        {!record && (
+          <p className="mb-3 rounded-xl bg-caution-tint/70 p-3 font-bold text-caution-ink">
+            The heater&apos;s age is an estimate (about {heater.installYear}, from the home inspection) until a label photo
+            confirms it.
+          </p>
+        )}
         <ol className="space-y-3">
           {result.checks.map((check, i) => (
             <li key={check.id} className="flex gap-3 rounded-xl bg-cream p-3">
@@ -96,7 +108,7 @@ export default function DecidePage() {
           </div>
           <div>
             <div className="flex items-baseline justify-between gap-3">
-              <p className="font-bold">Replace (Bayside quote)</p>
+              <p className="font-bold">Replace ({PLAN.vendorName}, the best quote)</p>
               <p className="text-lg font-extrabold">{usd(result.numbers.replaceCost)}</p>
             </div>
             <div className="mt-1 h-5 rounded-full bg-cream-deep" role="img" aria-label={`Replace ${usd(result.numbers.replaceCost)}`}>

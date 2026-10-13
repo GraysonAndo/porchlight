@@ -1,5 +1,6 @@
 "use client";
 
+import { PlainCodeNote } from "@/components/Agent";
 import { StepShell } from "@/components/StepShell";
 import { Badge, Callout, Card, PlaceholderNote, type Tone } from "@/components/ui";
 import { currentHeater, equipmentFor } from "@/lib/equipment";
@@ -36,6 +37,9 @@ export default function ForecastPage() {
         <p className="mt-2 text-4xl font-extrabold leading-tight text-glow sm:text-6xl">
           {usd(forecast.setAsideLowPerYear)} to {usd(forecast.setAsideHighPerYear)}
         </p>
+        <p className="mt-2 text-xl font-bold text-cream">
+          About {usd(forecast.setAsideLowPerMonth)} to {usd(forecast.setAsideHighPerMonth)} a month
+        </p>
         <p className="mt-3 text-lg text-cream/85">
           That is the cost of everything due from {first} to {last} ({usdRange(forecast.totalLow, forecast.totalHigh)}),
           spread over {forecast.years.length} years.
@@ -45,6 +49,11 @@ export default function ForecastPage() {
           <span className="text-sm text-cream/80">(all costs and lifespans on this screen)</span>
         </p>
       </div>
+
+      <PlainCodeNote>
+        Every number here is add-and-divide on the equipment ages in your house record. The AI is not involved, so the
+        plan never changes unless the record does.
+      </PlainCodeNote>
 
       <Card title={`What you may spend, ${first} to ${last}`}>
         <div

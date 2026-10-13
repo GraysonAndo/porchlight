@@ -1,174 +1,208 @@
 "use client";
 
-import { useEffect } from "react";
-import { RangeBar } from "@/components/Bars";
+import { useState } from "react";
+import { PlainCodeNote } from "@/components/Agent";
+import { QuoteDetail } from "@/components/QuoteDetail";
 import { StepShell } from "@/components/StepShell";
-import { Badge, Callout, Card, PlaceholderNote, Thinking } from "@/components/ui";
+import { CheckIcon, TagIcon } from "@/components/icons";
+import { Badge, Callout, Card } from "@/components/ui";
 import { VERDICT_LABEL, VERDICT_TONE } from "@/components/verdict";
-import { ai } from "@/lib/ai";
-import { usd, usdRange } from "@/lib/format";
-import { compareQuote, percentOverTop } from "@/lib/quote";
-import { BAYSIDE_QUOTE, WATER_HEATER_JOB } from "@/lib/seed";
-import { useDemo } from "@/lib/store";
+import { usd } from "@/lib/format";
+import { COLLECTED, PLAN } from "@/lib/plan";
+import { SAMPLE_QUOTE_TEXT, parseQuoteText, type ParsedQuote } from "@/lib/quoteParse";
+import type { VendorQuote } from "@/lib/types";
 
-export default function QuotePage() {
-  const { state, actions, hydrated } = useDemo();
-  const result = state.quoteCheck;
-  const comparison = compareQuote(BAYSIDE_QUOTE, WATER_HEATER_JOB);
+function PasteQuote() {
+  const [text, setText] = useState("");
+  const [parsed, setParsed] = useState<ParsedQuote | null>(null);
 
-  useEffect(() => {
-    if (!hydrated || result) return;
-    let cancelled = false;
-    ai.checkQuote({ quote: BAYSIDE_QUOTE, item: WATER_HEATER_JOB }).then((r) => {
-      if (!cancelled) actions.setQuoteCheck(r);
-    });
-    return () => {
-      cancelled = true;
-    };
-  }, [hydrated, result, actions]);
-
-  const flaggedNames = new Set(result?.flaggedLines.map((f) => f.line) ?? []);
-  const over = Math.round(percentOverTop(BAYSIDE_QUOTE.total, WATER_HEATER_JOB.marketTotal));
+  const quote: VendorQuote | null =
+    parsed && parsed.lines.length > 0
+      ? {
+          vendorId: "pasted",
+          vendorName: parsed.vendorName ?? "Your pasted quote",
+          total: parsed.total,
+          lines: parsed.lines,
+        }
+      : null;
 
   return (
-    <StepShell stepId="owner-quote" nextDisabled={!result}>
-      <Card title="The vendor quote">
-        <p className="font-bold">{BAYSIDE_QUOTE.vendorName}</p>
-        <p className="text-ink-soft">Job: {WATER_HEATER_JOB.name}</p>
-        <div className="mt-3 overflow-hidden rounded-xl border border-line">
-          <table className="w-full text-left">
-            <caption className="sr-only">Quote line items compared with typical prices</caption>
-            <thead className="bg-cream-deep text-sm">
-              <tr>
-                <th scope="col" className="px-3 py-2">
-                  Item
-                </th>
-                <th scope="col" className="px-3 py-2 text-right">
-                  Quote
-                </th>
-                <th scope="col" className="hidden px-3 py-2 text-right sm:table-cell">
-                  Typical
-                </th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-line">
-              {comparison.lines.map((line) => {
-                const high = line.verdict === "high" || line.verdict === "slightly high";
-                const flagged = high || flaggedNames.has(line.label);
-                return (
-                  <tr key={line.id} className={flagged ? "bg-caution-tint/60" : ""}>
-                    <td className="px-3 py-2">
-                      {line.label}
-                      {high && (
-                        <span className="ml-2 align-middle">
-                          <Badge tone="urgent">High</Badge>
-                        </span>
-                      )}
-                      {!high && flaggedNames.has(line.label) && (
-                        <span className="ml-2 align-middle">
-                          <Badge tone="caution">Ask</Badge>
-                        </span>
-                      )}
-                      {!high && !flaggedNames.has(line.label) && line.verdict === "fair" && (
-                        <span className="ml-2 align-middle">
-                          <Badge tone="good">OK</Badge>
-                        </span>
-                      )}
-                      {line.range && (
-                        <span className="block text-sm text-ink-soft sm:hidden">
-                          Typical {usdRange(line.range.low, line.range.high)}
-                        </span>
-                      )}
-                    </td>
-                    <td className="px-3 py-2 text-right font-bold">{usd(line.amount)}</td>
-                    <td className="hidden px-3 py-2 text-right text-ink-soft sm:table-cell">
-                      {line.range ? usdRange(line.range.low, line.range.high) : "n/a"}
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-            <tfoot className="bg-cream-deep">
-              <tr>
-                <th scope="row" className="px-3 py-2">
-                  Total
-                </th>
-                <td className="px-3 py-2 text-right text-lg font-extrabold">{usd(BAYSIDE_QUOTE.total)}</td>
-                <td className="hidden px-3 py-2 text-right text-ink-soft sm:table-cell">
-                  {usdRange(WATER_HEATER_JOB.marketTotal.low, WATER_HEATER_JOB.marketTotal.high)}
-                </td>
-              </tr>
-            </tfoot>
-          </table>
-        </div>
-        <p className="mt-2">
-          <PlaceholderNote /> <span className="text-sm text-ink-soft">(typical prices and this sample quote)</span>
+    <div className="space-y-5">
+      <Card
+        title={
+          <span className="flex items-center gap-2">
+            <TagIcon /> Got a quote yourself? Paste it here
+          </span>
+        }
+      >
+        <p className="mb-3 text-ink-soft">
+          Copy the text of an email or estimate and paste it in. Porchlight reads the line items and checks them against
+          typical prices, so you can tell if it is fair before you reply.
         </p>
+        <label htmlFor="paste-quote" className="label">
+          The text of the quote
+        </label>
+        <textarea
+          id="paste-quote"
+          className="field min-h-44 font-mono text-sm"
+          value={text}
+          onChange={(e) => {
+            setText(e.target.value);
+            setParsed(null);
+          }}
+          placeholder={"Vendor name\nWater heater unit ........ $800\nLabor ........ $1,200\nTOTAL $2,500"}
+        />
+        <div className="mt-3 flex flex-col gap-3 sm:flex-row">
+          <button type="button" className="btn btn-primary" disabled={text.trim() === ""} onClick={() => setParsed(parseQuoteText(text))}>
+            Check this quote
+          </button>
+          <button
+            type="button"
+            className="btn btn-secondary"
+            onClick={() => {
+              setText(SAMPLE_QUOTE_TEXT);
+              setParsed(parseQuoteText(SAMPLE_QUOTE_TEXT));
+            }}
+          >
+            Use a sample quote
+          </button>
+          {(text || parsed) && (
+            <button
+              type="button"
+              className="btn btn-ghost"
+              onClick={() => {
+                setText("");
+                setParsed(null);
+              }}
+            >
+              Clear
+            </button>
+          )}
+        </div>
+        <p className="hint">Prototype note: the sample quote is fictional. Reading the text is plain code, not AI.</p>
       </Card>
 
-      {!result ? (
-        <Thinking message="Comparing this quote to typical prices..." />
-      ) : (
-        <>
-          <Card>
-            <div className="flex flex-wrap items-center gap-3">
-              <h2 className="text-2xl font-extrabold">Is this quote fair?</h2>
-              <Badge tone={VERDICT_TONE[result.verdict]} size="lg">
-                {VERDICT_LABEL[result.verdict]}
-              </Badge>
-            </div>
-            <p className="mt-2 text-lg">
-              {result.verdict === "fair" && "The total is inside the typical range."}
-              {result.verdict === "low" &&
-                "The total is below the typical range. Ask what is left out before you say yes."}
-              {(result.verdict === "slightly high" || result.verdict === "high") &&
-                `The total is about ${over}% above the top of the typical range of ${usdRange(result.marketLow, result.marketHigh)}.`}
-            </p>
-            <div className="mt-2">
-              <RangeBar amount={BAYSIDE_QUOTE.total} range={{ low: result.marketLow, high: result.marketHigh }} />
-            </div>
-            <p className="mt-3">
-              <PlaceholderNote /> <span className="text-sm text-ink-soft">(typical range)</span>
-            </p>
-          </Card>
+      {parsed && !quote && (
+        <Callout tone="caution" title="I could not find any dollar amounts" role="alert">
+          <p>Put each item on its own line with its price at the end, like &quot;Labor ........ $1,200&quot;.</p>
+        </Callout>
+      )}
 
-          <div className="grid gap-5 md:grid-cols-2">
-            <Card title="Lines to look at">
-              <ul className="space-y-3">
-                {result.flaggedLines.map((f) => (
-                  <li key={f.line} className="rounded-xl bg-caution-tint/70 p-3">
-                    <p className="font-extrabold">{f.line}</p>
-                    <p>{f.reason}</p>
+      {parsed && quote && (
+        <div className="space-y-5" aria-label="Result for the pasted quote">
+          {(parsed.warnings.length > 0 || parsed.mismatch !== null) && (
+            <Callout tone="caution" title="Check these before you trust the result" role="status">
+              <ul className="list-disc space-y-1 pl-5">
+                {parsed.mismatch !== null && (
+                  <li>
+                    The total on the quote is {usd(parsed.statedTotal ?? 0)}, but the lines add up to {usd(parsed.sumOfLines)}. Ask
+                    the vendor which is right. The total on the quote was used.
                   </li>
+                )}
+                {parsed.warnings.map((w) => (
+                  <li key={w}>{w}</li>
                 ))}
               </ul>
-            </Card>
-
-            <Card title="Questions to ask the vendor">
-              <ol className="list-decimal space-y-2 pl-6">
-                {result.questionsToAsk.map((q) => (
-                  <li key={q}>{q}</li>
-                ))}
-              </ol>
-            </Card>
-          </div>
-
-          {result.estimatedSavingsHigh > 0 && (
-            <Callout tone="info" title="Possible savings">
-              <p>
-                You may be able to negotiate{" "}
-                <strong>
-                  {usd(result.estimatedSavingsLow)} to {usd(result.estimatedSavingsHigh)}
-                </strong>{" "}
-                off this quote. Getting a second quote is a good idea. Two more vendors are on the booking screen.
-              </p>
-              <p className="mt-1">
-                <PlaceholderNote />
-              </p>
             </Callout>
           )}
-        </>
+          <QuoteDetail quote={quote} />
+        </div>
       )}
+    </div>
+  );
+}
+
+export default function QuotePage() {
+  const [selected, setSelected] = useState(PLAN.vendorId);
+  const current = COLLECTED.find((c) => c.vendorId === selected) ?? COLLECTED[0];
+
+  return (
+    <StepShell stepId="owner-quote">
+      <div className="hero-ink">
+        <p className="eyebrow !text-cream/70">Porchlight collected {COLLECTED.length} quotes and checked each one</p>
+        <p className="mt-2 text-3xl font-extrabold leading-tight sm:text-5xl">
+          Best pick: <span className="text-glow">{PLAN.vendorName}</span>, {usd(PLAN.total)}
+        </p>
+        <p className="mt-2 text-lg text-cream/85">
+          That is <strong className="text-glow">{usd(PLAN.savedVsHighest)} less</strong> than the highest quote.
+        </p>
+        <ul className="mt-4 space-y-2">
+          {PLAN.reasons.map((reason) => (
+            <li key={reason} className="flex items-start gap-3">
+              <span className="mt-0.5 inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-glow text-ink">
+                <CheckIcon size={14} />
+              </span>
+              <span>{reason}</span>
+            </li>
+          ))}
+        </ul>
+        {PLAN.skipped.length > 0 && (
+          <div className="mt-4 rounded-2xl bg-white/10 p-3">
+            <p className="font-extrabold">Skipped, and why</p>
+            <ul className="mt-1 space-y-1 text-cream/90">
+              {PLAN.skipped.map((s) => (
+                <li key={s.vendorId}>
+                  <strong>{s.vendorName}:</strong> {s.reason}
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+      </div>
+
+      <PlainCodeNote>
+        Which quote to pick is a rule, not a guess: the cheapest quote with a fair price from a vendor that shows a
+        license. The AI never chooses a vendor or a price.
+      </PlainCodeNote>
+
+      <fieldset>
+        <legend className="mb-2 text-xl font-extrabold">The quotes</legend>
+        <div className="grid gap-3 md:grid-cols-3">
+          {COLLECTED.map((c) => {
+            const isSelected = c.vendorId === selected;
+            const pick = c.vendorId === PLAN.vendorId;
+            return (
+              <label
+                key={c.vendorId}
+                className={`card card-lift relative flex cursor-pointer flex-col gap-2 has-[:focus-visible]:outline has-[:focus-visible]:outline-[3px] has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-ink ${
+                  isSelected ? "!border-ink ring-4 ring-glow" : "hover:border-ink"
+                }`}
+              >
+                <input
+                  type="radio"
+                  name="quote"
+                  className="sr-only"
+                  checked={isSelected}
+                  onChange={() => setSelected(c.vendorId)}
+                />
+                <span className="flex flex-wrap items-center gap-2">
+                  <span className="text-lg font-extrabold leading-snug">{c.vendorName}</span>
+                  {pick && <Badge tone="good">Porchlight&apos;s pick</Badge>}
+                </span>
+                <span className="text-3xl font-extrabold">{usd(c.quote.total)}</span>
+                <span>
+                  <Badge tone={VERDICT_TONE[c.verdict]}>{VERDICT_LABEL[c.verdict]}</Badge>
+                </span>
+                <span className="text-sm">
+                  <strong>License:</strong> {c.license ?? "Not shown"}
+                </span>
+                {c.missingLines.length > 0 && (
+                  <span className="rounded-lg bg-caution-tint p-2 text-sm font-bold text-caution-ink">
+                    ! Not listed: {c.missingLines.join(", ")}
+                  </span>
+                )}
+                <span className="mt-1 font-bold underline underline-offset-4">
+                  {isSelected ? "Showing below" : "Show details"}
+                </span>
+              </label>
+            );
+          })}
+        </div>
+      </fieldset>
+
+      <QuoteDetail key={current.vendorId} quote={current.quote} license={current.license} />
+
+      <PasteQuote />
     </StepShell>
   );
 }

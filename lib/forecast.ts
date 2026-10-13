@@ -38,6 +38,9 @@ export interface ForecastResult {
   totalHigh: number;
   setAsideLowPerYear: number;
   setAsideHighPerYear: number;
+  /** The same plan spread over 60 months */
+  setAsideLowPerMonth: number;
+  setAsideHighPerMonth: number;
 }
 
 export function statusFor(dueYear: number, currentYear: number): ForecastStatus {
@@ -86,5 +89,7 @@ export function buildForecast(
     totalHigh,
     setAsideLowPerYear: Math.round(totalLow / FORECAST_YEARS),
     setAsideHighPerYear: Math.round(totalHigh / FORECAST_YEARS),
+    setAsideLowPerMonth: Math.round(totalLow / (FORECAST_YEARS * 12)),
+    setAsideHighPerMonth: Math.round(totalHigh / (FORECAST_YEARS * 12)),
   };
 }

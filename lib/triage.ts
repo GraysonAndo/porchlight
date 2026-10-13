@@ -27,9 +27,15 @@ export function isGasEmergency(text: string): boolean {
   return GAS.test.test(text) || CARBON_MONOXIDE.test.test(text);
 }
 
-function emergency(partial: Omit<TriageResult, "urgency" | "confidence" | "suggestedTrade"> & { suggestedTrade: string }): TriageResult {
-  return { ...partial, urgency: "emergency", confidence: 0.9 };
+/**
+ * Emergencies skip do-it-yourself fixes. The tenant only gets the safety action
+ * (get out, call for help), and the owner is alerted right away.
+ */
+function emergency(partial: Omit<TriageResult, "urgency" | "confidence" | "suggestedTrade" | "alertOwnerNow"> & { suggestedTrade: string }): TriageResult {
+  return { ...partial, urgency: "emergency", confidence: 0.9, alertOwnerNow: true };
 }
+
+const NO_HEAT: Rule = { test: /no heat|without heat|heat (is )?(out|off|not working)|furnace (is )?(out|off|not (working|heating))|heater (is )?(not|n't) (working|heating)|house is freezing|freezing in (here|the house)/i };
 
 const GENERIC_QUESTIONS = [
   "When did this start, and is it getting worse?",
@@ -83,6 +89,7 @@ export function seededHeaterTriage(): TriageResult {
     ],
     suggestedTrade: "Licensed plumber",
     confidence: 0.82,
+    alertOwnerNow: false,
   };
 }
 
@@ -139,8 +146,6 @@ export function triageText(description: string): TriageResult {
       safetySteps: [
         "Turn off the main water shut-off valve for the home.",
         "If water is near outlets or appliances, stay away and turn off power at the breaker only if it is dry and safe to reach.",
-        "Move valuables and electronics out of the water.",
-        "Take photos for the owner and for insurance.",
       ],
       tenantQuestions: [
         "Where is the water coming from, and can you find the main shut-off?",
@@ -149,6 +154,25 @@ export function triageText(description: string): TriageResult {
       ],
       suggestedTrade: "Emergency plumber",
     });
+  }
+
+  if (NO_HEAT.test.test(text) && !/water heater|hot water/i.test(text)) {
+    return {
+      category: "HVAC",
+      urgency: "urgent",
+      summary: "There is no heat. In cold weather that needs fast attention, so the owner has been alerted right away.",
+      likelyCause: "A furnace or thermostat problem. A technician has to find which.",
+      // No do-it-yourself steps: furnaces are gas appliances and should not be opened by a tenant.
+      safetySteps: [],
+      tenantQuestions: [
+        "Is the thermostat set to heat, and does it have power or a blank screen?",
+        "Do you smell gas or anything burning?",
+        "Is anyone in the home very young, elderly, or unwell?",
+      ],
+      suggestedTrade: "Licensed HVAC technician",
+      confidence: 0.7,
+      alertOwnerNow: true,
+    };
   }
 
   if (SEEDED_HEATER.test.test(text)) return seededHeaterTriage();

@@ -5,7 +5,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { FLOWS, STEPS, flowSteps, positionOf, stepForPath, type FlowId } from "@/lib/steps";
 
-const ORDER: FlowId[] = ["tenant", "owner", "tools", "optional"];
+const ORDER: FlowId[] = ["live", "tenant", "owner", "tools", "optional"];
 
 /** Collapsible list of every screen, grouped by who uses it, so the presenter can jump anywhere. */
 export function DemoGuide() {

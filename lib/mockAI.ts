@@ -8,6 +8,7 @@
 import { compareQuote } from "./quote";
 import { triageText } from "./triage";
 import { usd } from "./format";
+import { SAMPLE_LABEL_READING } from "./seed";
 import type {
   AIProvider,
   LabelInput,
@@ -45,18 +46,8 @@ export function createMockAI(options: MockAIOptions = {}): AIProvider {
     async readLabel(input: LabelInput): Promise<LabelResult> {
       void input; // Any photo returns the same reading.
       await think();
-      return {
-        manufacturer: "Hearthline",
-        model: "HL-40G-NG",
-        serial: "15C0412-X",
-        capacityGallons: 40,
-        fuelType: "Natural gas",
-        manufactureDate: "2015-03",
-        ageYears: 11,
-        confidence: 0.86,
-        // The serial is the one low confidence field, so the human can fix it.
-        fieldsNeedingReview: ["serial"],
-      };
+      // The serial is the one low confidence field, so the human can fix it.
+      return { ...SAMPLE_LABEL_READING, fieldsNeedingReview: [...SAMPLE_LABEL_READING.fieldsNeedingReview] };
     },
 
     async checkQuote(input: QuoteCheckInput): Promise<QuoteCheckResult> {

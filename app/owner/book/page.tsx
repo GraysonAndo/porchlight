@@ -2,13 +2,16 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { AgentFeed, EngineChip, PlainCodeNote } from "@/components/Agent";
 import { StepShell } from "@/components/StepShell";
-import { HammerIcon } from "@/components/icons";
+import { CheckIcon, HammerIcon, TapIcon } from "@/components/icons";
 import { Badge, Callout, Card, NumberField, PlaceholderNote } from "@/components/ui";
 import { VERDICT_LABEL, VERDICT_TONE } from "@/components/verdict";
 import { ai } from "@/lib/ai";
 import { usd } from "@/lib/format";
 import { useAsyncResult } from "@/lib/hooks";
+import { bookingEvents } from "@/lib/agentLog";
+import { PLAN } from "@/lib/plan";
 import { verdictFor } from "@/lib/quote";
 import { ACCESS_WINDOWS, PROPERTY, VENDORS, WATER_HEATER_JOB, type Vendor } from "@/lib/seed";
 import { useDemo } from "@/lib/store";
@@ -113,6 +116,10 @@ function ApproveBody() {
           <Timeline approval={approval} vendor={sentVendor} />
         </Card>
 
+        <Card title="What Porchlight did after your tap">
+          <AgentFeed events={bookingEvents(approval)} />
+        </Card>
+
         <Callout tone="caution" title="Nothing was actually sent">
           <p>This is a prototype. No message went to any vendor or tenant. The times above are samples.</p>
         </Callout>
@@ -174,8 +181,64 @@ function ApproveBody() {
     );
   }
 
+  function approvePlan() {
+    actions.approve({
+      vendorId: PLAN.vendorId,
+      notToExceed: PLAN.notToExceed,
+      accessWindow: ACCESS_WINDOWS[0],
+      sentAt: new Date().toISOString(),
+    });
+  }
+
   return (
     <StepShell stepId="owner-book">
+      <div className="hero-ink">
+        <p className="eyebrow !text-cream/70">Porchlight&apos;s plan, ready for one tap</p>
+        <p className="mt-2 text-3xl font-extrabold leading-tight sm:text-5xl">
+          Book <span className="text-glow">{PLAN.vendorName}</span>
+        </p>
+        <dl className="mt-4 grid gap-3 sm:grid-cols-3">
+          <div className="rounded-2xl bg-white/10 p-3">
+            <dt className="text-sm text-cream/75">Quote</dt>
+            <dd className="text-2xl font-extrabold">{usd(PLAN.total)}</dd>
+          </div>
+          <div className="rounded-2xl bg-white/10 p-3">
+            <dt className="text-sm text-cream/75">Spending limit</dt>
+            <dd className="text-2xl font-extrabold">{usd(PLAN.notToExceed)}</dd>
+          </div>
+          <div className="rounded-2xl bg-white/10 p-3">
+            <dt className="text-sm text-cream/75">Saves you</dt>
+            <dd className="text-2xl font-extrabold text-glow">{usd(PLAN.savedVsHighest)}</dd>
+          </div>
+        </dl>
+        <p className="mt-3 text-cream/85">
+          Visit: {ACCESS_WINDOWS[0]}. The vendor must call you before going over the limit.
+        </p>
+        <ul className="mt-3 space-y-1 text-cream/90">
+          {PLAN.reasons.slice(0, 2).map((r) => (
+            <li key={r} className="flex items-start gap-2">
+              <span className="mt-1 inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-glow text-ink">
+                <CheckIcon size={12} />
+              </span>
+              <span>{r}</span>
+            </li>
+          ))}
+        </ul>
+        <button type="button" className="btn btn-lg mt-5 w-full bg-glow font-extrabold text-ink hover:bg-glow-deep sm:w-auto" onClick={approvePlan}>
+          <TapIcon size={22} /> Approve Porchlight&apos;s plan
+        </button>
+        <p className="mt-2 text-sm text-cream/75">
+          This is the one tap Porchlight waits for. Nothing is booked or spent before it. <EngineChip engine="human" />
+        </p>
+      </div>
+
+      <PlainCodeNote>
+        The vendor pick, the price check, and the spending limit all come from rules you can read. The AI only drafts the
+        two messages below.
+      </PlainCodeNote>
+
+      <h2 className="font-display text-2xl font-extrabold">Or choose a different plan yourself</h2>
+
       <fieldset>
         <legend className="mb-2 text-xl font-extrabold">1. Pick a vendor</legend>
         <div className="grid gap-3 md:grid-cols-3">
@@ -212,7 +275,7 @@ function ApproveBody() {
                     ! {v.warning}
                   </span>
                 )}
-                {v.itemized && <span className="text-sm text-ink-soft">Itemized quote checked on screen 5.</span>}
+                {v.itemized && <span className="text-sm text-ink-soft">Itemized quote, checked on the quote screen.</span>}
                 <span className="mt-1 font-bold underline underline-offset-4">
                   {selected ? "Chosen" : "Choose this vendor"}
                 </span>
@@ -310,7 +373,7 @@ function ApproveBody() {
         </button>
         <p className="text-center text-sm text-ink-soft">
           Prototype: pressing this does not send anything.{" "}
-          <Link href="/quote" className="font-bold underline underline-offset-4">
+          <Link href="/owner/quote" className="font-bold underline underline-offset-4">
             Review the quote check
           </Link>
         </p>

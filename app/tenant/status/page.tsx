@@ -4,6 +4,7 @@ import Link from "next/link";
 import { StepShell } from "@/components/StepShell";
 import { CheckIcon, ClockIcon } from "@/components/icons";
 import { Badge, Callout, Card } from "@/components/ui";
+import { isHeaterJob } from "@/lib/agentLog";
 import { ai } from "@/lib/ai";
 import { useAsyncResult } from "@/lib/hooks";
 import { PROPERTY, SEED_REQUEST, VENDORS } from "@/lib/seed";
@@ -25,6 +26,8 @@ export default function TenantStatusPage() {
   const confirmed = state.tenantAccess === "confirmed";
   const needsChange = state.tenantAccess === "needs-change";
   const fixed = state.jobCompletedAt !== null;
+  const record = state.houseRecord;
+  const aboutHeater = isHeaterJob(request.description, state.triage);
 
   // The message the owner's booking sent to the tenant.
   const message = useAsyncResult(approval && vendor ? `${approval.vendorId}|${approval.accessWindow}` : null, () =>
@@ -39,10 +42,29 @@ export default function TenantStatusPage() {
 
   const stages: Stage[] = [
     { title: "You reported the problem", detail: "We read your report and photo and sorted the urgency.", state: "done" },
-    { title: "Owner notified", detail: `${PROPERTY.owner} was told right away.`, state: "done" },
+    {
+      title: "Owner notified",
+      detail: state.triage?.alertOwnerNow
+        ? `${PROPERTY.owner} was called right away because this cannot wait.`
+        : `${PROPERTY.owner} got a quiet heads-up. This was not an emergency, so there was no late-night call.`,
+      state: "done",
+    },
+    ...(aboutHeater
+      ? ([
+          {
+            title: record ? "Your label photo was read" : state.tenantSkippedLabel ? "Label photo skipped" : "Waiting for your label photo",
+            detail: record
+              ? `Porchlight added your water heater to the house record: ${record.manufacturer} ${record.model}.`
+              : state.tenantSkippedLabel
+                ? `${PROPERTY.owner} will add the details instead.`
+                : "One quick photo of the sticker on the heater helps the right plumber come.",
+            state: record || state.tenantSkippedLabel ? "done" : "current",
+          },
+        ] as Stage[])
+      : []),
     {
       title: "Owner choosing a plumber",
-      detail: approval ? `${PROPERTY.owner} approved a plumber.` : `${PROPERTY.owner} is comparing quotes. This is the owner's decision.`,
+      detail: approval ? `${PROPERTY.owner} approved a plumber.` : `Porchlight is collecting quotes for ${PROPERTY.owner}, who makes the decision.`,
       state: approval ? "done" : "current",
     },
     {

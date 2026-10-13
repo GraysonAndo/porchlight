@@ -87,3 +87,34 @@ describe("triageText seeded and generic results", () => {
     expect(triageText("").category).toBe("General maintenance");
   });
 });
+
+describe("triageText escalation", () => {
+  it("alerts the owner right away for every emergency", () => {
+    for (const text of ["I smell gas", "smoke from the outlet", "a pipe burst and water is everywhere"]) {
+      expect(triageText(text).alertOwnerNow).toBe(true);
+    }
+  });
+
+  it("keeps the seeded leak quiet: the owner gets a heads-up, not an alarm", () => {
+    const r = triageText(SEED_REQUEST_TEXT);
+    expect(r.urgency).toBe("urgent");
+    expect(r.alertOwnerNow).toBe(false);
+  });
+
+  it("gives no do-it-yourself fix steps for a gas smell, only getting out and calling for help", () => {
+    const steps = triageText("I smell gas near the water heater").safetySteps.join(" ").toLowerCase();
+    expect(steps).toContain("leave the home");
+    expect(steps).not.toMatch(/valve|turn off the gas|relight|pilot/);
+  });
+
+  it("treats no heat as an alert with no fix steps", () => {
+    const r = triageText("We have no heat and it is freezing");
+    expect(r.category).toBe("HVAC");
+    expect(r.alertOwnerNow).toBe(true);
+    expect(r.safetySteps).toEqual([]);
+  });
+
+  it("does not mistake a cold water heater complaint for no heat", () => {
+    expect(triageText("the water heater is not working, no hot water").category).not.toBe("HVAC");
+  });
+});

@@ -3,12 +3,14 @@
 import Link from "next/link";
 import { LifespanBar } from "@/components/Bars";
 import { PhotoThumb } from "@/components/PhotoPicker";
+import { AgentFeed, EngineLegend } from "@/components/Agent";
 import { SafetyChecklist, UrgencyHero } from "@/components/TriageParts";
 import { StepShell } from "@/components/StepShell";
 import { RobotIcon } from "@/components/icons";
 import { Badge, Callout, Card, Thinking } from "@/components/ui";
 import { ageOf, lifeStage } from "@/lib/life";
 import { equipmentFor, heaterBeforeRepair } from "@/lib/equipment";
+import { isHeaterJob, recordEvents, triageEvents } from "@/lib/agentLog";
 import { PROPERTY } from "@/lib/seed";
 import { useDemo } from "@/lib/store";
 import { useTriage } from "@/lib/useTriage";
@@ -20,7 +22,7 @@ export default function OwnerRequestPage() {
   const heaterRecord = heaterBeforeRepair(state);
   const heater = equipmentFor(heaterRecord)[0];
   const stage = lifeStage(ageOf(heater), heater.typicalLifeYears);
-  const aboutHeater = /heater|hot water/i.test(request.description);
+  const aboutHeater = isHeaterJob(request.description, triage);
 
   return (
     <StepShell stepId="owner-request" nextDisabled={!triage}>
@@ -48,6 +50,28 @@ export default function OwnerRequestPage() {
       ) : (
         <>
           <UrgencyHero triage={triage} audience="owner" />
+
+          <Card
+            title={
+              <span className="flex flex-wrap items-center gap-2">
+                <RobotIcon /> What Porchlight already did
+              </span>
+            }
+          >
+            <p className="mb-4 text-ink-soft">
+              You did not have to do any of this. Each step shows who did the work: the AI, plain code, Porchlight acting
+              inside your limits, or a person.
+            </p>
+            <AgentFeed
+              events={[
+                ...triageEvents({ request, triage, record: heaterRecord }),
+                ...(aboutHeater ? recordEvents(heaterRecord, state.tenantSkippedLabel) : []),
+              ]}
+            />
+            <div className="mt-4 border-t border-line pt-3">
+              <EngineLegend />
+            </div>
+          </Card>
 
           <Card
             title={
@@ -83,19 +107,24 @@ export default function OwnerRequestPage() {
             <Card title="Equipment involved">
               <div className="flex flex-wrap items-center gap-2">
                 <p className="text-lg font-extrabold">
-                  Water heater: {heaterRecord.manufacturer} {heaterRecord.model}
+                  Water heater: {heaterRecord ? `${heaterRecord.manufacturer} ${heaterRecord.model}` : "details not on file yet"}
                 </p>
                 <Badge tone={stage.tone}>{stage.label}</Badge>
               </div>
               <p className="mb-3 text-ink-soft">
-                {heaterRecord.fuelType}, {heaterRecord.capacityGallons} gallons, {ageOf(heater)} years old. Already in
-                your house record, no photo needed.
+                {heaterRecord
+                  ? `${heaterRecord.fuelType}, ${heaterRecord.capacityGallons} gallons, ${ageOf(heater)} years old. Read from a label photo, no typing needed.`
+                  : `The home inspection says about ${heater.installYear} (${ageOf(heater)} years old). ${
+                      state.tenantSkippedLabel
+                        ? `${PROPERTY.tenant} could not reach the label, so you can add the details yourself.`
+                        : `Porchlight asked ${PROPERTY.tenant} for a photo of the label. It fills in here when they send it.`
+                    }`}
               </p>
               <LifespanBar ageYears={ageOf(heater)} typicalLifeYears={heater.typicalLifeYears} tone={stage.tone} />
               <p className="mt-2 text-sm text-ink-soft">
-                Source: {heaterRecord.source}.{" "}
-                <Link href="/owner/record" className="font-bold underline underline-offset-4">
-                  Open the house record
+                Source: {heaterRecord ? heaterRecord.source : heater.source}.{" "}
+                <Link href={heaterRecord ? "/owner/record" : "/owner/label"} className="font-bold underline underline-offset-4">
+                  {heaterRecord ? "Open the house record" : "Add the details myself"}
                 </Link>
               </p>
             </Card>
@@ -103,7 +132,7 @@ export default function OwnerRequestPage() {
 
           <SafetyChecklist
             steps={triage.safetySteps}
-            context={{ manufacturer: heaterRecord.manufacturer, model: heaterRecord.model, fuelType: heaterRecord.fuelType }}
+            context={{ manufacturer: heaterRecord?.manufacturer, model: heaterRecord?.model, fuelType: heaterRecord?.fuelType }}
             interactive={false}
           />
 
@@ -137,8 +166,8 @@ export default function OwnerRequestPage() {
 
           <Callout tone="info" title="Your decision">
             <p>
-              Porchlight can check the house record, compare the vendor&apos;s quote, and book the visit for you. Nothing is
-              booked and nothing is spent until you approve it on the last step.
+              Porchlight can check the house record, collect and compare quotes, and book the visit for you. Nothing is
+              booked and nothing is spent until you tap approve on the last step.
             </p>
           </Callout>
         </>

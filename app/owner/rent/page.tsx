@@ -1,5 +1,6 @@
 "use client";
 
+import { PlainCodeNote } from "@/components/Agent";
 import { useState } from "react";
 import { StepShell } from "@/components/StepShell";
 import { Badge, Callout, Card, NumberField, PlaceholderNote } from "@/components/ui";
@@ -110,6 +111,10 @@ export default function RentPage() {
 
   return (
     <StepShell stepId="tools-rent">
+      <PlainCodeNote>
+        The legal cap is worked out with exact math from the numbers you enter. The AI never decides what is legal. It
+        only helps word the notice.
+      </PlainCodeNote>
       <div className="grid gap-5 lg:grid-cols-2">
         <Card title="Your numbers">
           <div className="space-y-5">

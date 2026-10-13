@@ -40,7 +40,7 @@ export const SEED_REQUEST = { description: SEED_REQUEST_TEXT, photos: [SAMPLE_PH
 
 /** Equipment for the forecast. Typical life and replace cost are placeholders. */
 export const EQUIPMENT: EquipmentItem[] = [
-  { id: "water-heater", name: "Water heater", source: "Installer warranty registration", installYear: 2015, typicalLifeYears: 10, replaceLow: 1600, replaceHigh: 2600 },
+  { id: "water-heater", name: "Water heater", source: "Home inspection report (brand, model, and serial were not recorded)", installYear: 2015, typicalLifeYears: 10, replaceLow: 1600, replaceHigh: 2600 },
   { id: "furnace", source: "Home inspection report", name: "Furnace", installYear: 2012, typicalLifeYears: 18, replaceLow: 4500, replaceHigh: 7000 },
   { id: "air-conditioner", source: "Home inspection report", name: "Air conditioner", installYear: 2012, typicalLifeYears: 15, replaceLow: 5500, replaceHigh: 8500 },
   { id: "dishwasher", source: "Installer warranty registration", name: "Dishwasher", installYear: 2018, typicalLifeYears: 10, replaceLow: 700, replaceHigh: 1200 },
@@ -49,23 +49,6 @@ export const EQUIPMENT: EquipmentItem[] = [
 ];
 
 export const WATER_HEATER = EQUIPMENT[0];
-
-/**
- * What the house record already knows about the water heater. It was recorded
- * when the heater was installed, so nobody has to type or photograph it.
- */
-export const SEED_HEATER_RECORD: WaterHeaterRecord = {
-  manufacturer: "Hearthline",
-  model: "HL-40G-NG",
-  serial: "15C0412-X",
-  capacityGallons: 40,
-  fuelType: "Natural gas",
-  manufactureDate: "2015-03",
-  ageYears: 11,
-  unconfirmed: [],
-  photo: null,
-  source: "Installer warranty registration, 2015 (sample)",
-};
 
 /** The replacement heater, added to the record automatically when the plumber finishes. */
 export const NEW_HEATER_RECORD: WaterHeaterRecord = {
@@ -111,6 +94,39 @@ export const BAYSIDE_QUOTE: VendorQuote = {
   ],
 };
 
+export const WILLOW_QUOTE: VendorQuote = {
+  vendorId: "willow-glen",
+  vendorName: "Willow Glen Water Heater Co.",
+  total: 2450,
+  lines: [
+    { id: "unit", label: "Unit", amount: 760 },
+    { id: "labor", label: "Labor", amount: 1050 },
+    { id: "permit", label: "Permit", amount: 150 },
+    { id: "haul", label: "Haul away", amount: 100 },
+    { id: "expansion", label: "Expansion tank", amount: 230 },
+    { id: "fittings", label: "Gas flex line and misc fittings", amount: 120 },
+    { id: "seismic", label: "Seismic strapping kit", amount: 40 },
+  ],
+};
+
+/** A1 did not list a permit line, and did not show a license number. */
+export const A1_QUOTE: VendorQuote = {
+  vendorId: "a1-rapid",
+  vendorName: "A1 Rapid Plumbing",
+  total: 2100,
+  lines: [
+    { id: "unit", label: "Unit", amount: 700 },
+    { id: "labor", label: "Labor", amount: 850 },
+    { id: "haul", label: "Haul away", amount: 100 },
+    { id: "expansion", label: "Expansion tank", amount: 200 },
+    { id: "fittings", label: "Gas flex line and misc fittings", amount: 200 },
+    { id: "seismic", label: "Seismic strapping kit", amount: 50 },
+  ],
+};
+
+/** The three quotes Porchlight collected from vendors. */
+export const QUOTES: VendorQuote[] = [BAYSIDE_QUOTE, WILLOW_QUOTE, A1_QUOTE];
+
 export interface Vendor {
   id: string;
   name: string;
@@ -136,7 +152,7 @@ export const VENDORS: Vendor[] = [
     total: 2450,
     license: "CSLB #000000 (sample)",
     warning: null,
-    itemized: false,
+    itemized: true,
   },
   {
     id: "a1-rapid",
@@ -144,9 +160,22 @@ export const VENDORS: Vendor[] = [
     total: 2100,
     license: null,
     warning: "License number not shown. Ask before booking.",
-    itemized: false,
+    itemized: true,
   },
 ];
+
+/** What the mock AI reads from the sample label photo. */
+export const SAMPLE_LABEL_READING = {
+  manufacturer: "Hearthline",
+  model: "HL-40G-NG",
+  serial: "15C0412-X",
+  capacityGallons: 40,
+  fuelType: "Natural gas",
+  manufactureDate: "2015-03",
+  ageYears: 11,
+  confidence: 0.86,
+  fieldsNeedingReview: ["serial"],
+};
 
 /** Placeholder repair estimate for the repair vs replace screen. */
 export const REPAIR_ESTIMATE = 450;
@@ -181,5 +210,6 @@ export const INITIAL_STATE: DemoState = {
   tenantAnswers: null,
   tenantAccess: null,
   jobCompletedAt: null,
+  tenantSkippedLabel: false,
   feedback: [],
 };

@@ -5,21 +5,32 @@
 // them carries the meaning.
 
 import {
+  ArrowCounterClockwise,
   Bell,
   CalendarCheck,
+  Calculator,
   Camera,
   ChartBar,
   ChatCircleDots,
   Check,
   Clock,
   FileText,
+  DeviceMobile,
   Hammer,
+  HandTap,
   House,
   Key,
+  Lightning,
+  Moon,
   Package,
+  Pause,
+  PhoneCall,
+  Play,
   Robot,
   Scales,
   ShieldCheck,
+  SkipBack,
+  SkipForward,
   Sparkle,
   Tag,
   UsersThree,
@@ -57,3 +68,14 @@ export const CalendarIcon = wrap(CalendarCheck);
 export const BoxIcon = wrap(Package);
 export const RobotIcon = wrap(Robot);
 export const HammerIcon = wrap(Hammer);
+export const CalculatorIcon = wrap(Calculator);
+export const BoltIcon = wrap(Lightning);
+export const TapIcon = wrap(HandTap);
+export const MoonIcon = wrap(Moon);
+export const PhoneCallIcon = wrap(PhoneCall);
+export const MobileIcon = wrap(DeviceMobile);
+export const PlayIcon = wrap(Play);
+export const PauseIcon = wrap(Pause);
+export const BackIcon = wrap(SkipBack);
+export const ForwardIcon = wrap(SkipForward);
+export const RestartIcon = wrap(ArrowCounterClockwise);

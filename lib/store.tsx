@@ -123,6 +123,7 @@ export interface DemoActions {
   setTenantAnswers(answers: string[]): void;
   confirmAccess(value: "confirmed" | "needs-change"): void;
   completeJob(): void;
+  skipTenantLabel(): void;
   addFeedback(input: { screen: string; rating: number; note: string }): void;
   clearFeedback(): void;
   reset(): void;
@@ -143,6 +144,7 @@ export const actions: DemoActions = {
         tenantAnswers: null,
         tenantAccess: null,
         jobCompletedAt: null,
+        tenantSkippedLabel: false,
       };
     }),
   setTriage: (triage) => update((s) => ({ ...s, triage })),
@@ -155,6 +157,7 @@ export const actions: DemoActions = {
   setTenantAnswers: (tenantAnswers) => update((s) => ({ ...s, tenantAnswers })),
   confirmAccess: (tenantAccess) => update((s) => ({ ...s, tenantAccess })),
   completeJob: () => update((s) => ({ ...s, jobCompletedAt: new Date().toISOString() })),
+  skipTenantLabel: () => update((s) => ({ ...s, tenantSkippedLabel: true })),
   addFeedback: ({ screen, rating, note }) =>
     update((s) => {
       const entry: FeedbackNote = {
