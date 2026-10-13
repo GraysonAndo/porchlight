@@ -1,0 +1,67 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 520" width="800" height="520" role="img" aria-labelledby="t d">
+  <title id="t">Water heater rating label</title>
+  <desc id="d">A metal rating label for a fictional Hearthline gas water heater. It lists model HL-40G-NG, serial 15C0412-X (slightly smudged), 40 gallon capacity, natural gas, and a March 2015 manufacture date. Sample illustration, not a real photo.</desc>
+  <defs>
+    <linearGradient id="plate" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#F4F5F7"/>
+      <stop offset="0.5" stop-color="#DDE1E8"/>
+      <stop offset="1" stop-color="#EEF0F4"/>
+    </linearGradient>
+    <filter id="smudge" x="-10%" y="-30%" width="120%" height="160%">
+      <feGaussianBlur stdDeviation="1.6"/>
+    </filter>
+  </defs>
+
+  <!-- Tank wall behind the label -->
+  <rect width="800" height="520" fill="#C5CCD8"/>
+  <rect width="800" height="520" fill="#AEB7C6" opacity="0.35"/>
+
+  <!-- Plate -->
+  <rect x="40" y="30" width="720" height="460" rx="18" fill="url(#plate)" stroke="#6B7587" stroke-width="5"/>
+  <g fill="#9AA4B5" stroke="#6B7587" stroke-width="2">
+    <circle cx="68" cy="58" r="8"/>
+    <circle cx="732" cy="58" r="8"/>
+    <circle cx="68" cy="462" r="8"/>
+    <circle cx="732" cy="462" r="8"/>
+  </g>
+
+  <!-- Header -->
+  <text x="400" y="104" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="46" font-weight="800" letter-spacing="6" fill="#1F2A44">HEARTHLINE</text>
+  <text x="400" y="136" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="20" letter-spacing="3" fill="#4A5570">GAS STORAGE WATER HEATER</text>
+  <line x1="80" y1="156" x2="720" y2="156" stroke="#6B7587" stroke-width="3"/>
+
+  <!-- Fields -->
+  <g font-family="'Courier New', Courier, monospace" fill="#1F2A44">
+    <text x="84" y="200" font-size="18" fill="#4A5570">MODEL NO.</text>
+    <text x="84" y="232" font-size="32" font-weight="700">HL-40G-NG</text>
+
+    <text x="420" y="200" font-size="18" fill="#4A5570">SERIAL NO.</text>
+    <g filter="url(#smudge)">
+      <text x="420" y="232" font-size="32" font-weight="700" fill="#5B6580">15C0412-X</text>
+    </g>
+    <ellipse cx="520" cy="224" rx="90" ry="18" fill="#9AA4B5" opacity="0.28"/>
+
+    <text x="84" y="288" font-size="18" fill="#4A5570">CAPACITY</text>
+    <text x="84" y="320" font-size="32" font-weight="700">40 GAL (151 L)</text>
+
+    <text x="420" y="288" font-size="18" fill="#4A5570">FUEL TYPE</text>
+    <text x="420" y="320" font-size="32" font-weight="700">NATURAL GAS</text>
+
+    <text x="84" y="376" font-size="18" fill="#4A5570">MFG DATE</text>
+    <text x="84" y="408" font-size="32" font-weight="700">03/2015</text>
+
+    <text x="420" y="376" font-size="18" fill="#4A5570">INPUT</text>
+    <text x="420" y="408" font-size="32" font-weight="700">40,000 BTU/H</text>
+  </g>
+
+  <!-- Fake barcode -->
+  <g fill="#1F2A44">
+    <rect x="84" y="430" width="4" height="34"/><rect x="94" y="430" width="8" height="34"/>
+    <rect x="108" y="430" width="3" height="34"/><rect x="116" y="430" width="6" height="34"/>
+    <rect x="128" y="430" width="4" height="34"/><rect x="138" y="430" width="9" height="34"/>
+    <rect x="152" y="430" width="3" height="34"/><rect x="160" y="430" width="5" height="34"/>
+    <rect x="170" y="430" width="8" height="34"/><rect x="184" y="430" width="3" height="34"/>
+    <rect x="192" y="430" width="6" height="34"/><rect x="204" y="430" width="4" height="34"/>
+  </g>
+  <text x="560" y="452" font-family="Arial, Helvetica, sans-serif" font-size="15" fill="#4A5570">Sample label. Fictional product.</text>
+</svg>

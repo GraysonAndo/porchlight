@@ -1,0 +1,83 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 600" width="800" height="600" role="img" aria-labelledby="t d">
+  <title id="t">Water heater leaking at the bottom</title>
+  <desc id="d">A garage scene with a gas water heater. Water drips from the base of the tank and forms a puddle on the concrete floor. Sample illustration, not a real photo.</desc>
+  <defs>
+    <linearGradient id="wall" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#EFE9DD"/>
+      <stop offset="1" stop-color="#DDD5C5"/>
+    </linearGradient>
+    <linearGradient id="tank" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#C5CCD8"/>
+      <stop offset="0.35" stop-color="#EEF1F6"/>
+      <stop offset="1" stop-color="#AEB7C6"/>
+    </linearGradient>
+    <linearGradient id="floor" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#BDB7AA"/>
+      <stop offset="1" stop-color="#A7A194"/>
+    </linearGradient>
+    <radialGradient id="puddle" cx="0.5" cy="0.5" r="0.5">
+      <stop offset="0" stop-color="#6FA9CF" stop-opacity="0.95"/>
+      <stop offset="1" stop-color="#8DBBD8" stop-opacity="0.75"/>
+    </radialGradient>
+  </defs>
+
+  <!-- Wall and floor -->
+  <rect width="800" height="600" fill="url(#wall)"/>
+  <rect y="430" width="800" height="170" fill="url(#floor)"/>
+  <rect y="424" width="800" height="8" fill="#8F8A7E"/>
+  <!-- Wall stud lines -->
+  <g stroke="#CFC6B3" stroke-width="3">
+    <line x1="120" y1="0" x2="120" y2="424"/>
+    <line x1="680" y1="0" x2="680" y2="424"/>
+  </g>
+
+  <!-- Boxes on the floor, left -->
+  <rect x="40" y="350" width="130" height="90" fill="#C99A62" stroke="#8C6A3F" stroke-width="3"/>
+  <rect x="40" y="350" width="130" height="18" fill="#D9AE7A" stroke="#8C6A3F" stroke-width="3"/>
+  <rect x="62" y="300" width="96" height="52" fill="#D2A56E" stroke="#8C6A3F" stroke-width="3"/>
+
+  <!-- Pipes on top -->
+  <rect x="318" y="40" width="20" height="96" fill="#3B7DB8" stroke="#24557F" stroke-width="3"/>
+  <rect x="372" y="40" width="20" height="96" fill="#C4563A" stroke="#8C3722" stroke-width="3"/>
+  <rect x="318" y="40" width="74" height="16" fill="#9AA4B5" stroke="#6B7587" stroke-width="3"/>
+  <!-- Flue pipe -->
+  <rect x="436" y="0" width="34" height="132" fill="#9AA4B5" stroke="#6B7587" stroke-width="3"/>
+
+  <!-- Tank -->
+  <path d="M290 150 Q290 124 330 124 L470 124 Q510 124 510 150 L510 410 Q510 432 470 432 L330 432 Q290 432 290 410 Z" fill="url(#tank)" stroke="#6B7587" stroke-width="4"/>
+  <!-- Top dome seam -->
+  <path d="M290 160 H510" stroke="#9AA4B5" stroke-width="3"/>
+  <!-- Label sticker -->
+  <rect x="330" y="200" width="100" height="80" rx="4" fill="#FFFFFF" stroke="#9AA4B5" stroke-width="2"/>
+  <g fill="#B5BCC8">
+    <rect x="340" y="212" width="80" height="6"/>
+    <rect x="340" y="226" width="64" height="6"/>
+    <rect x="340" y="240" width="72" height="6"/>
+    <rect x="340" y="254" width="50" height="6"/>
+  </g>
+  <!-- Gas control box -->
+  <rect x="318" y="360" width="64" height="52" rx="6" fill="#3A4560" stroke="#222B40" stroke-width="3"/>
+  <circle cx="350" cy="386" r="13" fill="#F5A524" stroke="#222B40" stroke-width="3"/>
+  <line x1="350" y1="386" x2="350" y2="376" stroke="#222B40" stroke-width="3"/>
+
+  <!-- Rust streaks and wet bottom -->
+  <path d="M380 420 C 372 400, 392 392, 384 372" stroke="#A8552B" stroke-width="7" fill="none" opacity="0.8"/>
+  <path d="M440 428 C 436 408, 450 398, 446 380" stroke="#A8552B" stroke-width="6" fill="none" opacity="0.7"/>
+  <path d="M300 430 H500 V442 Q400 452 300 442 Z" fill="#6FA9CF" opacity="0.75"/>
+
+  <!-- Legs -->
+  <rect x="318" y="432" width="14" height="22" fill="#6B7587"/>
+  <rect x="468" y="432" width="14" height="22" fill="#6B7587"/>
+
+  <!-- Puddle on the floor -->
+  <ellipse cx="400" cy="520" rx="220" ry="46" fill="url(#puddle)"/>
+  <ellipse cx="400" cy="520" rx="150" ry="28" fill="none" stroke="#FFFFFF" stroke-opacity="0.55" stroke-width="3"/>
+  <ellipse cx="400" cy="520" rx="80" ry="14" fill="none" stroke="#FFFFFF" stroke-opacity="0.55" stroke-width="3"/>
+
+  <!-- Drips -->
+  <g fill="#5F9FC9" stroke="#3E7AA6" stroke-width="2">
+    <path d="M384 458 q-8 14 0 20 q8 -6 0 -20z"/>
+    <path d="M430 468 q-8 14 0 20 q8 -6 0 -20z"/>
+    <path d="M404 484 q-7 12 0 17 q7 -5 0 -17z"/>
+  </g>
+</svg>
