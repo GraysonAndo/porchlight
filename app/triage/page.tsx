@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { StepShell } from "@/components/StepShell";
 import { PhotoThumb } from "@/components/PhotoPicker";
+import { AlertIcon, CheckIcon, ShieldIcon } from "@/components/icons";
 import { Badge, Callout, Card, Thinking } from "@/components/ui";
 import { ai } from "@/lib/ai";
 import { PROPERTY, SEED_REQUEST } from "@/lib/seed";
@@ -64,9 +65,29 @@ export default function TriagePage() {
         <Thinking message="Reading your request and photo..." />
       ) : (
         <>
+          <div
+            className={`reveal flex items-center gap-4 rounded-3xl border-2 p-5 sm:p-6 ${
+              tone === "good" ? "border-good bg-good-tint" : "border-urgent bg-urgent-tint"
+            }`}
+          >
+            <span
+              className={`inline-flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl bg-white ${
+                tone === "good" ? "text-good-ink" : "text-urgent"
+              }`}
+            >
+              {tone === "good" ? <CheckIcon size={34} /> : <AlertIcon size={34} />}
+            </span>
+            <div>
+              <p className="eyebrow">Urgency</p>
+              <p className={`text-4xl font-extrabold leading-none ${tone === "good" ? "text-good-ink" : "text-urgent"}`}>
+                {URGENCY_LABEL[triage.urgency]}
+              </p>
+              <p className="mt-1 font-bold text-ink">{URGENCY_NOTE[triage.urgency]}</p>
+            </div>
+          </div>
+
           <Card>
-            <div className="flex flex-wrap items-center gap-3">
-              <Badge tone={tone}>{URGENCY_LABEL[triage.urgency]}</Badge>
+            <div className="flex flex-wrap items-center gap-2">
               <Badge tone="neutral" icon={false}>
                 {triage.category}
               </Badge>
@@ -74,8 +95,7 @@ export default function TriagePage() {
                 Suggested: {triage.suggestedTrade}
               </Badge>
             </div>
-            <p className="mt-3 font-bold">{URGENCY_NOTE[triage.urgency]}</p>
-            <p className="mt-2 text-lg">{triage.summary}</p>
+            <p className="mt-3 text-lg">{triage.summary}</p>
 
             <h3 className="mt-5 text-lg font-extrabold">Likely cause</h3>
             <p>{triage.likelyCause}</p>
@@ -90,14 +110,20 @@ export default function TriagePage() {
                 aria-label={`Confidence ${Math.round(triage.confidence * 100)} percent`}
               >
                 <div
-                  className="h-full rounded-full bg-good"
+                  className="bar-grow h-full rounded-full bg-good"
                   style={{ width: `${Math.round(triage.confidence * 100)}%` }}
                 />
               </div>
             </div>
           </Card>
 
-          <Card title="Safety steps for the tenant">
+          <Card
+            title={
+              <span className="flex items-center gap-2">
+                <ShieldIcon /> Safety steps for the tenant
+              </span>
+            }
+          >
             <p className="mb-2 text-ink-soft">Check each one off as it is done.</p>
             <ul className="space-y-1">
               {triage.safetySteps.map((step, i) => (

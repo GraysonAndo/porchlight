@@ -1,5 +1,6 @@
 "use client";
 
+import { CheckIcon } from "@/components/icons";
 import { StepShell } from "@/components/StepShell";
 import { Badge, Callout, Card, PlaceholderNote } from "@/components/ui";
 import { decideRepairOrReplace } from "@/lib/decision";
@@ -28,18 +29,23 @@ export default function DecidePage() {
 
   return (
     <StepShell step={6}>
-      <Card className={replace ? "!border-ink" : ""}>
-        <p className="text-sm font-bold uppercase tracking-wide text-ink-soft">Our recommendation</p>
-        <div className="mt-1 flex flex-wrap items-center gap-3">
-          <p className="text-4xl font-extrabold">{replace ? "Replace it" : "Repair it"}</p>
+      <div className="hero-ink">
+        <p className="eyebrow !text-cream/70">Our recommendation</p>
+        <div className="mt-2 flex flex-wrap items-center gap-3">
+          <p className="text-5xl font-extrabold leading-none sm:text-6xl">{replace ? "Replace it" : "Repair it"}</p>
           <Badge tone={replace ? "urgent" : "good"}>{replace ? "REPLACE" : "REPAIR"}</Badge>
         </div>
-        <ul className="mt-3 list-disc space-y-1 pl-6 text-lg">
+        <ul className="mt-5 space-y-3 text-lg">
           {result.reasons.map((reason) => (
-            <li key={reason}>{reason}</li>
+            <li key={reason} className="flex items-start gap-3">
+              <span className="mt-0.5 inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-glow text-ink">
+                <CheckIcon size={16} />
+              </span>
+              <span>{reason}</span>
+            </li>
           ))}
         </ul>
-      </Card>
+      </div>
 
       <Card title="How we decided">
         <p className="mb-3 text-ink-soft">
@@ -80,7 +86,7 @@ export default function DecidePage() {
             </div>
             <div className="mt-1 h-5 rounded-full bg-cream-deep" role="img" aria-label={`Repair ${usd(result.numbers.repairCost)}`}>
               <div
-                className="h-full rounded-full bg-glow"
+                className="bar-grow h-full rounded-full bg-glow"
                 style={{ width: `${(result.numbers.repairCost / maxCost) * 100}%` }}
               />
             </div>
@@ -95,7 +101,7 @@ export default function DecidePage() {
             </div>
             <div className="mt-1 h-5 rounded-full bg-cream-deep" role="img" aria-label={`Replace ${usd(result.numbers.replaceCost)}`}>
               <div
-                className="h-full rounded-full bg-ink"
+                className="bar-grow h-full rounded-full bg-ink"
                 style={{ width: `${(result.numbers.replaceCost / maxCost) * 100}%` }}
               />
             </div>

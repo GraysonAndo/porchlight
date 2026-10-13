@@ -136,7 +136,7 @@ function ApproveBody() {
             return (
               <label
                 key={v.id}
-                className={`card relative flex cursor-pointer flex-col gap-2 has-[:focus-visible]:outline has-[:focus-visible]:outline-[3px] has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-ink ${
+                className={`card card-lift relative flex cursor-pointer flex-col gap-2 has-[:focus-visible]:outline has-[:focus-visible]:outline-[3px] has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-ink ${
                   selected ? "!border-ink ring-4 ring-glow" : "hover:border-ink"
                 }`}
               >

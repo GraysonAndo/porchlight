@@ -24,10 +24,22 @@ const BADGE_ICONS: Record<Tone, string> = {
 };
 
 /** Always carries text (and an icon), so color is never the only signal. */
-export function Badge({ tone, children, icon = true }: { tone: Tone; children: ReactNode; icon?: boolean }) {
+export function Badge({
+  tone,
+  children,
+  icon = true,
+  size = "sm",
+}: {
+  tone: Tone;
+  children: ReactNode;
+  icon?: boolean;
+  size?: "sm" | "lg";
+}) {
   return (
     <span
-      className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-0.5 text-sm font-extrabold ${BADGE_STYLES[tone]}`}
+      className={`inline-flex items-center gap-1.5 rounded-full border font-extrabold ${
+        size === "lg" ? "px-4 py-1 text-lg" : "px-3 py-0.5 text-sm"
+      } ${BADGE_STYLES[tone]}`}
     >
       {icon && (
         <span aria-hidden="true" className="text-xs">

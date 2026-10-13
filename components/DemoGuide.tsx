@@ -12,7 +12,7 @@ export function DemoGuide() {
   const current = stepForPath(pathname)?.n;
 
   return (
-    <div className="border-b border-line bg-glow-tint/60">
+    <div className="border-b border-line/70 bg-glow-tint/50">
       <div className="mx-auto w-full max-w-5xl px-4 sm:px-6">
         <button
           type="button"

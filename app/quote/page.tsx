@@ -107,8 +107,10 @@ export default function QuotePage() {
         <>
           <Card>
             <div className="flex flex-wrap items-center gap-3">
-              <h2 className="text-xl font-extrabold">Is this quote fair?</h2>
-              <Badge tone={VERDICT_TONE[result.verdict]}>{VERDICT_LABEL[result.verdict]}</Badge>
+              <h2 className="text-2xl font-extrabold">Is this quote fair?</h2>
+              <Badge tone={VERDICT_TONE[result.verdict]} size="lg">
+                {VERDICT_LABEL[result.verdict]}
+              </Badge>
             </div>
             <p className="mt-2 text-lg">
               {result.verdict === "fair" && "The total is inside the typical range."}

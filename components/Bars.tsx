@@ -18,13 +18,13 @@ export function RangeBar({ amount, range, label = "Quote" }: { amount: number; r
       aria-label={`${label} ${usd(amount)} is ${position} the typical range of ${usd(range.low)} to ${usd(range.high)}`}
       className="pt-9"
     >
-      <div className="relative h-4 rounded-full bg-cream-deep">
+      <div className="relative h-5 rounded-full bg-cream-deep">
         <div
-          className="absolute inset-y-0 rounded-full bg-good"
+          className="bar-grow absolute inset-y-0 rounded-full bg-good"
           style={{ left: `${scale.rangeStartPct}%`, width: `${scale.rangeEndPct - scale.rangeStartPct}%` }}
         />
         <div
-          className="absolute -top-2 h-8 w-1.5 -translate-x-1/2 rounded bg-ink"
+          className="absolute -top-2 h-9 w-1.5 -translate-x-1/2 rounded bg-ink shadow"
           style={{ left: `${scale.markerPct}%` }}
         />
         <div
@@ -78,7 +78,7 @@ export function LifespanBar({
       aria-label={`Age ${ageYears} years against a typical life of ${typicalLifeYears} years`}
     >
       <div className={`relative rounded-full bg-cream-deep ${compact ? "h-2.5" : "h-4"}`}>
-        <div className={`h-full rounded-full ${LIFE_COLORS[tone]}`} style={{ width: `${fill}%` }} />
+        <div className={`bar-grow h-full rounded-full ${LIFE_COLORS[tone]}`} style={{ width: `${fill}%` }} />
         <div
           className="absolute -top-1 -bottom-1 w-0.5 bg-ink/50"
           style={{ left: `${replaceTick}%` }}

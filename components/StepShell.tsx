@@ -44,16 +44,16 @@ export function StepShell({
   return (
     <div className={narrow ? "mx-auto max-w-2xl" : ""}>
       <Stepper current={step} />
-      <h1 className="text-3xl font-extrabold leading-tight sm:text-4xl">{info.title}</h1>
+      <h1 className="text-3xl font-extrabold leading-tight sm:text-5xl">{info.title}</h1>
 
-      <details className="mt-3 rounded-xl bg-glow-tint/60 px-4">
+      <details className="mt-3 rounded-2xl border border-glow/30 bg-glow-tint/70 px-4">
         <summary className="flex min-h-11 cursor-pointer items-center font-bold">
           Why this screen exists
         </summary>
         <p className="pb-3 text-ink">{info.why}</p>
       </details>
 
-      <div className="mt-5 space-y-5">{children}</div>
+      <div className="reveal mt-5 space-y-5">{children}</div>
 
       <div className="mt-8 flex flex-col-reverse gap-3 border-t border-line pt-5 sm:flex-row sm:items-center sm:justify-between">
         <Link href={back} className="btn btn-secondary sm:min-w-32">

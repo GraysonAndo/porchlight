@@ -2,6 +2,7 @@
 
 import { useRef, useState } from "react";
 import { usePathname } from "next/navigation";
+import { ChatIcon } from "./icons";
 import { screenNameFor } from "@/lib/steps";
 import { useDemo } from "@/lib/store";
 
@@ -48,6 +49,7 @@ export function FeedbackButton() {
         onClick={open}
         className="btn btn-primary fixed bottom-4 right-4 z-30 shadow-lg ring-2 ring-white"
       >
+        <ChatIcon size={20} />
         Leave feedback
       </button>
 

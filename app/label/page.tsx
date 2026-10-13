@@ -156,9 +156,14 @@ function LabelBody({ saved }: { saved: WaterHeaterRecord | null }) {
       {photo && (
         <Card title={scanning ? "Scanning the label..." : "What we read"}>
           <div className="grid gap-5 md:grid-cols-2">
-            <div className="relative overflow-hidden rounded-xl">
+            <div className={`relative overflow-hidden rounded-2xl ${scanning ? "scan-frame" : ""}`}>
               <PhotoThumb photo={photo} className="aspect-[3/2] w-full" />
-              {scanning && <div className="scan-line" aria-hidden="true" />}
+              {scanning && (
+                <>
+                  <div className="absolute inset-0 bg-ink/15" aria-hidden="true" />
+                  <div className="scan-line" aria-hidden="true" />
+                </>
+              )}
             </div>
 
             {scanning ? (

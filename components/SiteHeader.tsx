@@ -3,7 +3,7 @@ import { Logo } from "./Logo";
 
 export function SiteHeader() {
   return (
-    <header className="border-b border-line bg-cream">
+    <header className="border-b border-line/70 bg-cream/80 backdrop-blur">
       <div className="mx-auto flex w-full max-w-5xl items-center justify-between px-4 py-2 sm:px-6">
         <Link href="/" className="inline-flex min-h-11 items-center rounded-lg" aria-label="Porchlight home">
           <Logo />

@@ -29,19 +29,20 @@ export default function ForecastPage() {
 
   return (
     <StepShell step={7}>
-      <Card className="!border-ink">
-        <p className="text-sm font-bold uppercase tracking-wide text-ink-soft">Plan to set aside each year</p>
-        <p className="mt-1 text-3xl font-extrabold sm:text-4xl">
+      <div className="hero-ink">
+        <p className="eyebrow !text-cream/70">Plan to set aside each year</p>
+        <p className="mt-2 text-4xl font-extrabold leading-tight text-glow sm:text-6xl">
           {usd(forecast.setAsideLowPerYear)} to {usd(forecast.setAsideHighPerYear)}
         </p>
-        <p className="mt-2 text-ink-soft">
+        <p className="mt-3 text-lg text-cream/85">
           That is the cost of everything due from {first} to {last} ({usdRange(forecast.totalLow, forecast.totalHigh)}),
           spread over {forecast.years.length} years.
         </p>
-        <p className="mt-2">
-          <PlaceholderNote /> <span className="text-sm text-ink-soft">(all costs and lifespans on this screen)</span>
+        <p className="mt-3">
+          <PlaceholderNote className="!text-cream/80" />{" "}
+          <span className="text-sm text-cream/80">(all costs and lifespans on this screen)</span>
         </p>
-      </Card>
+      </div>
 
       <Card title={`What you may spend, ${first} to ${last}`}>
         <div
@@ -59,7 +60,7 @@ export default function ForecastPage() {
                   <p className="mb-1 text-center text-xs font-bold sm:text-sm">
                     {y.high === 0 ? "$0" : `${compact(y.low)} to ${compact(y.high)}`}
                   </p>
-                  <div className="relative w-full" style={{ height: `${highPct * 0.82}%` }}>
+                  <div className="bar-rise relative w-full" style={{ height: `${highPct * 0.82}%` }}>
                     <div className="absolute inset-0 rounded-t-lg bg-glow/50" />
                     <div
                       className="absolute inset-x-0 bottom-0 rounded-t-lg bg-ink"
