@@ -1,0 +1,138 @@
+@import "tailwindcss";
+
+/* Porchlight palette. Warm cream, deep ink navy, amber glow. */
+@theme {
+  --color-cream: #fff9f0;
+  --color-cream-deep: #f6ead5;
+  --color-ink: #1f2a44;
+  --color-ink-soft: #4a5570;
+  --color-glow: #f5a524;
+  --color-glow-deep: #d98a00;
+  --color-glow-tint: #fff0d1;
+  --color-good: #2e7d5b;
+  --color-good-ink: #1d5b41;
+  --color-good-tint: #e2f1e9;
+  --color-caution-ink: #7a5200;
+  --color-caution-tint: #fff1c2;
+  --color-urgent: #b3261e;
+  --color-urgent-tint: #fce6e3;
+  --color-line: #e4d6bd;
+}
+
+@theme inline {
+  --font-sans: var(--font-nunito), ui-sans-serif, system-ui, sans-serif;
+}
+
+html {
+  background: var(--color-cream);
+}
+
+body {
+  background: var(--color-cream);
+  color: var(--color-ink);
+  font-family: var(--font-sans);
+  line-height: 1.6;
+}
+
+/* Visible focus for keyboard users on every interactive element. */
+:focus-visible {
+  outline: 3px solid var(--color-ink);
+  outline-offset: 3px;
+  border-radius: 6px;
+}
+
+@layer components {
+  .btn {
+    @apply inline-flex min-h-11 cursor-pointer items-center justify-center gap-2 rounded-xl px-5 py-2.5 text-center text-base font-bold transition-colors disabled:cursor-not-allowed disabled:opacity-50;
+  }
+  .btn-primary {
+    @apply bg-glow text-ink shadow-sm hover:bg-glow-deep;
+  }
+  .btn-secondary {
+    @apply border-2 border-ink bg-white text-ink hover:bg-cream-deep;
+  }
+  .btn-ghost {
+    @apply text-ink underline underline-offset-4 hover:bg-cream-deep;
+  }
+  .btn-lg {
+    @apply min-h-14 px-8 text-lg;
+  }
+  .field {
+    @apply min-h-11 w-full rounded-xl border-2 border-line bg-white px-3 py-2 text-base text-ink placeholder:text-ink-soft;
+  }
+  .field[readonly] {
+    @apply bg-cream-deep text-ink-soft;
+  }
+  .card {
+    @apply rounded-2xl border border-line bg-white p-5 shadow-sm;
+  }
+  .label {
+    @apply mb-1 block text-base font-bold text-ink;
+  }
+  .hint {
+    @apply mt-1 text-sm text-ink-soft;
+  }
+}
+
+/* Scanning animation for the equipment label. */
+@keyframes scan {
+  0% {
+    top: 0;
+  }
+  50% {
+    top: calc(100% - 4px);
+  }
+  100% {
+    top: 0;
+  }
+}
+
+.scan-line {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 4px;
+  background: var(--color-glow);
+  box-shadow: 0 0 14px 4px rgba(245, 165, 36, 0.75);
+  animation: scan 1.6s ease-in-out infinite;
+}
+
+@keyframes think {
+  0%,
+  80%,
+  100% {
+    opacity: 0.25;
+    transform: translateY(0);
+  }
+  40% {
+    opacity: 1;
+    transform: translateY(-4px);
+  }
+}
+
+.think-dot {
+  display: inline-block;
+  height: 10px;
+  width: 10px;
+  border-radius: 9999px;
+  background: var(--color-glow-deep);
+  animation: think 1.2s ease-in-out infinite;
+}
+
+.think-dot:nth-child(2) {
+  animation-delay: 0.15s;
+}
+
+.think-dot:nth-child(3) {
+  animation-delay: 0.3s;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .scan-line,
+  .think-dot {
+    animation: none;
+  }
+  .scan-line {
+    top: 50%;
+  }
+}

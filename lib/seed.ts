@@ -4,6 +4,7 @@
 import type {
   DemoState,
   EquipmentItem,
+  Photo,
   QuoteItem,
   RentFormState,
   VendorQuote,
@@ -29,6 +30,12 @@ export const SEED_REQUEST_TEXT =
 
 export const SAMPLE_PHOTO_PATH = "/sample/leaking-heater.svg";
 export const SAMPLE_LABEL_PATH = "/sample/equipment-label.svg";
+
+export const SAMPLE_PHOTO: Photo = { name: "leaking-heater.svg", src: SAMPLE_PHOTO_PATH, isSample: true };
+export const SAMPLE_LABEL_PHOTO: Photo = { name: "equipment-label.svg", src: SAMPLE_LABEL_PATH, isSample: true };
+
+/** Used by screens that are opened directly, before anyone submitted a request. */
+export const SEED_REQUEST = { description: SEED_REQUEST_TEXT, photos: [SAMPLE_PHOTO] };
 
 /** Equipment for the forecast. Typical life and replace cost are placeholders. */
 export const EQUIPMENT: EquipmentItem[] = [
