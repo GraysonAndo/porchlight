@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { StepShell } from "@/components/StepShell";
 import { PhotoPicker, PhotoThumb } from "@/components/PhotoPicker";
+import { LabelLocationDiagram } from "@/components/diagrams";
 import { Badge, Callout, Card, Thinking } from "@/components/ui";
 import { ai } from "@/lib/ai";
 import { CURRENT_YEAR } from "@/lib/forecast";
@@ -142,6 +143,57 @@ function LabelBody({ saved }: { saved: WaterHeaterRecord | null }) {
       skipLabel="Skip"
       skipHref="/record"
     >
+      <Card title="What this step is for">
+        <div className="grid gap-5 md:grid-cols-[1fr_17rem]">
+          <div className="space-y-4">
+            <p className="text-lg">
+              Every water heater has a label with its brand, model, serial number, size, fuel type, and the month it was
+              made. Porchlight reads those facts from a photo and saves them to your <strong>house record</strong>, so
+              you always know what is in the home and how old it is.
+            </p>
+
+            <div>
+              <h3 className="font-extrabold">Why it matters</h3>
+              <ul className="mt-1 list-disc space-y-1 pl-6">
+                <li>The age tells us if the heater is near the end of its life.</li>
+                <li>A plumber can bring the right parts, because the record has the exact model.</li>
+                <li>It makes the repair or replace answer and the 5-year forecast more accurate.</li>
+              </ul>
+            </div>
+
+            <div>
+              <h3 className="font-extrabold">What to do (about 1 minute)</h3>
+              <ol className="mt-2 space-y-2">
+                {[
+                  "Find the label. On a water heater it is a sticker or metal plate on the side of the tank.",
+                  "Take a clear photo. Stand close, hold still, and avoid flash glare. All the small print should be readable.",
+                  "Add the photo below. Choose a file, or use the sample label photo to try it.",
+                  "Check what we read. Fix anything that is wrong, and tap \"Looks right\" on fields marked Please confirm.",
+                  "Save to the house record.",
+                ].map((text, i) => (
+                  <li key={text} className="flex gap-3">
+                    <span
+                      aria-hidden="true"
+                      className="mt-0.5 inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-ink text-sm font-extrabold text-cream"
+                    >
+                      {i + 1}
+                    </span>{" "}
+                    <span>{text}</span>
+                  </li>
+                ))}
+              </ol>
+            </div>
+
+            <p className="text-sm text-ink-soft">
+              Cannot get to the label right now? Tap Skip and come back later. Do not move or unplug anything just to
+              read it.
+            </p>
+          </div>
+
+          <LabelLocationDiagram />
+        </div>
+      </Card>
+
       <Card>
         <PhotoPicker
           label="Photo of the equipment label"

@@ -66,6 +66,10 @@ async function run(browser, vp) {
   await snap(page, vp, "05-screen2-triage-thinking");
   await page.getByText("Owner notified").waitFor({ timeout: 8000 });
   await snap(page, vp, "06-screen2-triage");
+  await page.locator("summary", { hasText: "How to do this" }).first().click();
+  await page.getByText("Stop and get help if:").first().waitFor();
+  await snap(page, vp, "06b-screen2-triage-guide-open");
+  await page.locator("summary", { hasText: "How to do this" }).first().click();
   await page.getByRole("link", { name: "Read the equipment label" }).click();
 
   // 4. Screen 3: label
@@ -134,7 +138,7 @@ async function run(browser, vp) {
   // 11. Feedback sheet and notes page
   await page.getByRole("button", { name: "Leave feedback" }).click();
   await page.getByText("How clear was this screen?").waitFor();
-  await page.getByText("4", { exact: true }).first().click();
+  await page.locator("dialog").getByText("4", { exact: true }).click();
   await page.getByLabel(/What was confusing or missing/).fill("The not-to-exceed amount was clear.");
   await snap(page, vp, "19-feedback-sheet");
   await page.getByRole("button", { name: "Save feedback" }).click();

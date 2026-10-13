@@ -3,9 +3,11 @@
 import { useEffect, useState } from "react";
 import { StepShell } from "@/components/StepShell";
 import { PhotoThumb } from "@/components/PhotoPicker";
+import { SafetyGuideCard } from "@/components/SafetyGuideCard";
 import { AlertIcon, CheckIcon, ShieldIcon } from "@/components/icons";
 import { Badge, Callout, Card, Thinking } from "@/components/ui";
 import { ai } from "@/lib/ai";
+import { guideForStep, type HouseContext } from "@/lib/safetyGuides";
 import { PROPERTY, SEED_REQUEST } from "@/lib/seed";
 import { useDemo } from "@/lib/store";
 import type { Urgency } from "@/lib/types";
@@ -41,6 +43,11 @@ export default function TriagePage() {
   }, [hydrated, triage, request.description, request.photos, actions]);
 
   const tone = triage?.urgency === "routine" ? "good" : "urgent";
+  const houseRecord = state.houseRecord;
+  const houseContext: HouseContext = houseRecord
+    ? { manufacturer: houseRecord.manufacturer, model: houseRecord.model, fuelType: houseRecord.fuelType }
+    : {};
+  const heaterRelated = triage?.safetySteps.some((step) => /water supply valve|gas valve/i.test(step)) ?? false;
 
   return (
     <StepShell
@@ -124,28 +131,65 @@ export default function TriagePage() {
               </span>
             }
           >
-            <p className="mb-2 text-ink-soft">Check each one off as it is done.</p>
-            <ul className="space-y-1">
-              {triage.safetySteps.map((step, i) => (
-                <li key={step}>
-                  <label className="flex min-h-11 cursor-pointer items-start gap-3 rounded-lg py-1.5">
-                    <input
-                      type="checkbox"
-                      className="mt-1 h-6 w-6 shrink-0 accent-[#2e7d5b]"
-                      checked={checked[i] ?? false}
-                      onChange={(e) =>
-                        setChecked((prev) => {
-                          const next = [...prev];
-                          next[i] = e.target.checked;
-                          return next;
-                        })
-                      }
-                    />
-                    <span className={checked[i] ? "text-ink-soft line-through" : ""}>{step}</span>
-                  </label>
-                </li>
-              ))}
+            <p className="mb-3 text-ink-soft">
+              Check each one off as it is done. Tap <strong className="text-ink">How to do this</strong> under a step
+              for simple instructions, so you do not have to look anything up.
+            </p>
+
+            {heaterRelated && (
+              <div className="mb-3 rounded-2xl bg-glow-tint px-4 py-3 text-sm">
+                <p className="eyebrow">From your house record</p>
+                {houseRecord ? (
+                  <p className="mt-0.5 font-bold">
+                    Water heater: {houseRecord.manufacturer} {houseRecord.model}, {houseRecord.fuelType.toLowerCase()},{" "}
+                    {houseRecord.capacityGallons} gallons. The guides below match this heater.
+                  </p>
+                ) : (
+                  <p className="mt-0.5">
+                    <strong>The water heater is not in your house record yet.</strong> The guides below cover both
+                    gas and electric heaters. Reading the label in the next step adds its brand, model, and fuel type, and
+                    then the guides will match your heater.
+                  </p>
+                )}
+              </div>
+            )}
+
+            <ul className="space-y-3">
+              {triage.safetySteps.map((step, i) => {
+                const guide = guideForStep(step, houseContext);
+                return (
+                  <li key={step}>
+                    <label className="flex min-h-11 cursor-pointer items-start gap-3 rounded-lg py-1.5">
+                      <input
+                        type="checkbox"
+                        className="mt-1 h-6 w-6 shrink-0 accent-[#2e7d5b]"
+                        checked={checked[i] ?? false}
+                        onChange={(e) =>
+                          setChecked((prev) => {
+                            const next = [...prev];
+                            next[i] = e.target.checked;
+                            return next;
+                          })
+                        }
+                      />
+                      <span className={checked[i] ? "text-ink-soft line-through" : ""}>{step}</span>
+                    </label>
+                    {guide && (
+                      <details className="ml-9">
+                        <summary className="inline-flex min-h-11 cursor-pointer items-center rounded-lg px-1 font-bold underline underline-offset-4">
+                          How to do this
+                        </summary>
+                        <SafetyGuideCard guide={guide} />
+                      </details>
+                    )}
+                  </li>
+                );
+              })}
             </ul>
+            <p className="mt-3 text-sm text-ink-soft">
+              General safety information, not a substitute for a professional. If you are unsure, stop and call the
+              owner.
+            </p>
           </Card>
 
           <Card title="Questions we sent the tenant">
@@ -160,6 +204,14 @@ export default function TriagePage() {
             <p>
               {PROPERTY.owner} was told about this request and the urgency. (Simulated. Nothing was actually
               sent.)
+            </p>
+          </Callout>
+
+          <Callout tone="info" title="What happens next">
+            <p>
+              Next, take a photo of the label on the water heater. Porchlight reads the brand, model, and age and saves
+              them to your house record. That record helps decide repair or replace, and it feeds the 5-year forecast.
+              It takes about a minute. You can skip it and come back later.
             </p>
           </Callout>
         </>

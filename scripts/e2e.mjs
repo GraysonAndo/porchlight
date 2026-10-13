@@ -116,7 +116,7 @@ async function newPage(options = {}) {
   await page.getByRole("button", { name: "Leave feedback" }).click();
   await page.getByRole("button", { name: "Save feedback" }).click();
   check("rating is required", (await page.getByText("Please pick a rating").count()) > 0);
-  await page.getByText("5", { exact: true }).first().click();
+  await page.locator("dialog").getByText("5", { exact: true }).click();
   await page.getByLabel(/What was confusing/).fill("Clear. I would ask for the labor hours.");
   await page.getByRole("button", { name: "Save feedback" }).click();
   await page.getByText(/Saved. Thank you/).waitFor();
@@ -136,7 +136,7 @@ async function newPage(options = {}) {
 
   // ?reset=1 clears saved notes too.
   await page.getByRole("button", { name: "Leave feedback" }).click();
-  await page.getByText("3", { exact: true }).first().click();
+  await page.locator("dialog").getByText("3", { exact: true }).click();
   await page.getByRole("button", { name: "Save feedback" }).click();
   await page.getByRole("button", { name: "Done" }).click();
   await page.getByText("1. Feedback notes", { exact: true }).waitFor();
@@ -167,7 +167,7 @@ async function newPage(options = {}) {
   await page.getByText("Owner notified").waitFor({ timeout: 8000 });
   check("app works with localStorage blocked", true);
   await page.getByRole("button", { name: "Leave feedback" }).click();
-  await page.getByText("4", { exact: true }).first().click();
+  await page.locator("dialog").getByText("4", { exact: true }).click();
   await page.getByRole("button", { name: "Save feedback" }).click();
   await page.getByText(/Saved. Thank you/).waitFor();
   check("feedback still saves in memory with storage blocked", true);
@@ -259,6 +259,67 @@ async function newPage(options = {}) {
   }
 
   check("no console errors in QA checks", errors.length === 0, errors.join(" | "));
+  await context.close();
+}
+
+
+// ---------- Safety guides and label context ----------
+{
+  const { context, page, errors } = await newPage({ viewport: { width: 390, height: 844 } });
+
+  // Label page explains itself.
+  await page.goto(`${BASE}/?reset=1`);
+  await page.goto(`${BASE}/label`);
+  await page.getByText("What this step is for").waitFor();
+  check("label page says what the step is for", (await page.getByText(/saves them to your house record|saves those facts|house record/).count()) > 0);
+  check("label page tells you where to find the label", (await page.getByText(/Find the label\./).count()) > 0);
+  check("label page has the where-to-find diagram caption", (await page.getByText(/usually on the side of the tank/).count()) > 0);
+  check("label page lists the numbered steps", (await page.getByText(/Take a clear photo\./).count()) > 0);
+
+  // Triage: guides with no house record yet.
+  await page.goto(`${BASE}/?reset=1`);
+  await page.goto(`${BASE}/tenant/request`);
+  await page.getByRole("button", { name: "Submit" }).click();
+  await page.waitForURL("**/triage");
+  await page.getByText("Owner notified").waitFor({ timeout: 8000 });
+  check("triage explains the next step", (await page.getByText("What happens next").count()) > 0);
+  check("triage says the heater is not in the house record yet", (await page.getByText(/not in your house record yet/).count()) > 0);
+  const summaries = page.locator("summary", { hasText: "How to do this" });
+  check("each safety step has a How to do this guide", (await summaries.count()) === 4, String(await summaries.count()));
+  await summaries.nth(0).click();
+  await page.getByText(/Turn off the water to the water heater/).waitFor();
+  check("water guide shows the valve diagram labels", (await page.getByText("Handle lines up with the pipe").count()) > 0);
+  check("water guide has a stop-and-get-help list", (await page.getByText("Stop and get help if:").count()) > 0);
+  await summaries.nth(1).click();
+  await page.getByText(/Turn the gas to the water heater to pilot or off/).waitFor();
+  check("gas guide says not to relight the pilot", (await page.getByText(/Do not try to relight the pilot/).count()) > 0);
+
+  // Guides use the house record: an electric heater gets breaker steps.
+  await page.goto(`${BASE}/?reset=1`);
+  await page.goto(`${BASE}/label`);
+  await page.getByRole("button", { name: "Use sample label photo" }).click();
+  await page.getByText("Please confirm").waitFor({ timeout: 8000 });
+  await page.locator("#label-fuelType").selectOption("Electric");
+  await page.getByRole("button", { name: "Save to house record" }).click();
+  await page.waitForURL("**/record");
+  await page.goto(`${BASE}/triage`);
+  await page.getByText("Owner notified").waitFor({ timeout: 8000 });
+  check("triage shows the saved heater from the house record", (await page.getByText(/Hearthline HL-40G-NG, electric/).count()) > 0);
+  await page.locator("summary", { hasText: "How to do this" }).nth(1).click();
+  await page.getByText("Turn off the power to the water heater").waitFor();
+  check("electric heater gets breaker steps instead of a gas knob", (await page.getByText(/WATER HEATER\. It is often a wide switch/).count()) > 0);
+
+  // Gas emergency guides.
+  await page.goto(`${BASE}/?reset=1`);
+  await page.goto(`${BASE}/tenant/request`);
+  await page.locator("#description").fill("I smell gas near the water heater");
+  await page.getByRole("button", { name: "Submit" }).click();
+  await page.getByText("Owner notified").waitFor({ timeout: 8000 });
+  await page.locator("summary", { hasText: "How to do this" }).nth(0).click();
+  await page.getByText(/Never go back in to look for the leak/).waitFor();
+  check("gas emergency guide says never go back in", true);
+
+  check("no console errors in guide checks", errors.length === 0, errors.join(" | "));
   await context.close();
 }
 
