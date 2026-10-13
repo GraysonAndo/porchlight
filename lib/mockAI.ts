@@ -6,6 +6,7 @@
 // mockAI for the real Claude API") and change the one import in lib/ai.ts.
 
 import { compareQuote } from "./quote";
+import { triageText } from "./triage";
 import { usd } from "./format";
 import type {
   AIProvider,
@@ -36,29 +37,9 @@ export function createMockAI(options: MockAIOptions = {}): AIProvider {
 
   return {
     async triageRequest(input: TriageInput): Promise<TriageResult> {
-      void input; // Output is deterministic: the seeded water heater scenario.
       await think();
-      return {
-        category: "Plumbing",
-        urgency: "urgent",
-        summary:
-          "The water heater is leaking from the bottom and the garage floor is wet. This needs a plumber soon. It is not an emergency unless the leak is large or water is reaching living areas.",
-        likelyCause:
-          "Tank failure or a corroded tank bottom. A leak from the bottom of the tank usually means the tank has worn through, not that a fitting came loose.",
-        safetySteps: [
-          "Turn off the water supply valve to the heater.",
-          "Turn the gas valve to pilot or off.",
-          "Keep items off the garage floor.",
-          "Do not touch the heater if you are standing in water near anything electrical.",
-        ],
-        tenantQuestions: [
-          "How fast is the leak: a slow drip, a steady stream, or a gush?",
-          "Is any water reaching the living areas of the house?",
-          "Do you smell gas near the heater?",
-        ],
-        suggestedTrade: "Licensed plumber",
-        confidence: 0.82,
-      };
+      // Plain keyword rules (lib/triage.ts). Safety words always win.
+      return triageText(input.description);
     },
 
     async readLabel(input: LabelInput): Promise<LabelResult> {

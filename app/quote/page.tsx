@@ -69,6 +69,11 @@ export default function QuotePage() {
                           <Badge tone="caution">Ask</Badge>
                         </span>
                       )}
+                      {!high && !flaggedNames.has(line.label) && line.verdict === "fair" && (
+                        <span className="ml-2 align-middle">
+                          <Badge tone="good">OK</Badge>
+                        </span>
+                      )}
                       {line.range && (
                         <span className="block text-sm text-ink-soft sm:hidden">
                           Typical {usdRange(line.range.low, line.range.high)}

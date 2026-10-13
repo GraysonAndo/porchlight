@@ -183,11 +183,20 @@ function ApproveBody() {
               id="nte"
               label="Not-to-exceed amount"
               prefix="$"
-              step={10}
-              min={0}
+              step={1}
+              min={vendor.total}
+              invalid={notToExceed < vendor.total}
               value={notToExceed}
               onChange={(v) => setNteEdit({ vendorId: vendor.id, value: v })}
-              hint={`Starts at 10% above the quote (${usd(vendor.total)}). The vendor must call you before going over.`}
+              hint={
+                notToExceed < vendor.total ? (
+                  <span role="alert" className="font-bold text-urgent">
+                    The limit cannot be lower than the quote ({usd(vendor.total)}).
+                  </span>
+                ) : (
+                  `Starts at 10% above the quote (${usd(vendor.total)}). The vendor must call you before going over.`
+                )
+              }
             />
             <div>
               <label htmlFor="window" className="label">
@@ -245,7 +254,7 @@ function ApproveBody() {
         <button
           type="button"
           className="btn btn-primary btn-lg w-full"
-          disabled={!vendor || drafts.loading}
+          disabled={!vendor || drafts.loading || notToExceed < vendor.total}
           onClick={send}
         >
           Approve and send

@@ -14,7 +14,7 @@ import {
 } from "@/components/icons";
 import { LogoMark } from "@/components/Logo";
 import { Badge, Card } from "@/components/ui";
-import { PROPERTY, EQUIPMENT } from "@/lib/seed";
+import { PROPERTY, EQUIPMENT, VENDORS, SEED_REQUEST_TEXT } from "@/lib/seed";
 import { usd } from "@/lib/format";
 import { useDemo } from "@/lib/store";
 
@@ -57,7 +57,8 @@ const FEATURES = [
 function OwnerView() {
   const router = useRouter();
   const { state, actions } = useDemo();
-  const request = state.request;
+  // A booking counts as an open request even if the demo was entered at the last screen.
+  const requestText = state.request?.description ?? (state.approval ? SEED_REQUEST_TEXT : null);
   const urgency = state.triage?.urgency;
 
   return (
@@ -84,21 +85,29 @@ function OwnerView() {
         <div className="mt-4 grid gap-3 sm:grid-cols-2">
           <div className="rounded-2xl bg-cream p-4">
             <p className="eyebrow">Open repair request</p>
-            {request ? (
+            {requestText ? (
               <>
                 <p className="mt-1 font-bold">
-                  {request.description.length > 90 ? `${request.description.slice(0, 90)}...` : request.description}
+                  {requestText.length > 90 ? `${requestText.slice(0, 90)}...` : requestText}
                 </p>
                 <div className="mt-2 flex flex-wrap items-center gap-2">
-                  {urgency ? (
+                  {state.approval ? (
+                    <Badge tone="good">BOOKED</Badge>
+                  ) : urgency ? (
                     <Badge tone={urgency === "routine" ? "good" : "urgent"}>{urgency.toUpperCase()}</Badge>
                   ) : (
                     <Badge tone="neutral">Waiting for triage</Badge>
                   )}
-                  <Link href="/triage" className="btn btn-secondary !min-h-11 text-sm">
-                    Review request
+                  <Link href={state.approval ? "/approve" : "/triage"} className="btn btn-secondary !min-h-11 text-sm">
+                    {state.approval ? "View booking" : "Review request"}
                   </Link>
                 </div>
+                {state.approval && (
+                  <p className="mt-2 text-sm text-ink-soft">
+                    {VENDORS.find((v) => v.id === state.approval?.vendorId)?.name}, {state.approval.accessWindow}.
+                    (Simulated, nothing was sent.)
+                  </p>
+                )}
               </>
             ) : (
               <>
@@ -206,6 +215,14 @@ export default function HomePage() {
               onClick={() => actions.setRole("owner")}
             />
           </div>
+          {state.role === "tenant" && (
+            <p className="text-sm font-bold">
+              You were last using Porchlight as a tenant.{" "}
+              <Link href="/tenant/request" className="underline underline-offset-4">
+                Continue as tenant
+              </Link>
+            </p>
+          )}
           <p className="text-sm text-ink-soft">
             Presenting the demo? Open the Demo guide at the top to jump to any of the 9 screens.
           </p>

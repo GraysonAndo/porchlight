@@ -60,7 +60,7 @@ Every page also has a floating **Leave feedback** button (1 to 5 clarity rating 
 
 | Real (plain code, unit tested) | Faked |
 | --- | --- |
-| Repair vs replace rule (`lib/decision.ts`) | All AI outputs: triage, label reading, quote commentary, message drafts (`lib/mockAI.ts`) |
+| Repair vs replace rule (`lib/decision.ts`) | All AI outputs: triage (keyword rules plus the seeded scenario), label reading, quote commentary, message drafts (`lib/mockAI.ts`) |
 | Forecast math (`lib/forecast.ts`) | Photo reading. Any photo gives the same sample result. |
 | AB 1482 math, notice period, notice text (`lib/rent.ts`) | Vendor data, vendor names, licenses, and quotes |
 | Quote comparison and verdict thresholds (`lib/quote.ts`) | Every price, market range, typical lifespan, and the CPI figure |
@@ -82,7 +82,7 @@ I made these calls without asking. Please check the ones that matter to you.
 - A photo is optional on the request form.
 - Screens opened directly (for example by the Demo guide) fall back to the seed scenario, so any screen works on its own.
 - On the triage screen, "Skip" goes to the house record (step 4).
-- The triage and label results are the same for any text or photo. Urgency is always "urgent".
+- The label reading is the same for any photo. Triage uses plain keyword rules (`lib/triage.ts`): gas, carbon monoxide, smoke or sparks, and flooding always give an EMERGENCY result with safety steps (for a gas smell: leave the home, no sparks, call 911 or the gas company). A water heater problem gives the seeded scenario. Other problems get a short generic result for their category (plumbing, HVAC, electrical, appliance, and so on). It is a keyword match, not real understanding.
 - Water heater age is `2026 minus the manufacture year` (March 2015 gives 11 years). If the owner edits the date, the forecast, record, and decision all update.
 - The repair estimate on screen 6 is $450, and the "replace" cost is the Bayside quote ($2,850). A leaking tank cannot really be repaired, so the repair number is for comparison only.
 - Per-line market ranges for the quote (unit, permit, and so on) were invented so each line can be compared. Only labor is flagged "high" for the seed quote. The expansion tank is flagged "ask" by the mock AI, not by the math.
@@ -140,7 +140,7 @@ The UI only talks to the `AIProvider` interface in `lib/types.ts`, through one i
 ## Known limitations
 
 - It is a prototype: no accounts, no database, no real sending, one seeded scenario, one property.
-- All AI output is identical regardless of what is typed or photographed.
+- Mock triage is keyword based and will misread unusual wording. The label reading and quote commentary are fixed samples.
 - Dates and "today" depend on the browser. The forecast is pinned to 2026.
 - The rent screen does not track the full 12 month rent history, only the number of increases.
 - Data is stored per browser in localStorage. Feedback notes do not sync between devices, so export them after each interview with "Copy all as text".

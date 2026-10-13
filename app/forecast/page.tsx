@@ -22,7 +22,9 @@ function compact(n: number): string {
 
 export default function ForecastPage() {
   const { state } = useDemo();
-  const forecast = buildForecast(equipmentFor(state.houseRecord));
+  const built = buildForecast(equipmentFor(state.houseRecord));
+  // Soonest first, so the most urgent items are at the top.
+  const forecast = { ...built, rows: [...built.rows].sort((x, y) => x.dueYear - y.dueYear) };
   const maxHigh = Math.max(1, ...forecast.years.map((y) => y.high));
   const first = forecast.years[0].year;
   const last = forecast.years[forecast.years.length - 1].year;

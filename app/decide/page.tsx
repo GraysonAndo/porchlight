@@ -59,7 +59,7 @@ export default function DecidePage() {
                 className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-ink text-sm font-extrabold text-cream"
               >
                 {i + 1}
-              </span>
+              </span>{" "}
               <div>
                 <p className="font-bold">{check.rule}</p>
                 <p>{check.detail}</p>

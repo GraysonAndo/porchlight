@@ -130,6 +130,7 @@ export function NumberField({
   prefix,
   suffix,
   hint,
+  invalid,
 }: {
   id: string;
   label: ReactNode;
@@ -140,6 +141,7 @@ export function NumberField({
   prefix?: string;
   suffix?: string;
   hint?: ReactNode;
+  invalid?: boolean;
 }) {
   const [draft, setDraft] = useState<string | null>(null);
   const shown = draft ?? String(value);
@@ -160,6 +162,7 @@ export function NumberField({
           min={min}
           value={shown}
           aria-describedby={hint ? `${id}-hint` : undefined}
+          aria-invalid={invalid ? true : undefined}
           onChange={(e) => {
             setDraft(e.target.value);
             const parsed = Number(e.target.value);

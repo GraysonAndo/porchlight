@@ -175,6 +175,93 @@ async function newPage(options = {}) {
   await context.close();
 }
 
+
+// ---------- QA fixes: triage safety, approve limit, status, order, spacing ----------
+{
+  const { context, page, errors } = await newPage({ viewport: { width: 1280, height: 800 } });
+  async function submit(text) {
+    await page.goto(`${BASE}/?reset=1`);
+    await page.goto(`${BASE}/tenant/request`);
+    await page.locator("#description").fill(text);
+    await page.getByRole("button", { name: "Submit" }).click();
+    await page.waitForURL("**/triage");
+    await page.getByText("Owner notified").waitFor({ timeout: 8000 });
+  }
+
+  await submit("I smell gas near the water heater");
+  check("gas smell is an EMERGENCY", (await page.getByText("EMERGENCY").count()) > 0);
+  check("gas smell tells the tenant to leave the home", (await page.getByText(/Leave the home now/).count()) > 0);
+  check("gas smell tells the tenant to call 911 or the gas company", (await page.getByText(/911 or your gas company/).count()) > 0);
+
+  await submit("The toilet is clogged");
+  check("a clogged toilet is not the water heater result", (await page.getByText(/tank/i).count()) === 0);
+  check("a clogged toilet is routine plumbing", (await page.getByText("ROUTINE").count()) > 0);
+
+  // Approve: the default limit is valid and an invalid one blocks sending.
+  await page.goto(`${BASE}/?reset=1`);
+  await page.goto(`${BASE}/approve`);
+  await page.getByText("Willow Glen Water Heater Co.").first().click();
+  await page.getByRole("button", { name: "Approve and send" }).waitFor();
+  check("default not-to-exceed is valid", await page.locator("#nte").evaluate((el) => el.checkValidity()));
+  await page.getByText("To the tenant: Sample Tenant").waitFor({ timeout: 8000 });
+  await page.locator("#nte").fill("1000");
+  check("a limit below the quote shows an error", (await page.getByText(/cannot be lower than the quote/).count()) > 0);
+  check("a limit below the quote disables Approve and send", await page.getByRole("button", { name: "Approve and send" }).isDisabled());
+  await page.locator("#nte").fill("2700");
+  await page.getByText("To the tenant: Sample Tenant").waitFor({ timeout: 8000 });
+  check("a whole-dollar limit is valid", await page.locator("#nte").evaluate((el) => el.checkValidity()));
+  await page.getByRole("button", { name: "Approve and send" }).click();
+  await page.getByText("Nothing was actually sent").waitFor();
+
+  // Owner home shows the booking, and the owner role survives a reload.
+  await page.goto(`${BASE}/`);
+  await page.getByRole("button", { name: /I am an owner/ }).click();
+  await page.getByText("BOOKED").waitFor();
+  check("owner home shows BOOKED after approving", true);
+  check("owner home no longer says Waiting for triage", (await page.getByText("Waiting for triage").count()) === 0);
+  await page.reload();
+  await page.getByText("Open repair request").waitFor();
+  check("owner role survives a reload", true);
+
+  // Tenant role is remembered on the home screen.
+  await page.getByRole("button", { name: /Switch to tenant view/ }).click();
+  await page.goto(`${BASE}/`);
+  await page.getByText(/last using Porchlight as a tenant/).waitFor();
+  check("tenant role is remembered on the home screen", true);
+
+  // Forecast is sorted by years left.
+  await page.goto(`${BASE}/forecast`);
+  const order = await page.locator("tbody th[scope=row]").allInnerTexts();
+  check("forecast is sorted soonest first", order.join(",") === "Water heater,Air conditioner,Dishwasher,Furnace,Refrigerator,Roof", order.join(","));
+
+  // Text spacing: look at visible text only (not script payloads).
+  for (const path of ["/record", "/forecast", "/rent", "/decide", "/quote"]) {
+    await page.goto(`${BASE}${path}`);
+    await page.waitForTimeout(1500);
+    const bad = await page.evaluate((pagePath) => {
+      const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT, {
+        acceptNode(n) {
+          const tag = n.parentElement && n.parentElement.tagName;
+          return tag === "SCRIPT" || tag === "STYLE" || tag === "NOSCRIPT" ? NodeFilter.FILTER_REJECT : NodeFilter.FILTER_ACCEPT;
+        },
+      });
+      // Join the text of each block element the way a screen reader would, then look for words glued to numbers.
+      const hits = [];
+      for (const el of Array.from(document.body.querySelectorAll("p, li, dd, dt, td, th, span, h1, h2, h3"))) {
+        const t = (el.textContent || "").trim();
+        const m = t.match(/[A-Za-z]:\d|[a-z]\d{4}[a-z]|of\d\.\d|\$[\d,.]+per|\d[A-Za-z]{3,}(?=\s|$)/);
+        if (m && !/^\d+(st|nd|rd|th)$/.test(m[0])) hits.push(`${pagePath}: "${t.slice(0, 50)}"`);
+      }
+      void walker;
+      return hits.slice(0, 3);
+    }, path);
+    check(`no words glued to numbers on ${path}`, bad.length === 0, bad.join(" | "));
+  }
+
+  check("no console errors in QA checks", errors.length === 0, errors.join(" | "));
+  await context.close();
+}
+
 await browser.close();
 console.log(failed === 0 ? "\nAll end to end checks passed." : `\n${failed} check(s) failed.`);
 process.exit(failed === 0 ? 0 : 1);

@@ -208,6 +208,11 @@ function LabelBody({ saved }: { saved: WaterHeaterRecord | null }) {
                             onChange={(e) => setEdits((p) => ({ ...p, [key]: e.target.value }))}
                           />
                         )}
+                        {key === "manufactureDate" && (
+                          <p className="hint">
+                            Check this against the label. The age, forecast, and repair or replace answer all depend on this year.
+                          </p>
+                        )}
                         {flagged && !done && (
                           <div className="mt-2 flex flex-wrap items-center gap-2">
                             <p className="text-sm text-caution-ink">
