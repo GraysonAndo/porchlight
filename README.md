@@ -18,7 +18,7 @@ Other commands:
 | Command | What it does |
 | --- | --- |
 | `npm run lint` | ESLint |
-| `npm test` | Vitest unit tests for the decision, forecast, rent, quote, quote paste parser, recommendation, scenario, agent log, and mock AI logic |
+| `npm test` | Vitest unit tests for the decision, forecast, rent, quote, quote paste parser, recommendation, scenario, agent log, SMS agents, and mock AI logic |
 | `npm run build` | Production build |
 | `node scripts/walkthrough.mjs` | Walks every screen at 390x844 and 1280x800, saves screenshots, checks layout (needs the app running) |
 | `node scripts/e2e.mjs` | Behavior checks: happy path, reload, Reset demo, `?reset=1`, blocked localStorage, feedback notes (needs the app running) |
@@ -36,9 +36,21 @@ Screenshots from the last run are in [`docs/screenshots`](docs/screenshots), two
 
 The app is fully static and makes no network requests at runtime. The font (Nunito Sans) is downloaded once at build time by `next/font` and then served from your own domain.
 
+## The SMS console (`/sms`)
+
+The most agentic screen. Porchlight lives in text messages, so there are no dashboards to open. The page shows the tenant's phone, the owner's phone, the agent's tool log, the house record (which flashes when an agent writes to it), and the contractor's inbox. It runs three agents over text:
+
+1. **4 AM triage and dispatch.** The tenant texts a problem. Porchlight runs the emergency rules, asks a safety question, gives safe steps, asks for a label photo (and asks again if it is blurry), reads the label into the house record, checks vendors, asks for quotes, and sends the owner one decision card with a one-tap approve.
+2. **Quote audit and counter-negotiation.** A contractor emails a quote. Porchlight reads it, checks every line against the price table with plain code, flags the labor rate, drafts a pushback, and waits for a thumbs-up before sending it. A counter is re-checked.
+3. **Compliance sentinel.** On a Monday morning it finds a lease coming up, calculates the exact legal maximum rent increase, drafts the notice, and waits for a tap. The tap mails the notice (with proof of service), because a text is not valid service.
+
+Try it three ways: press **Play the full demo** (the autopilot), type as the tenant and tap or type as the owner, or use **Make something happen** (a blurry photo, a sleepy owner, a contractor counter, the lease check). **Skip ahead** moves the clock to the next scheduled event. A gas smell, water near an outlet, or no heat calls the owner and skips fix steps.
+
+The design and the architecture are in [`docs/BLUEPRINT.md`](docs/BLUEPRINT.md). The agents are one pure reducer, `(world, event) => world`, in `lib/agents/engine.ts`, so they are deterministic and unit tested (`tests/agents.test.ts`). The screen replays the timeline with typing indicators so it looks live.
+
 ## The demo flow
 
-**Start with `/live` ("Watch Porchlight work").** It plays a 4 AM story with a tenant phone, the agent log, and an owner phone side by side. Two stories: a water heater leak (urgent, quiet heads-up, one owner tap, $400 saved) and a gas smell (emergency, no fix steps, the owner's phone rings through Do Not Disturb, nothing is booked). The numbers in the story come from the same logic the other screens use.
+**Start with `/sms` (the SMS console) or `/live` ("Watch Porchlight work").** `/live` is a guided story. It plays a 4 AM story with a tenant phone, the agent log, and an owner phone side by side. Two stories: a water heater leak (urgent, quiet heads-up, one owner tap, $400 saved) and a gas smell (emergency, no fix steps, the owner's phone rings through Do Not Disturb, nothing is booked). The numbers in the story come from the same logic the other screens use.
 
 There are two sides to the real flow, and each side only sees what it needs. **Porchlight** is the AI property manager in the middle.
 
@@ -127,6 +139,15 @@ I made these calls without asking. Please check the ones that matter to you.
 - The not-to-exceed amount starts at the quote plus 10%, rounded to the dollar, and resets when the vendor changes.
 - Photos are not uploaded anywhere. Large photos are shown but not kept after a reload (localStorage is small).
 - The sample contact uses a reserved fictional phone range (555 01xx) and `example.com`.
+
+**SMS console and agents**
+- **Standing permission.** Porchlight may ask vendors for quotes without a tap, because that commits nothing. It may not book, negotiate, or spend without a tap. Every third-party message the owner approves is sent word for word.
+- **Rent notices are mailed, not texted.** A statutory notice has to be properly served. The sentinel's tap simulates certified mail with tracking and proof of service. A real version should also respect what the lease allows (for example email service).
+- **Emergencies** (gas smell, smoke or sparks, flooding, water near electricity, no heat) call the owner by voice and text, skip fix steps, and start no quotes. A new emergency interrupts any case in progress.
+- **The owner gets a silent heads-up** for an urgent but not emergency problem, and one decision card when the quotes are in. If the owner does not answer in 45 minutes, Porchlight sends a reminder and calls.
+- **The agent wording is deterministic sample text** in the same spirit as `lib/mockAI.ts`. Typed tenant and owner replies use simple keyword matching, with a polite fallback.
+- **Times** are simulated. The story starts at 4:07 AM, the lease check runs on a later Monday at 9:00 AM, and the sample notice date is October 19, 2026.
+- **The label photo, serial, and quotes are the same samples** for any photo. The blurry photo button sends an unreadable one on purpose.
 
 **Safety guides**
 - Each safety step on the tenant's safety screen has a "How to do this" guide (`lib/safetyGuides.ts`): time needed, what you need, why, numbered steps, a "Stop and get help if" list, and a valve diagram where it helps.

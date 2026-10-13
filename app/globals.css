@@ -202,6 +202,41 @@ h3 {
   animation: reveal 0.45s ease-out both;
 }
 
+@keyframes flash-field {
+  0% {
+    background-color: var(--color-glow);
+  }
+  100% {
+    background-color: transparent;
+  }
+}
+
+.flash-field {
+  animation: flash-field 1.8s ease-out;
+}
+
+@keyframes typing-dot {
+  0%,
+  60%,
+  100% {
+    opacity: 0.3;
+    transform: translateY(0);
+  }
+  30% {
+    opacity: 1;
+    transform: translateY(-3px);
+  }
+}
+
+.typing-dot {
+  display: inline-block;
+  height: 7px;
+  width: 7px;
+  border-radius: 9999px;
+  background: currentColor;
+  animation: typing-dot 1.1s infinite;
+}
+
 @keyframes grow {
   from {
     width: 0;
@@ -269,6 +304,8 @@ h3 {
 
 @media (prefers-reduced-motion: reduce) {
   .reveal,
+  .flash-field,
+  .typing-dot,
   .bar-grow,
   .bar-rise,
   .glow-pulse,

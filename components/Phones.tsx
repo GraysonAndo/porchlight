@@ -19,6 +19,7 @@ export function PhoneFrame({
   scrollKey,
   label,
   stickToBottom = true,
+  footer,
 }: {
   title: string;
   clock: string;
@@ -28,6 +29,8 @@ export function PhoneFrame({
   scrollKey: number;
   label: string;
   stickToBottom?: boolean;
+  /** Pinned under the scrolling screen, for example a message box */
+  footer?: ReactNode;
 }) {
   const screen = useRef<HTMLDivElement>(null);
 
@@ -47,8 +50,11 @@ export function PhoneFrame({
         <span className="rounded-full bg-cream/15 px-2 py-0.5">{title}</span>
         <span>{statusNote ?? "5G"}</span>
       </div>
-      <div ref={screen} className="h-[540px] overflow-y-auto rounded-[1.6rem] bg-cream p-3">
-        {children}
+      <div className="flex h-[540px] flex-col overflow-hidden rounded-[1.6rem] bg-cream">
+        <div ref={screen} className="min-h-0 flex-1 overflow-y-auto p-3">
+          {children}
+        </div>
+        {footer}
       </div>
     </section>
   );

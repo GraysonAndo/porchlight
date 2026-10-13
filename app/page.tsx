@@ -113,12 +113,12 @@ export default function HomePage() {
             <Link href="/live" className="btn btn-primary btn-lg">
               <PlayIcon size={22} /> Watch Porchlight work
             </Link>
-            <Link href="/owner" className="btn btn-secondary btn-lg" onClick={() => actions.setRole("owner")}>
+            <Link href="/sms" className="btn btn-secondary btn-lg">
+              Try the SMS demo
+            </Link>
+            <Link href="/owner" className="btn btn-ghost" onClick={() => actions.setRole("owner")}>
               Start as the owner
             </Link>
-            <a href="#role-heading" className="btn btn-ghost">
-              Or choose a role
-            </a>
           </div>
         </div>
         <div className="relative hidden h-52 w-52 items-center justify-center md:flex" aria-hidden="true">
@@ -195,8 +195,9 @@ export default function HomePage() {
           </p>
         )}
         <p className="text-sm text-ink-soft">
-          Presenting? Start with &quot;Watch Porchlight work&quot; (2 minutes, both phones side by side). Then try it yourself: the
-          tenant reports the leak, and you switch to the owner to approve. The Demo guide at the top jumps to any screen.
+          Presenting? Start with &quot;Try the SMS demo&quot; (press Play, or text as the tenant and tap as the owner), or
+          &quot;Watch Porchlight work&quot; for a 2 minute story. Then try the full screens: the tenant reports the leak, and you
+          switch to the owner to approve. The Demo guide at the top jumps to any screen.
         </p>
       </section>
 

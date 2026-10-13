@@ -34,7 +34,7 @@ export const FLOWS: Record<FlowId, FlowInfo> = {
   live: {
     id: "live",
     label: "Watch it work",
-    blurb: "Both phones and the agent, side by side",
+    blurb: "The agents running over text messages, side by side",
     numbered: false,
     home: "/",
     homeLabel: "Back to home",
@@ -82,6 +82,14 @@ export const STEPS: Step[] = [
     short: "Live",
     title: "Watch Porchlight work",
     why: "This shows the whole idea in two minutes. A tenant texts at 4 AM, and Porchlight handles it while the owner sleeps. The owner only wakes up to one decision. The two phones show what each person sees at the same moment, and the log shows which parts the AI did and which parts plain code did.",
+  },
+  {
+    id: "live-sms",
+    flow: "live",
+    path: "/sms",
+    short: "SMS",
+    title: "Live agent console",
+    why: "Porchlight lives in text messages, so nobody has to log in. Type as the tenant, tap as the owner, or press Play and watch all three agents run: the 4 AM triage, the quote audit, and the rent compliance check. The log shows which parts the AI did, which parts plain code did, and where Porchlight waits for a tap.",
   },
   // ---- Tenant ----
   {

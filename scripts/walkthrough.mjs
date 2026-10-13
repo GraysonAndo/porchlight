@@ -22,7 +22,9 @@ const warnings = [];
 
 async function snap(page, vp, name) {
   await page.waitForTimeout(300);
-  await page.screenshot({ path: `${OUT}${name}-${vp.name}.png`, fullPage: true });
+  // Finish entrance animations, so a full-page capture never catches an element half faded in.
+  await page.evaluate(() => document.getAnimations().forEach((a) => { if (a.effect && a.effect.getComputedTiming().iterations !== Infinity) a.finish(); }));
+  await page.screenshot({ path: `${OUT}${name}-${vp.name}.png`, fullPage: true, animations: "disabled" });
   const problems = await layoutProblems(page);
   for (const p of problems) {
     const text = `[${vp.name}] ${name}: ${p}`;
@@ -62,6 +64,51 @@ async function run(browser, vp) {
   await page.getByRole("radio", { name: /gas/i }).click();
   while (await next.isEnabled()) await next.click();
   await snap(page, vp, "06-live-gas-done");
+
+  // ---------- SMS console ----------
+  await page.goto(`${BASE}/sms`);
+  await page.getByLabel("Faster").check();
+  await snap(page, vp, "06b-sms-start");
+  const phone = vp.width < 1024;
+  const tab = async (name) => {
+    if (phone) await page.getByRole("tab", { name }).click();
+  };
+  const tenantPhone = page.locator('[aria-label="Tenant\'s phone"]');
+  const ownerPhone = page.locator('[aria-label="Owner\'s phone"]');
+  await page.getByRole("button", { name: "Water heater leak" }).click();
+  await tenantPhone.getByText(/near an outlet/).waitFor({ timeout: 20000 });
+  await tenantPhone.getByRole("button", { name: /^2\s+No$/ }).click();
+  await tenantPhone.getByRole("button", { name: "Done" }).waitFor({ timeout: 20000 });
+  await tenantPhone.getByRole("button", { name: "Done" }).click();
+  await tenantPhone.getByRole("button", { name: "Send a photo" }).waitFor({ timeout: 20000 });
+  await tenantPhone.getByText(/silver sticker/).waitFor({ timeout: 20000 });
+  await tenantPhone.getByRole("button", { name: "Send a photo" }).click();
+  await tenantPhone.getByRole("button", { name: "Label photo" }).click();
+  await tenantPhone.getByText(/Is it 15C0412-X/).waitFor({ timeout: 20000 });
+  await snap(page, vp, "06c-sms-label-read");
+  await tenantPhone.getByRole("button", { name: "Y", exact: true }).click();
+  await tenantPhone.getByText(/I'm watching this/).waitFor({ timeout: 20000 });
+  await page.getByRole("button", { name: /Skip ahead .*vendor quotes arrive/ }).click();
+  await tab("Owner");
+  await ownerPhone.getByText(/DECISION NEEDED/).waitFor({ timeout: 20000 });
+  await snap(page, vp, "06d-sms-decision");
+  await tab("Agent");
+  await snap(page, vp, "06d2-sms-agent-log");
+  await page.getByRole("button", { name: "Start over" }).click();
+  await page.getByRole("button", { name: /Play the full demo/ }).click();
+  await tab("Owner");
+  await ownerPhone.getByText(/Proof of service is saved/).waitFor({ timeout: 90000 });
+  await snap(page, vp, "06e-sms-complete");
+  await tab("Agent");
+  await snap(page, vp, "06e2-sms-complete-agent");
+  await tab("Vendor");
+  await snap(page, vp, "06e3-sms-complete-vendor");
+  await tab("Tenant");
+  await page.getByRole("button", { name: "Start over" }).click();
+  await page.getByRole("button", { name: "I smell gas" }).click();
+  await tab("Owner");
+  await ownerPhone.getByText(/EMERGENCY at/).waitFor({ timeout: 20000 });
+  await snap(page, vp, "06f-sms-gas-emergency");
 
   // ---------- Tenant ----------
   await page.goto(`${BASE}/?reset=1`);

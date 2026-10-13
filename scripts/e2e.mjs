@@ -337,6 +337,153 @@ const count = async (page, text) => page.getByText(text).count();
   await context.close();
 }
 
+// ======================= SMS console: the three agents =======================
+{
+  const { context, page, errors } = await newPage({ viewport: { width: 1280, height: 800 } });
+  await page.goto(`${BASE}/sms`);
+  await page.getByLabel("Faster").check();
+  const tenant = page.locator('[aria-label="Tenant\'s phone"]');
+  const owner = page.locator('[aria-label="Owner\'s phone"]');
+  const wait = { timeout: 20000 };
+
+  // Loop 1: the 4 AM triage and dispatch.
+  await page.getByRole("button", { name: "Water heater leak" }).click();
+  await tenant.getByText(/near an outlet/).waitFor(wait);
+  check("tenant text starts the triage with a safety question", true);
+  await tenant.getByRole("button", { name: /^2\s+No$/ }).click();
+  await tenant.getByText(/Two quick steps/).waitFor(wait);
+  await owner.getByText(/Delivered silently/).first().waitFor(wait);
+  check("owner gets a silent heads-up, not a call", (await owner.getByText("Incoming call from Porchlight").count()) === 0);
+  await tenant.getByRole("button", { name: "Done" }).click();
+  await tenant.getByText(/silver sticker/).waitFor(wait);
+  await tenant.getByRole("button", { name: "Send a photo" }).click();
+  await tenant.getByRole("button", { name: "Blurry photo" }).click();
+  await tenant.getByText(/too blurry/).waitFor(wait);
+  check("a blurry label photo is not written to the record", (await page.getByRole("region", { name: "Water heater" }).getByText("Not on file").count()) >= 3);
+  await tenant.getByRole("button", { name: "Send a photo" }).click();
+  await tenant.getByRole("button", { name: "Label photo" }).click();
+  await tenant.getByText(/Is it 15C0412-X/).waitFor(wait);
+  await page.getByRole("region", { name: "Water heater" }).getByText("Hearthline").waitFor(wait);
+  check("the label photo fills the house record", (await page.getByRole("region", { name: "Water heater" }).getByText("HL-40G-NG").count()) > 0);
+  await tenant.getByRole("button", { name: "Y", exact: true }).click();
+  await tenant.getByText(/I'm watching this/).waitFor(wait);
+  const tenantText = await tenant.innerText();
+  check("the tenant never sees a price", !/\$|quote/i.test(tenantText), tenantText.slice(0, 80));
+
+  await page.getByRole("button", { name: /Skip ahead .*vendor quotes arrive/ }).click();
+  await owner.getByText(/DECISION NEEDED: replace/).waitFor(wait);
+  const card = await owner.innerText();
+  check("owner decision card: pick, limit, saving", card.includes("$2,450") && card.includes("$2,695") && card.includes("$400"));
+  check("owner decision card skips A1 for no license", /A1 Rapid\s+\$2,100.*no license shown/.test(card));
+  check("nothing is booked before the tap", (await page.getByText("Booked Willow Glen").count()) === 0);
+  await owner.getByRole("button", { name: "Approve", exact: true }).click();
+  await owner.getByText(/Approved. Booked/).waitFor(wait);
+  check("one tap books the plumber", true);
+  await tenant.getByText(/Your plumber is Willow Glen/).waitFor(wait);
+  check("the tenant is told who is coming and when", true);
+  check("the approval gate is in the log", (await page.getByText("Owner tapped Approve").count()) > 0);
+  await tenant.getByRole("button", { name: /^1\s+That works$/ }).click();
+  await page.getByRole("button", { name: /Skip ahead .*plumber finishes/ }).click();
+  await page.getByRole("region", { name: "Water heater" }).getByText("26J0007-A").waitFor(wait);
+  check("the installer writes the new heater to the record by itself", (await page.getByText("Brand new").count()) > 0);
+
+  // Loop 2: the quote audit.
+  await page.getByRole("button", { name: "Contractor emails a quote" }).click();
+  await owner.getByText(/22% above the top/).waitFor(wait);
+  check("the quote audit flags the labor rate", (await owner.getByText(/\$230 an hour/).count()) > 0);
+  check("nothing goes to the contractor before the thumbs-up", (await page.getByText("From Porchlight, approved by the owner").count()) === 1);
+  await owner.getByRole("button", { name: /Send it/ }).click();
+  await page.getByText("From Porchlight, approved by the owner").nth(1).waitFor(wait);
+  check("the thumbs-up sends the drafted pushback", true);
+  await page.getByRole("button", { name: "Contractor counters at $2,550" }).click();
+  await owner.getByText(/inside the typical range/).waitFor(wait);
+  await owner.getByRole("button", { name: /Accept/ }).click();
+  await owner.getByText(/Accepted at \$2,550/).waitFor(wait);
+  check("a fair counter can be accepted in one tap", true);
+
+  // Loop 3: the compliance sentinel.
+  await page.getByRole("button", { name: "Run the Monday lease check" }).click();
+  await owner.getByText(/\$3,456\.00/).first().waitFor(wait);
+  const lease = await owner.innerText();
+  check("sentinel texts the exact legal maximum", lease.includes("8.0%") && lease.includes("$3,456.00"));
+  check("sentinel says draft, not legal advice", lease.includes("DRAFT, NOT LEGAL ADVICE"));
+  await owner.getByRole("button", { name: /Mail at max/ }).click();
+  await owner.getByText(/Notice mailed certified/).waitFor(wait);
+  check("the notice is mailed, not texted", (await page.getByText("Mailed the notice by certified mail").count()) > 0);
+  await page.getByRole("button", { name: /Skip ahead .*notice is delivered/ }).click();
+  await owner.getByText(/Proof of service is saved/).waitFor(wait);
+  check("proof of service lands in the house record", (await page.getByText(/Delivered .*proof saved/).count()) > 0);
+  check("four owner taps and $400 saved on the scoreboard", (await page.getByLabel("Scoreboard").innerText()).includes("4 owner taps") && (await page.getByLabel("Scoreboard").innerText()).includes("$400 saved"));
+  check("no console errors in the SMS console", errors.length === 0, errors.join(" | "));
+  await context.close();
+}
+
+{
+  // Emergencies: the gas smell, typed by hand as the owner, and the sleepy owner.
+  const { context, page, errors } = await newPage({ viewport: { width: 1280, height: 800 } });
+  await page.goto(`${BASE}/sms`);
+  await page.getByLabel("Faster").check();
+  const tenant = page.locator('[aria-label="Tenant\'s phone"]');
+  const owner = page.locator('[aria-label="Owner\'s phone"]');
+  const wait = { timeout: 20000 };
+  await page.getByRole("button", { name: "I smell gas" }).click();
+  await tenant.getByText(/911/).first().waitFor(wait);
+  await owner.getByText("Incoming call from Porchlight").waitFor(wait);
+  check("a gas smell calls the owner through Do Not Disturb", true);
+  await owner.getByText(/EMERGENCY at/).waitFor(wait);
+  check("a gas smell gives the tenant no photo request and starts no quotes", (await page.getByText("request_quotes").count()) === 0 && (await tenant.getByText(/silver sticker/).count()) === 0);
+  await owner.getByRole("button", { name: "I'm on it" }).click();
+  await tenant.getByText(/Your landlord is on it/).first().waitFor(wait);
+  check("the owner's acknowledgement is relayed to the tenant", true);
+  check("emergency scoreboard has a skip-fix-steps entry", (await page.getByText("skip_fix_steps").count()) > 0);
+
+  await page.getByRole("button", { name: "Start over" }).click();
+  await page.getByRole("button", { name: "Water heater leak" }).click();
+  await tenant.getByText(/near an outlet/).waitFor(wait);
+  await tenant.getByRole("button", { name: /^1\s+Yes$/ }).click();
+  await owner.getByText("Incoming call from Porchlight").waitFor(wait);
+  check("water near an outlet is treated as an emergency", true);
+
+  await page.getByRole("button", { name: "Start over" }).click();
+  await page.getByRole("button", { name: "Water heater leak" }).click();
+  await tenant.getByRole("button", { name: /^2\s+No$/ }).click();
+  await tenant.getByRole("button", { name: "Done" }).click();
+  await tenant.getByRole("button", { name: "Send a photo" }).click();
+  await tenant.getByRole("button", { name: "Label photo" }).click();
+  await tenant.getByRole("button", { name: "Y", exact: true }).click();
+  await page.getByRole("button", { name: /Skip ahead .*vendor quotes arrive/ }).click();
+  await owner.getByText(/DECISION NEEDED/).waitFor(wait);
+  await page.getByRole("button", { name: "Owner stays asleep (+45 min)" }).click();
+  await owner.getByText(/Reminder: the water heater decision/).waitFor(wait);
+  await owner.getByText("Incoming call from Porchlight").waitFor(wait);
+  check("a silent owner gets a reminder text and a call after 45 minutes", true);
+  await owner.getByLabel("Reply to Porchlight").fill("1");
+  await owner.getByRole("button", { name: "Send", exact: true }).click();
+  await owner.getByText(/Approved. Booked/).waitFor(wait);
+  check("typing 1 approves the same as tapping", true);
+  check("no console errors in the emergency checks", errors.length === 0, errors.join(" | "));
+  await context.close();
+}
+
+{
+  // The autopilot plays the whole thing, on a phone.
+  const { context, page, errors } = await newPage({ viewport: { width: 390, height: 844 } });
+  await page.goto(`${BASE}/sms`);
+  await page.getByLabel("Faster").check();
+  await page.getByRole("button", { name: /Play the full demo/ }).click();
+  await page.getByRole("tab", { name: "Owner" }).click();
+  await page.getByText(/Proof of service is saved/).waitFor({ timeout: 90000 });
+  check("the autopilot finishes all three loops on a phone", true);
+  await page.getByRole("tab", { name: "Agent" }).click();
+  await page.getByText("Wrote to the house record").first().waitFor();
+  check("the agent tab shows the log and the house record", (await page.getByText("26J0007-A").count()) > 0);
+  await page.getByRole("tab", { name: "Vendor" }).click();
+  await page.getByText("From the contractor").first().waitFor();
+  check("the vendor tab shows the contractor's inbox", true);
+  check("no console errors on the phone", errors.length === 0, errors.join(" | "));
+  await context.close();
+}
+
 // ======================= Old links still work =======================
 {
   const { context, page } = await newPage();
