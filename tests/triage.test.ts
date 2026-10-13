@@ -118,3 +118,63 @@ describe("triageText escalation", () => {
     expect(triageText("the water heater is not working, no hot water").category).not.toBe("HVAC");
   });
 });
+
+describe("triage covers the cases the QA report raised", () => {
+  it.each([
+    "I smell gas and I feel dizzy",
+    "I feel dizzy and have a headache near the furnace",
+    "My head is spinning, I am nauseous, and the heater smells strange",
+  ])("treats %j as a gas or carbon monoxide emergency with no fix steps", (text) => {
+    const r = triageText(text);
+    expect(r.urgency).toBe("emergency");
+    expect(r.alertOwnerNow).toBe(true);
+    expect(r.safetySteps[0].toLowerCase()).toContain("leave the home");
+  });
+
+  it("does not return the water heater result for an overflowing toilet", () => {
+    const r = triageText("The toilet is clogged and overflowing");
+    expect(r.category).toBe("Plumbing");
+    expect(r.urgency).toBe("urgent");
+    expect(r.summary).toMatch(/toilet/i);
+    expect(r.likelyCause).not.toMatch(/tank/i);
+    expect(r.safetySteps.join(" ")).toMatch(/do not flush/i);
+    expect(r.safetySteps.join(" ")).not.toMatch(/gas|heater/i);
+  });
+
+  it("gives 2 to 4 safe steps that match the problem for every ordinary category", () => {
+    const cases: [string, RegExp][] = [
+      ["The kitchen sink is clogged", /drain cleaner/i],
+      ["The dishwasher will not drain", /unplug|appliance/i],
+      ["The outlet in the bedroom does not work", /outlet/i],
+      ["I think we have mice", /food/i],
+      ["The roof is leaking in the hallway", /bucket/i],
+    ];
+    for (const [text, expected] of cases) {
+      const r = triageText(text);
+      expect(r.safetySteps.length).toBeGreaterThanOrEqual(2);
+      expect(r.safetySteps.length).toBeLessThanOrEqual(4);
+      expect(r.safetySteps.join(" ")).toMatch(expected);
+    }
+  });
+
+  it("never tells a tenant to turn, open, or relight anything on a gas line, for any request", () => {
+    const requests = [
+      "water heater is leaking",
+      "The water heater is leaking from the bottom and the floor in the garage is wet.",
+      "I smell gas near the water heater",
+      "We have no heat",
+      "The furnace is making a loud noise",
+      "The stove igniter clicks slowly",
+      "The toilet is clogged and overflowing",
+    ];
+    for (const text of requests) {
+      const steps = triageText(text).safetySteps.join(" ").toLowerCase();
+      expect(steps).not.toMatch(/turn (the )?gas|gas (knob|valve) to|pilot|relight|shut off the gas/);
+    }
+  });
+
+  it("labels urgency with the three buckets from the spec", async () => {
+    const { URGENCY_LABEL } = await import("../lib/triage");
+    expect(Object.values(URGENCY_LABEL)).toEqual(["EMERGENCY", "SOON", "ROUTINE"]);
+  });
+});

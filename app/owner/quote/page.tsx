@@ -9,15 +9,17 @@ import { Badge, Callout, Card } from "@/components/ui";
 import { VERDICT_LABEL, VERDICT_TONE } from "@/components/verdict";
 import { usd } from "@/lib/format";
 import { COLLECTED, PLAN } from "@/lib/plan";
-import { SAMPLE_QUOTE_TEXT, parseQuoteText, type ParsedQuote } from "@/lib/quoteParse";
+import { SAMPLE_QUOTE_TEXT, detectQuoteJob, parseQuoteText, type ParsedQuote } from "@/lib/quoteParse";
 import type { VendorQuote } from "@/lib/types";
 
 function PasteQuote() {
   const [text, setText] = useState("");
   const [parsed, setParsed] = useState<ParsedQuote | null>(null);
+  const [fromPhoto, setFromPhoto] = useState<string | null>(null);
 
+  const job = detectQuoteJob(text);
   const quote: VendorQuote | null =
-    parsed && parsed.lines.length > 0
+    parsed && parsed.lines.length > 0 && job.kind === "water-heater"
       ? {
           vendorId: "pasted",
           vendorName: parsed.vendorName ?? "Your pasted quote",
@@ -49,6 +51,7 @@ function PasteQuote() {
           onChange={(e) => {
             setText(e.target.value);
             setParsed(null);
+            setFromPhoto(null);
           }}
           placeholder={"Vendor name\nWater heater unit ........ $800\nLabor ........ $1,200\nTOTAL $2,500"}
         />
@@ -73,6 +76,7 @@ function PasteQuote() {
               onClick={() => {
                 setText("");
                 setParsed(null);
+                setFromPhoto(null);
               }}
             >
               Clear
@@ -80,11 +84,55 @@ function PasteQuote() {
           )}
         </div>
         <p className="hint">Prototype note: the sample quote is fictional. Reading the text is plain code, not AI.</p>
+
+        <div className="mt-4 border-t border-line pt-4">
+          <label htmlFor="quote-photo" className="label">
+            Or upload a photo or screenshot of the quote
+          </label>
+          <input
+            id="quote-photo"
+            type="file"
+            accept="image/*"
+            className="field"
+            onChange={(e) => {
+              const file = e.target.files?.[0];
+              if (!file) return;
+              setText(SAMPLE_QUOTE_TEXT);
+              setParsed(parseQuoteText(SAMPLE_QUOTE_TEXT));
+              setFromPhoto(file.name);
+            }}
+          />
+          <p className="hint">Prototype note: any photo gives the same sample reading (the Harbor View quote). A real version would read your photo.</p>
+          {fromPhoto && parsed && (
+            <p className="mt-1 text-sm font-bold" role="status">
+              Read from {fromPhoto} (sample result). Check the lines below against your photo.
+            </p>
+          )}
+        </div>
       </Card>
 
       {parsed && !quote && (
         <Callout tone="caution" title="I could not find any dollar amounts" role="alert">
           <p>Put each item on its own line with its price at the end, like &quot;Labor ........ $1,200&quot;.</p>
+        </Callout>
+      )}
+
+      {parsed && parsed.lines.length > 0 && job.kind === "unknown" && (
+        <Callout tone="caution" title="This job is not in Porchlight's price table yet" role="status">
+          <p>
+            Porchlight only has typical prices for a water heater replacement right now. This looks like{" "}
+            {job.guess ?? "a different kind of job"}, so it will not give a fair, high, or low verdict. It would only be a
+            guess.
+          </p>
+          <p className="mt-2 font-bold">What Porchlight read ({usd(parsed.total)} total):</p>
+          <ul className="mt-1 list-disc space-y-0.5 pl-5">
+            {parsed.lines.map((l) => (
+              <li key={l.id + l.label}>
+                {l.label}: {usd(l.amount)}
+              </li>
+            ))}
+          </ul>
+          <p className="mt-2">Ask the vendor for the labor hours and the hourly rate, and get a second quote.</p>
         </Callout>
       )}
 

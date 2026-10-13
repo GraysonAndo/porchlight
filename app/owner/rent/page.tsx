@@ -8,6 +8,8 @@ import { longDate, pct, usdCents } from "@/lib/format";
 import { useToday } from "@/lib/hooks";
 import { buildNotice, calculateRent, effectiveDateFor } from "@/lib/rent";
 import { PROPERTY } from "@/lib/seed";
+
+const STATUTE_URL = "https://leginfo.legislature.ca.gov/faces/codes_displaySection.xhtml?lawCode=CIV&sectionNum=1947.12";
 import { useDemo } from "@/lib/store";
 
 function Check({
@@ -51,6 +53,16 @@ export default function RentPage() {
   const [dateOverride, setDateOverride] = useState<string | null>(null);
   const [copied, setCopied] = useState<"" | "yes" | "no">("");
   const noticeDate = dateOverride ?? today;
+  // A box that has been cleared is not a number. The result waits instead of using an old value.
+  const [empty, setEmpty] = useState({ current: false, cpi: false, proposed: false });
+  const markEmpty = (key: "current" | "cpi" | "proposed") => (isEmpty: boolean) =>
+    setEmpty((e) => (e[key] === isEmpty ? e : { ...e, [key]: isEmpty }));
+  const missing = [
+    empty.current || form.currentRent <= 0 ? "the current rent" : null,
+    empty.proposed || form.proposedRent <= 0 ? "the proposed new rent" : null,
+    empty.cpi ? "the local CPI change" : null,
+  ].filter((m): m is string => m !== null);
+  const cpiOdd = !empty.cpi && (form.cpiPercent < 0 || form.cpiPercent > 10);
 
   const result = calculateRent({
     currentRent: form.currentRent,
@@ -111,6 +123,13 @@ export default function RentPage() {
 
   return (
     <StepShell stepId="tools-rent">
+      <p className="rounded-2xl bg-glow-tint px-4 py-3 font-bold">
+        California only, for now. This follows California&apos;s rent cap law, AB 1482 (
+        <a href={STATUTE_URL} className="underline underline-offset-4" target="_blank" rel="noreferrer">
+          Civil Code 1947.12
+        </a>
+        ).
+      </p>
       <PlainCodeNote>
         The legal cap is worked out with exact math from the numbers you enter. The AI never decides what is legal. It
         only helps word the notice.
@@ -126,6 +145,8 @@ export default function RentPage() {
               min={0}
               value={form.currentRent}
               onChange={(v) => actions.setRent({ currentRent: v })}
+              onEmptyChange={markEmpty("current")}
+              invalid={empty.current}
             />
             <NumberField
               id="cpi"
@@ -134,9 +155,16 @@ export default function RentPage() {
               step="any"
               value={form.cpiPercent}
               onChange={(v) => actions.setRent({ cpiPercent: v })}
+              onEmptyChange={markEmpty("cpi")}
+              invalid={empty.cpi || cpiOdd}
               hint={
                 <>
                   <PlaceholderNote /> Look up the current figure for your area before using.
+                  {cpiOdd && (
+                    <span role="alert" className="mt-1 block font-bold text-caution-ink">
+                      Check this number. A yearly CPI change is usually between 0% and 10%.
+                    </span>
+                  )}
                 </>
               }
             />
@@ -148,33 +176,9 @@ export default function RentPage() {
               min={0}
               value={form.proposedRent}
               onChange={(v) => actions.setRent({ proposedRent: v })}
+              onEmptyChange={markEmpty("proposed")}
+              invalid={empty.proposed}
             />
-
-            <fieldset>
-              <legend className="label">Has the tenant lived there 12 months or more?</legend>
-              <div className="flex gap-3">
-                {[
-                  { v: true, text: "Yes" },
-                  { v: false, text: "No" },
-                ].map((o) => (
-                  <label
-                    key={o.text}
-                    className={`flex min-h-11 flex-1 cursor-pointer items-center justify-center gap-2 rounded-xl border-2 px-4 font-bold has-[:focus-visible]:outline has-[:focus-visible]:outline-[3px] has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-ink ${
-                      form.tenancy12Plus === o.v ? "border-ink bg-glow" : "border-line bg-white"
-                    }`}
-                  >
-                    <input
-                      type="radio"
-                      name="tenancy"
-                      className="sr-only"
-                      checked={form.tenancy12Plus === o.v}
-                      onChange={() => actions.setRent({ tenancy12Plus: o.v })}
-                    />
-                    {o.text}
-                  </label>
-                ))}
-              </div>
-            </fieldset>
 
             <NumberField
               id="increases"
@@ -187,7 +191,11 @@ export default function RentPage() {
 
             <fieldset>
               <legend className="label">Exemption checks</legend>
-              <p className="hint mb-1">Tick each one that is true for this property.</p>
+              <p className="hint mb-1">
+                Tick each one that is true for this property. Under AB 1482, a single family home or condo that is not
+                owned by a corporate owner, with the written notice given, may be exempt. So may a building under 15
+                years old.
+              </p>
               <Check
                 id="ex-sfh"
                 checked={form.singleFamilyOrCondo}
@@ -227,7 +235,11 @@ export default function RentPage() {
               <Badge tone="info">Draft, not legal advice</Badge>
             </div>
 
-            {result.mayBeExempt ? (
+            {missing.length > 0 ? (
+              <Callout tone="caution" title="Fill in the numbers to see the result" role="status">
+                <p>Porchlight needs {missing.join(" and ")}. It will not guess or use an old number.</p>
+              </Callout>
+            ) : result.mayBeExempt ? (
               <div className="mt-3 space-y-3">
                 <Callout tone="caution" title="May be exempt from the state cap. Confirm with an attorney.">
                   <p>{result.exemptionReason}</p>
@@ -265,12 +277,10 @@ export default function RentPage() {
                 {form.increasesInLast12Months === 1 &&
                   " The cap is measured over any 12 months, so the earlier increase counts toward it."}
               </p>
-              {!form.tenancy12Plus && (
-                <p className="text-sm text-ink-soft">
-                  The state rent cap generally applies no matter how long the tenant has lived there. Other
-                  protections, like just cause rules, start after 12 months. Confirm with an attorney.
-                </p>
-              )}
+              <p className="text-sm text-ink-soft">
+                The state cap applies no matter how long the tenant has lived there, so Porchlight does not ask. Other
+                protections, like just cause rules, start after 12 months. Confirm with an attorney.
+              </p>
               <Callout tone="caution" title="Check local rules first">
                 <p>
                   Local rules (for example San Jose rent ordinances) can be stricter than state law. Check before
@@ -304,7 +314,7 @@ export default function RentPage() {
               </p>
             </div>
 
-            {!result.mayBeExempt && !result.withinCap && (
+            {missing.length === 0 && !result.mayBeExempt && !result.withinCap && (
               <div className="mt-3">
                 <Callout tone="urgent" title="This draft is above the cap">
                   <p>Lower the proposed rent first, or this notice could cause trouble.</p>
@@ -312,6 +322,10 @@ export default function RentPage() {
               </div>
             )}
 
+            {missing.length > 0 ? (
+              <p className="mt-3 rounded-xl bg-cream p-3 text-ink-soft">The notice draft appears once the numbers above are filled in.</p>
+            ) : (
+            <>
             <pre
               className="mt-3 max-h-96 overflow-auto whitespace-pre-wrap rounded-xl border border-line bg-cream p-4 font-mono text-sm leading-relaxed"
               aria-label="Rent increase notice draft"
@@ -329,6 +343,8 @@ export default function RentPage() {
                 {copied === "no" && "Could not copy. Select the text above and copy it by hand."}
               </span>
             </div>
+            </>
+            )}
           </Card>
         </div>
       </div>

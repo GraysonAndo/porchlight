@@ -121,3 +121,25 @@ Expansion tank .......... $250.00
 Gas flex line and fittings .......... $180.00
 Seismic strap kit .......... $40.00
 TOTAL $3,170.00`;
+
+export type QuoteJob = { kind: "water-heater" } | { kind: "unknown"; guess: string | null };
+
+const OTHER_JOBS: [RegExp, string][] = [
+  [/furnace|heating system|\bhvac\b|air condition|\ba\/c\b|\bduct/i, "a heating or cooling job"],
+  [/roof|shingle|gutter/i, "a roofing job"],
+  [/electric|panel|outlet|wiring|rewire/i, "an electrical job"],
+  [/paint|drywall|flooring|carpet|tile|cabinet/i, "a repair or remodel job"],
+  [/toilet|sink|faucet|drain|sewer|pipe|plumb/i, "a plumbing repair"],
+  [/dishwasher|refrigerator|fridge|oven|washer|dryer|stove/i, "an appliance job"],
+];
+
+/**
+ * Which job a pasted quote is for. Porchlight only has typical prices for a
+ * water heater swap, so anything else is reported as not in the table and gets
+ * no verdict. It never invents a range.
+ */
+export function detectQuoteJob(text: string): QuoteJob {
+  if (/water heater|hot water (heater|tank)|tankless|tank heater/i.test(text)) return { kind: "water-heater" };
+  const other = OTHER_JOBS.find(([test]) => test.test(text));
+  return { kind: "unknown", guess: other ? other[1] : null };
+}

@@ -186,7 +186,7 @@ function buildLeakScenario(): Scenario {
           tool: "check_emergency_rules",
           engine: "code",
           title: "Checked the emergency rules",
-          detail: "No gas smell, fire, sparks, or flooding. This is urgent, not an emergency.",
+          detail: "No gas smell, fire, sparks, or flooding. Urgency: soon, not an emergency.",
         },
         {
           id: "a-lookup",
@@ -495,7 +495,7 @@ function buildLeakScenario(): Scenario {
 
   return {
     id: "leak",
-    title: "Water heater leak (urgent)",
+    title: "Water heater leak (soon)",
     blurb: "The tenant texts at 4:07 AM. By 6:46 AM the owner has made one tap.",
     steps,
   };
@@ -568,7 +568,7 @@ function buildGasScenario(): Scenario {
           tool: "call_owner",
           engine: "action",
           title: "Called the owner",
-          detail: "Emergencies ring through Do Not Disturb. An urgent repair only sends a quiet message.",
+          detail: "Emergencies ring through Do Not Disturb. A repair that can wait a few hours only sends a quiet message.",
         },
       ],
     }),

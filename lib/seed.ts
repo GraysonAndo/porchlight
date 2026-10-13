@@ -26,6 +26,9 @@ export const PROPERTY = {
   tenantSince: 2023,
 };
 
+/** The month the demo rent payment is for. */
+export const RENT_MONTH = "October 2026";
+
 export const SEED_REQUEST_TEXT =
   "The water heater is leaking from the bottom and the floor in the garage is wet.";
 
@@ -68,14 +71,15 @@ export const NEW_HEATER_RECORD: WaterHeaterRecord = {
 export const WATER_HEATER_JOB: QuoteItem = {
   name: "40 gallon gas tank water heater swap",
   marketTotal: { low: 1600, high: 2600 },
+  // The line ranges add up to the total range ($1,600 to $2,600), so the total never contradicts its lines.
   marketLines: {
-    unit: { low: 600, high: 1000 },
-    labor: { low: 700, high: 1100 },
-    permit: { low: 100, high: 250 },
-    haul: { low: 50, high: 150 },
-    expansion: { low: 150, high: 300 },
-    fittings: { low: 100, high: 250 },
-    seismic: { low: 25, high: 75 },
+    unit: { low: 555, high: 830 },
+    labor: { low: 620, high: 1030 },
+    permit: { low: 100, high: 150 },
+    haul: { low: 50, high: 120 },
+    expansion: { low: 150, high: 250 },
+    fittings: { low: 100, high: 180 },
+    seismic: { low: 25, high: 40 },
   },
 };
 
@@ -99,13 +103,13 @@ export const WILLOW_QUOTE: VendorQuote = {
   vendorName: "Willow Glen Water Heater Co.",
   total: 2450,
   lines: [
-    { id: "unit", label: "Unit", amount: 760 },
-    { id: "labor", label: "Labor", amount: 1050 },
+    { id: "unit", label: "Unit", amount: 790 },
+    { id: "labor", label: "Labor", amount: 1020 },
     { id: "permit", label: "Permit", amount: 150 },
     { id: "haul", label: "Haul away", amount: 100 },
     { id: "expansion", label: "Expansion tank", amount: 230 },
-    { id: "fittings", label: "Gas flex line and misc fittings", amount: 120 },
-    { id: "seismic", label: "Seismic strapping kit", amount: 40 },
+    { id: "fittings", label: "Gas flex line and misc fittings", amount: 130 },
+    { id: "seismic", label: "Seismic strapping kit", amount: 30 },
   ],
 };
 
@@ -116,11 +120,11 @@ export const A1_QUOTE: VendorQuote = {
   total: 2100,
   lines: [
     { id: "unit", label: "Unit", amount: 700 },
-    { id: "labor", label: "Labor", amount: 850 },
+    { id: "labor", label: "Labor", amount: 890 },
     { id: "haul", label: "Haul away", amount: 100 },
     { id: "expansion", label: "Expansion tank", amount: 200 },
-    { id: "fittings", label: "Gas flex line and misc fittings", amount: 200 },
-    { id: "seismic", label: "Seismic strapping kit", amount: 50 },
+    { id: "fittings", label: "Gas flex line and misc fittings", amount: 170 },
+    { id: "seismic", label: "Seismic strapping kit", amount: 40 },
   ],
 };
 
@@ -211,5 +215,7 @@ export const INITIAL_STATE: DemoState = {
   tenantAccess: null,
   jobCompletedAt: null,
   tenantSkippedLabel: false,
+  rentPaidAt: null,
+  pricingPick: null,
   feedback: [],
 };

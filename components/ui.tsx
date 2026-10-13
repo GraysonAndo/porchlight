@@ -131,6 +131,7 @@ export function NumberField({
   suffix,
   hint,
   invalid,
+  onEmptyChange,
 }: {
   id: string;
   label: ReactNode;
@@ -142,6 +143,8 @@ export function NumberField({
   suffix?: string;
   hint?: ReactNode;
   invalid?: boolean;
+  /** Called with true when the box is cleared, and false when it has a number again or loses focus */
+  onEmptyChange?: (empty: boolean) => void;
 }) {
   const [draft, setDraft] = useState<string | null>(null);
   const shown = draft ?? String(value);
@@ -166,9 +169,14 @@ export function NumberField({
           onChange={(e) => {
             setDraft(e.target.value);
             const parsed = Number(e.target.value);
-            if (e.target.value.trim() !== "" && Number.isFinite(parsed)) onChange(parsed);
+            const empty = e.target.value.trim() === "" || !Number.isFinite(parsed);
+            onEmptyChange?.(empty);
+            if (!empty) onChange(parsed);
           }}
-          onBlur={() => setDraft(null)}
+          onBlur={() => {
+            setDraft(null);
+            onEmptyChange?.(false);
+          }}
         />
         {suffix && <span className="text-lg font-bold">{suffix}</span>}
       </div>

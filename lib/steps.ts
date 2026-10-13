@@ -235,7 +235,11 @@ export function screenNameFor(pathname: string): string {
   if (pathname.startsWith("/feedback")) return "Feedback notes";
   if (pathname === "/owner") return "Owner home";
   if (pathname === "/") return "Home";
-  return pathname;
+  if (pathname === "/pricing") return "Pricing";
+  if (pathname === "/about") return "About and FAQ";
+  if (pathname === "/sms" || pathname === "/live") return "Watch it work";
+  // Any other path (a 404) is named the same on the server and the client, so the page hydrates cleanly.
+  return "Another page";
 }
 
 /** Which side of the demo a path belongs to, for the header. */

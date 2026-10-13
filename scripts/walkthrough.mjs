@@ -17,6 +17,13 @@ const VIEWPORTS = [
   { name: "desktop", width: 1280, height: 800 },
 ];
 
+
+/** Opens ?reset=1 and waits until the reset has actually happened (the page removes the flag). */
+async function resetDemo(page) {
+  await page.goto(`${BASE}/?reset=1`);
+  await page.waitForFunction(() => !window.location.search.includes("reset=1"));
+}
+
 let failures = 0;
 const warnings = [];
 
@@ -43,7 +50,7 @@ async function run(browser, vp) {
   watchErrors(page, errors);
 
   // ---------- Home ----------
-  await page.goto(`${BASE}/?reset=1`);
+  await resetDemo(page);
   await page.getByRole("heading", { name: /Your rental, looked after/ }).waitFor();
   await snap(page, vp, "01-home");
 
@@ -111,7 +118,7 @@ async function run(browser, vp) {
   await snap(page, vp, "06f-sms-gas-emergency");
 
   // ---------- Tenant ----------
-  await page.goto(`${BASE}/?reset=1`);
+  await resetDemo(page);
   await page.getByRole("button", { name: /I am a tenant/ }).click();
   await page.waitForURL("**/tenant/request");
   await page.getByRole("button", { name: "Use sample photo" }).click();
@@ -212,7 +219,7 @@ async function run(browser, vp) {
 
   // The plumber finishes, and the record updates itself.
   await page.goto(`${BASE}/owner/book`);
-  await page.getByRole("button", { name: "Demo: the plumber finishes the job" }).click();
+  await page.getByRole("button", { name: "Mark job done" }).click();
   await page.getByText("House record updated automatically").waitFor();
   await snap(page, vp, "31-owner-5-record-updated-automatically");
 
@@ -248,7 +255,7 @@ async function run(browser, vp) {
   await snap(page, vp, "38-tool-rent-exempt");
 
   // ---------- Tenant could not reach the label ----------
-  await page.goto(`${BASE}/?reset=1`);
+  await resetDemo(page);
   await page.goto(`${BASE}/tenant/request`);
   await page.getByRole("button", { name: "Submit" }).click();
   await page.getByText("Owner notified").first().waitFor({ timeout: 8000 });
@@ -261,7 +268,7 @@ async function run(browser, vp) {
   await snap(page, vp, "40-owner-2-record-missing");
 
   // ---------- Emergency example ----------
-  await page.goto(`${BASE}/?reset=1`);
+  await resetDemo(page);
   await page.goto(`${BASE}/tenant/request`);
   await page.locator("#description").fill("I smell gas near the water heater");
   await page.getByRole("button", { name: "Submit" }).click();
@@ -273,6 +280,43 @@ async function run(browser, vp) {
   await page.goto(`${BASE}/owner`);
   await page.getByText("Porchlight sorted a new request").waitFor();
   await snap(page, vp, "43-owner-home-emergency");
+
+  // ---------- Owner inbox, tenant chat and rent, pricing, FAQ, edge states ----------
+  await resetDemo(page);
+  await page.goto(`${BASE}/owner`);
+  await page.getByRole("button", { name: "Approve", exact: true }).waitFor();
+  await snap(page, vp, "46-owner-home-ready-for-ok");
+  await page.getByRole("button", { name: "Approve", exact: true }).click();
+  await page.getByText(/Approved. Confirming/).waitFor();
+  await snap(page, vp, "47-owner-home-approved");
+  await page.getByRole("button", { name: "Mark done" }).waitFor({ timeout: 10000 });
+  await snap(page, vp, "48-owner-home-booked");
+  await resetDemo(page);
+  await page.goto(`${BASE}/tenant/status`);
+  await page.getByRole("button", { name: "How much is my rent?" }).click();
+  await page.locator("#house-question").fill("Can I have a dog?");
+  await page.getByRole("button", { name: "Ask", exact: true }).click();
+  await page.getByText(/I don't know whether pets are allowed/).waitFor();
+  await page.getByRole("button", { name: /Pay \$3,200 \(demo\)/ }).click();
+  await snap(page, vp, "49-tenant-status-chat-and-rent");
+  await page.goto(`${BASE}/owner/rent`);
+  await page.locator("#current-rent").fill("");
+  await page.getByText("Fill in the numbers to see the result").waitFor();
+  await snap(page, vp, "50-tool-rent-empty-input");
+  await page.goto(`${BASE}/owner/quote`);
+  await page.locator("#paste-quote").fill("Furnace replacement\nLabor ..... $2,000\nTotal $6,000");
+  await page.getByRole("button", { name: "Check this quote" }).click();
+  await page.getByText(/not in Porchlight's price table yet/).waitFor();
+  await snap(page, vp, "51-owner-quote-job-not-in-table");
+  await page.goto(`${BASE}/pricing`);
+  await page.getByRole("button", { name: "I would pick Plus" }).click();
+  await snap(page, vp, "52-pricing");
+  await page.goto(`${BASE}/about`);
+  await page.getByText("What counts as an emergency?").click();
+  await snap(page, vp, "53-about-and-faq");
+  await page.goto(`${BASE}/nope`);
+  await page.getByText(/not part of the demo/).waitFor();
+  await snap(page, vp, "54-not-found");
 
   // ---------- Feedback ----------
   await page.getByRole("button", { name: "Leave feedback" }).click();
@@ -287,7 +331,8 @@ async function run(browser, vp) {
   await page.getByText("The owner steps were clear.").first().waitFor();
   await snap(page, vp, "45-feedback-notes");
 
-  for (const e of errors) {
+  // The deliberate visit to a page that does not exist logs one 404. That is expected.
+  for (const e of errors.filter((x) => !/status of 404/.test(x))) {
     console.log(`FAIL [${vp.name}] ${e}`);
     failures++;
   }

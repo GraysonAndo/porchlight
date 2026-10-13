@@ -202,5 +202,9 @@ export interface DemoState {
   jobCompletedAt: string | null;
   /** True if the tenant could not photograph the label, so the owner is asked to add it */
   tenantSkippedLabel: boolean;
+  /** When rent for the current month was marked paid (demo only, nothing is charged), or null */
+  rentPaidAt: string | null;
+  /** Which pricing tier the visitor said they would pick, for the pricing test */
+  pricingPick: "starter" | "plus" | "pro" | "none" | null;
   feedback: FeedbackNote[];
 }

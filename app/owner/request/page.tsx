@@ -4,6 +4,7 @@ import Link from "next/link";
 import { LifespanBar } from "@/components/Bars";
 import { PhotoThumb } from "@/components/PhotoPicker";
 import { AgentFeed, EngineLegend } from "@/components/Agent";
+import { JobStatusTracker } from "@/components/JobStatusTracker";
 import { SafetyChecklist, UrgencyHero } from "@/components/TriageParts";
 import { StepShell } from "@/components/StepShell";
 import { RobotIcon } from "@/components/icons";
@@ -13,11 +14,13 @@ import { equipmentFor, heaterBeforeRepair } from "@/lib/equipment";
 import { isHeaterJob, recordEvents, triageEvents } from "@/lib/agentLog";
 import { PROPERTY } from "@/lib/seed";
 import { useDemo } from "@/lib/store";
+import { useJobStatus } from "@/lib/useJobStatus";
 import { useTriage } from "@/lib/useTriage";
 
 export default function OwnerRequestPage() {
   const { state } = useDemo();
   const { request, triage } = useTriage();
+  const status = useJobStatus();
   const answers = state.tenantAnswers;
   const heaterRecord = heaterBeforeRepair(state);
   const heater = equipmentFor(heaterRecord)[0];
@@ -34,6 +37,9 @@ export default function OwnerRequestPage() {
           </span>
         }
       >
+        <div className="mb-3">
+          <JobStatusTracker status={status} />
+        </div>
         <p className="text-sm text-ink-soft">{PROPERTY.address}</p>
         <p className="mt-2 text-lg">{request.description}</p>
         {request.photos.length > 0 && (

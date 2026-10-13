@@ -1,6 +1,8 @@
 "use client";
 
 import Link from "next/link";
+import { HouseChat } from "@/components/HouseChat";
+import { RentCard } from "@/components/RentCard";
 import { StepShell } from "@/components/StepShell";
 import { CheckIcon, ClockIcon } from "@/components/icons";
 import { Badge, Callout, Card } from "@/components/ui";
@@ -158,6 +160,10 @@ export default function TenantStatusPage() {
           )}
         </Card>
       )}
+
+      <RentCard audience="tenant" />
+
+      <HouseChat />
 
       {!approval && (
         <Callout tone="neutral" title="For the demo">

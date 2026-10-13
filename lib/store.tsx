@@ -124,6 +124,9 @@ export interface DemoActions {
   confirmAccess(value: "confirmed" | "needs-change"): void;
   completeJob(): void;
   skipTenantLabel(): void;
+  /** Demo only: mark this month's rent paid or unpaid. Nothing is charged. */
+  setRentPaid(paid: boolean): void;
+  setPricingPick(pick: "starter" | "plus" | "pro" | "none" | null): void;
   addFeedback(input: { screen: string; rating: number; note: string }): void;
   clearFeedback(): void;
   reset(): void;
@@ -158,6 +161,8 @@ export const actions: DemoActions = {
   confirmAccess: (tenantAccess) => update((s) => ({ ...s, tenantAccess })),
   completeJob: () => update((s) => ({ ...s, jobCompletedAt: new Date().toISOString() })),
   skipTenantLabel: () => update((s) => ({ ...s, tenantSkippedLabel: true })),
+  setRentPaid: (paid) => update((s) => ({ ...s, rentPaidAt: paid ? new Date().toISOString() : null })),
+  setPricingPick: (pricingPick) => update((s) => ({ ...s, pricingPick })),
   addFeedback: ({ screen, rating, note }) =>
     update((s) => {
       const entry: FeedbackNote = {

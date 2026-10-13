@@ -61,7 +61,7 @@ export default function OwnerRecordPage() {
               <Fact label="Serial number">
                 {record.serial}
                 {record.unconfirmed.includes("serial") && (
-                  <span className="ml-2 align-middle">
+                  <span className="ml-1 align-middle">{" "}
                     <Badge tone="caution">Not confirmed</Badge>
                   </span>
                 )}

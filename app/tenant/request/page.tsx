@@ -64,11 +64,12 @@ function RequestForm({ initialText, initialPhotos }: { initialText: string; init
               className="field min-h-32"
               value={description}
               onChange={(e) => setDescription(e.target.value)}
+              maxLength={500}
               aria-describedby="description-hint"
               aria-invalid={error ? true : undefined}
             />
             <p id="description-hint" className="hint">
-              Sample text is filled in for the demo. Edit it if you like.
+              Sample text is filled in for the demo. Edit it if you like. Up to 500 characters.
             </p>
             {error && (
               <p role="alert" className="mt-1 font-bold text-urgent">

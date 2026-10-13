@@ -47,7 +47,7 @@ export function QuoteDetail({ quote, license }: { quote: VendorQuote; license?: 
           <p className="mt-3">
             <strong>License:</strong> {license ?? "Not shown"}
             {license === null && (
-              <span className="ml-2 align-middle">
+              <span className="ml-1 align-middle">{" "}
                 <Badge tone="caution">Ask before booking</Badge>
               </span>
             )}
@@ -64,74 +64,95 @@ export function QuoteDetail({ quote, license }: { quote: VendorQuote; license?: 
         </div>
       </Card>
 
-      <Card title="Line by line">
+      <details className="card !p-0">
+        <summary className="flex min-h-11 cursor-pointer items-center px-5 py-3 text-lg font-extrabold">
+          See the line by line math
+          <span className="ml-1 text-sm font-normal text-ink-soft">{" "}(each item against a typical price)</span>
+        </summary>
+        <div className="px-5 pb-5">
         <div className="overflow-hidden rounded-xl border border-line">
-          <table className="w-full text-left">
-            <caption className="sr-only">Quote line items compared with typical prices</caption>
-            <thead className="bg-cream-deep text-sm">
-              <tr>
-                <th scope="col" className="px-3 py-2">
-                  Item
-                </th>
-                <th scope="col" className="px-3 py-2 text-right">
-                  Quote
-                </th>
-                <th scope="col" className="hidden px-3 py-2 text-right sm:table-cell">
-                  Typical
-                </th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-line">
-              {comparison.lines.map((line) => {
-                const high = line.verdict === "high" || line.verdict === "slightly high";
-                const flagged = high || flaggedNames.has(line.label);
-                return (
-                  <tr key={line.id} className={flagged ? "bg-caution-tint/60" : ""}>
-                    <td className="px-3 py-2">
-                      {line.label}
-                      {high && (
-                        <span className="ml-2 align-middle">
+            <table className="w-full text-left">
+              <caption className="sr-only">Quote line items compared with typical prices</caption>
+              <thead className="bg-cream-deep text-sm">
+                <tr>
+                  <th scope="col" className="px-3 py-2">
+                    Item
+                  </th>
+                  <th scope="col" className="px-3 py-2 text-right">
+                    Quote
+                  </th>
+                  <th scope="col" className="hidden px-3 py-2 text-right sm:table-cell">
+                    Typical
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-line">
+                {comparison.lines.map((line) => {
+                  const high = line.verdict === "high" || line.verdict === "slightly high";
+                  const flagged = high || flaggedNames.has(line.label);
+                  return (
+                    <tr key={line.id} className={flagged ? "bg-caution-tint/60" : ""}>
+                      <td className="px-3 py-2">
+                        {line.label}
+                        {line.verdict === "high" && (
+                        <span className="ml-1 align-middle">{" "}
                           <Badge tone="urgent">High</Badge>
                         </span>
                       )}
-                      {!high && flaggedNames.has(line.label) && (
-                        <span className="ml-2 align-middle">
+                      {line.verdict === "slightly high" && (
+                        <span className="ml-1 align-middle">{" "}
+                          <Badge tone="caution">Slightly high</Badge>
+                        </span>
+                      )}
+                      {line.verdict === "low" && (
+                        <span className="ml-1 align-middle">{" "}
+                          <Badge tone="caution">Low</Badge>
+                        </span>
+                      )}
+                      {!high && line.verdict !== "low" && flaggedNames.has(line.label) && (
+                        <span className="ml-1 align-middle">{" "}
                           <Badge tone="caution">Ask</Badge>
                         </span>
                       )}
-                      {!high && !flaggedNames.has(line.label) && line.verdict === "fair" && (
-                        <span className="ml-2 align-middle">
+                      {line.verdict === "fair" && !flaggedNames.has(line.label) && (
+                        <span className="ml-1 align-middle">{" "}
                           <Badge tone="good">OK</Badge>
                         </span>
                       )}
-                      {line.range && (
-                        <span className="block text-sm text-ink-soft sm:hidden">
-                          Typical {usdRange(line.range.low, line.range.high)}
+                      {line.verdict === null && (
+                        <span className="ml-1 align-middle">{" "}
+                          <Badge tone="neutral" icon={false}>Not compared</Badge>
                         </span>
                       )}
-                    </td>
-                    <td className="px-3 py-2 text-right font-bold">{usd(line.amount)}</td>
-                    <td className="hidden px-3 py-2 text-right text-ink-soft sm:table-cell">
-                      {line.range ? usdRange(line.range.low, line.range.high) : "n/a"}
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-            <tfoot className="bg-cream-deep">
-              <tr>
-                <th scope="row" className="px-3 py-2">
-                  Total
-                </th>
-                <td className="px-3 py-2 text-right text-lg font-extrabold">{usd(quote.total)}</td>
-                <td className="hidden px-3 py-2 text-right text-ink-soft sm:table-cell">
-                  {usdRange(total.range.low, total.range.high)}
-                </td>
-              </tr>
-            </tfoot>
-          </table>
+                      {line.range && (
+                          <span className="block text-sm text-ink-soft sm:hidden">
+                            Typical {usdRange(line.range.low, line.range.high)}
+                          </span>
+                        )}
+                      </td>
+                      <td className="px-3 py-2 text-right font-bold">{usd(line.amount)}</td>
+                      <td className="hidden px-3 py-2 text-right text-ink-soft sm:table-cell">
+                        {line.range ? usdRange(line.range.low, line.range.high) : "n/a"}
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+              <tfoot className="bg-cream-deep">
+                <tr>
+                  <th scope="row" className="px-3 py-2">
+                    Total
+                  </th>
+                  <td className="px-3 py-2 text-right text-lg font-extrabold">{usd(quote.total)}</td>
+                  <td className="hidden px-3 py-2 text-right text-ink-soft sm:table-cell">
+                    {usdRange(total.range.low, total.range.high)}
+                  </td>
+                </tr>
+              </tfoot>
+            </table>
+          </div>
         </div>
-      </Card>
+      </details>
 
       {check.loading || !check.data ? (
         <Thinking message="Writing questions to ask this vendor..." />

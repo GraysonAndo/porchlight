@@ -98,3 +98,18 @@ describe("parseQuoteText", () => {
     expect(parseQuoteText("").total).toBe(0);
   });
 });
+
+describe("detectQuoteJob", () => {
+  it("recognizes a water heater quote", async () => {
+    const { detectQuoteJob, SAMPLE_QUOTE_TEXT } = await import("../lib/quoteParse");
+    expect(detectQuoteJob(SAMPLE_QUOTE_TEXT)).toEqual({ kind: "water-heater" });
+    expect(detectQuoteJob("Replace tankless water heater, $3,000")).toEqual({ kind: "water-heater" });
+  });
+
+  it("says unknown, with a guess, for a job that is not in the price table", async () => {
+    const { detectQuoteJob } = await import("../lib/quoteParse");
+    expect(detectQuoteJob("Furnace replacement\nLabor $2,000\nTotal $6,000")).toEqual({ kind: "unknown", guess: "a heating or cooling job" });
+    expect(detectQuoteJob("Re-roof the garage\nTotal $9,000")).toEqual({ kind: "unknown", guess: "a roofing job" });
+    expect(detectQuoteJob("Something else\nTotal $500")).toEqual({ kind: "unknown", guess: null });
+  });
+});

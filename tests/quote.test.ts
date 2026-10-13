@@ -89,3 +89,29 @@ describe("rangeBarScale", () => {
     expect(scale.markerPct).toBeLessThan(scale.rangeEndPct);
   });
 });
+
+describe("the price table is consistent with itself", () => {
+  it("makes the total typical range the sum of the line ranges", async () => {
+    const { WATER_HEATER_JOB } = await import("../lib/seed");
+    const lines = Object.values(WATER_HEATER_JOB.marketLines);
+    expect(lines.reduce((s, r) => s + r.low, 0)).toBe(WATER_HEATER_JOB.marketTotal.low);
+    expect(lines.reduce((s, r) => s + r.high, 0)).toBe(WATER_HEATER_JOB.marketTotal.high);
+  });
+
+  it("makes every sample quote add up to its own total", async () => {
+    const { QUOTES } = await import("../lib/seed");
+    for (const q of QUOTES) expect(q.lines.reduce((s, l) => s + l.amount, 0)).toBe(q.total);
+  });
+
+  it("keeps the story: Bayside labor is high, the fair quotes have no high lines", async () => {
+    const { QUOTES, WATER_HEATER_JOB } = await import("../lib/seed");
+    const { compareQuote } = await import("../lib/quote");
+    const flagged = (id: string) =>
+      compareQuote(QUOTES.find((q) => q.vendorId === id)!, WATER_HEATER_JOB)
+        .lines.filter((l) => l.verdict && l.verdict !== "fair")
+        .map((l) => l.id);
+    expect(flagged("bayside")).toEqual(["labor"]);
+    expect(flagged("willow-glen")).toEqual([]);
+    expect(flagged("a1-rapid")).toEqual([]);
+  });
+});

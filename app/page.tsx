@@ -101,7 +101,7 @@ export default function HomePage() {
     <div className="mx-auto max-w-4xl space-y-10">
       <section className="grid items-center gap-6 pt-2 md:grid-cols-[1fr_auto]">
         <div>
-          <p className="eyebrow mb-2">For owners with 1 to 10 rentals</p>
+          <p className="eyebrow mb-2">For owners with 1 to 10 rentals. California only, for now.</p>
           <h1 className="font-display text-4xl font-extrabold leading-[1.05] sm:text-6xl">
             Your rental, looked after. <span className="text-glow-deep">Even at 4 AM.</span>
           </h1>
@@ -127,6 +127,45 @@ export default function HomePage() {
             <LogoMark size={150} />
           </span>
         </div>
+      </section>
+
+      <section aria-labelledby="how-heading" className="space-y-3">
+        <h2 id="how-heading" className="font-display text-2xl font-extrabold">
+          How it works
+        </h2>
+        <ol className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+          {[
+            ["Your tenant reports a problem", "A few words and a photo. Emergencies like a gas smell come first, with safe steps and an alert to you."],
+            ["Porchlight builds the house record", "One photo of an equipment label fills in the brand, model, and age. After that, new installs add themselves."],
+            ["It collects and checks the quotes", "Each quote is checked against typical prices, with a clear fair, high, or low."],
+            ["It tells you repair or replace", "A simple rule, shown openly, using the age of the equipment and the price."],
+            ["You tap Approve", "Porchlight books the vendor, sets a spending limit, and tells the tenant."],
+            ["Your plan updates itself", "The record and your 5-year forecast update when the job is done, with a monthly set-aside."],
+          ].map(([title, body], i) => (
+            <li key={title} className="card flex gap-3 !p-4">
+              <span
+                aria-hidden="true"
+                className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-ink text-sm font-extrabold text-cream"
+              >
+                {i + 1}
+              </span>
+              <span>
+                <span className="block font-extrabold leading-snug">{title}</span>
+                <span className="text-sm text-ink-soft">{body}</span>
+              </span>
+            </li>
+          ))}
+        </ol>
+        <p className="text-ink-soft">
+          <strong className="text-ink">Why not a bigger property tool?</strong> Tools like MagicDoor and Hemlane are built
+          around rent collection, listings, and leasing. Porchlight is built around what goes wrong in the house: the
+          repair, the record, and the plan for big costs. It is made for owners with 1 to 10 units who manage their own
+          rentals.{" "}
+          <Link href="/pricing" className="font-bold text-ink underline underline-offset-4">
+            See the pricing test
+          </Link>
+          .
+        </p>
       </section>
 
       <section aria-labelledby="engines-heading" className="card space-y-3">

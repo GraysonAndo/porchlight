@@ -23,7 +23,7 @@ describe("triageEvents", () => {
   it("logs the seeded leak: read the photo, check rules, look up the record, pick steps, quiet heads-up", () => {
     const events = triageEvents({ request: SEED_REQUEST, triage: triageText(SEED_REQUEST.description), record: null });
     expect(tools(events)).toEqual(["read_photo", "check_emergency_rules", "lookup_house_record", "pick_safety_steps", "notify_owner"]);
-    expect(events[1].detail).toMatch(/urgent, not an emergency/);
+    expect(events[1].detail).toMatch(/soon, not an emergency/);
     expect(events[2].detail).toMatch(/Brand, model, and serial are missing/);
     expect(events[4].detail).toMatch(/no phone call/);
   });

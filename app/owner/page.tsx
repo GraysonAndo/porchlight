@@ -3,15 +3,19 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { EngineChip } from "@/components/Agent";
-import { ChartIcon, DocIcon, HomeIcon, MoonIcon, PlayIcon, WrenchIcon } from "@/components/icons";
+import { JobStatusTracker } from "@/components/JobStatusTracker";
+import { RentCard } from "@/components/RentCard";
+import { ChartIcon, CheckIcon, DocIcon, HomeIcon, MoonIcon, PlayIcon, TapIcon, WrenchIcon } from "@/components/icons";
 import { Badge, Card } from "@/components/ui";
-import { PROPERTY, EQUIPMENT, SEED_REQUEST_TEXT, VENDORS } from "@/lib/seed";
+import { ACCESS_WINDOWS, PROPERTY, EQUIPMENT, SEED_REQUEST_TEXT, VENDORS } from "@/lib/seed";
 import { usd } from "@/lib/format";
 import { isHeaterJob, triageEvents } from "@/lib/agentLog";
+import { URGENCY_LABEL } from "@/lib/triage";
 import { buildForecast } from "@/lib/forecast";
 import { PLAN } from "@/lib/plan";
 import type { Engine } from "@/lib/scenario";
 import { useDemo } from "@/lib/store";
+import { useJobStatus } from "@/lib/useJobStatus";
 
 export default function OwnerHomePage() {
   const router = useRouter();
@@ -22,6 +26,7 @@ export default function OwnerHomePage() {
   const urgency = state.triage?.urgency;
   const vendor = state.approval ? VENDORS.find((v) => v.id === state.approval?.vendorId) : null;
   const done = state.jobCompletedAt !== null;
+  const status = useJobStatus();
   const forecast = buildForecast(EQUIPMENT);
   const triage = state.triage;
   const heaterJob = !state.request || isHeaterJob(state.request.description, triage);
@@ -62,6 +67,127 @@ export default function OwnerHomePage() {
         </div>
       </Card>
 
+      <Card
+        title={
+          <span className="flex flex-wrap items-center gap-2">
+            <WrenchIcon /> Repair request
+            {status === "done" ? (
+              <Badge tone="good">DONE</Badge>
+            ) : status === "booked" ? (
+              <Badge tone="good">BOOKED</Badge>
+            ) : status === "approved" ? (
+              <Badge tone="good">APPROVED</Badge>
+            ) : status === "quoted" ? (
+              <Badge tone="caution">READY FOR YOUR OK</Badge>
+            ) : (
+              <Badge tone="neutral" icon={false}>NEW</Badge>
+            )}
+            {urgency && status !== "done" && status !== "booked" && status !== "approved" && (
+              <Badge tone={urgency === "routine" ? "good" : "urgent"}>{URGENCY_LABEL[urgency]}</Badge>
+            )}
+          </span>
+        }
+      >
+        <p className="text-sm font-bold text-ink-soft">From {PROPERTY.tenant}</p>
+        <p className="mt-1 text-lg font-bold">
+          {requestText.length > 120 ? `${requestText.slice(0, 120)}...` : requestText}
+        </p>
+
+        <div className="mt-4">
+          <JobStatusTracker status={status} />
+        </div>
+
+        {status === "quoted" && heaterJob && (
+          <div className="mt-4 rounded-2xl bg-glow-tint p-4">
+            <p className="eyebrow">Porchlight&apos;s plan, already done for you</p>
+            <p className="mt-1 text-xl font-extrabold leading-snug">
+              Replace the water heater with {PLAN.vendorName} for {usd(PLAN.total)}.
+            </p>
+            <p className="mt-1">
+              Fair price, license on file, saves you {usd(PLAN.savedVsHighest)}. Limit {usd(PLAN.notToExceed)}. Visit{" "}
+              {ACCESS_WINDOWS[0].toLowerCase()}. The tenant and the vendor are told for you.
+            </p>
+            <button
+              type="button"
+              className="btn btn-primary btn-lg mt-3 w-full sm:w-auto"
+              onClick={() =>
+                actions.approve({
+                  vendorId: PLAN.vendorId,
+                  notToExceed: PLAN.notToExceed,
+                  accessWindow: ACCESS_WINDOWS[0],
+                  sentAt: new Date().toISOString(),
+                })
+              }
+            >
+              <TapIcon size={22} /> Approve
+            </button>
+            <p className="mt-2 text-sm text-ink-soft">
+              One tap. Nothing is spent until you tap. Want to change something?{" "}
+              <Link href="/owner/book" className="font-bold underline underline-offset-4">
+                Pick another vendor or limit
+              </Link>
+              {" or "}
+              <Link href="/owner/quote" className="font-bold underline underline-offset-4">
+                see the quotes
+              </Link>
+              .
+            </p>
+          </div>
+        )}
+
+        {(status === "approved" || status === "booked") && vendor && state.approval && (
+          <div className="mt-4 rounded-2xl bg-good-tint p-4" role="status">
+            <p className="flex items-start gap-2 font-extrabold text-good-ink">
+              <CheckIcon size={22} />
+              <span>
+                {status === "approved" ? "Approved. Confirming with the vendor..." : "Booked."} {vendor.name},{" "}
+                {state.approval.accessWindow}.
+              </span>
+            </p>
+            <p className="mt-1 text-sm text-ink-soft">Limit {usd(state.approval.notToExceed)}. (Simulated, nothing was sent.)</p>
+            {status === "booked" && (
+              <>
+                <button type="button" className="btn btn-primary mt-3" onClick={() => actions.completeJob()}>
+                  Mark done
+                </button>
+                <p className="mt-1 text-sm text-ink-soft">
+                  Tap this after the visit. The installer&apos;s details go into your house record on their own.
+                </p>
+              </>
+            )}
+          </div>
+        )}
+
+        {status === "done" && (
+          <p className="mt-4 flex items-start gap-2 rounded-2xl bg-good-tint p-4 font-bold text-good-ink" role="status">
+            <CheckIcon size={22} />
+            <span>
+              Done. The new water heater is in your{" "}
+              <Link href="/owner/record" className="underline underline-offset-4">
+                house record
+              </Link>
+              .
+            </span>
+          </p>
+        )}
+
+        <div className="mt-3 flex flex-wrap items-center gap-2">
+          {state.tenantAnswers && <Badge tone="good">Tenant answered the questions</Badge>}
+          {state.tenantAccess === "confirmed" && <Badge tone="good">Tenant confirmed the time</Badge>}
+        </div>
+
+        <div className="mt-4 flex flex-col gap-3 sm:flex-row">
+          <Link href={state.approval ? "/owner/book" : "/owner/request"} className="btn btn-secondary">
+            {state.approval ? "View the booking" : "See the details"}
+          </Link>
+          <Link href="/tenant/status" className="btn btn-ghost">
+            See what the tenant sees
+          </Link>
+        </div>
+      </Card>
+
+      <RentCard audience="owner" />
+
       <div className="hero-ink">
         <p className="eyebrow !text-cream/70 flex items-center gap-2">
           <MoonIcon size={18} /> While you were away
@@ -98,46 +224,6 @@ export default function OwnerHomePage() {
           </Link>
         </div>
       </div>
-
-      <Card
-        title={
-          <span className="flex flex-wrap items-center gap-2">
-            <WrenchIcon /> New repair request
-            {done ? (
-              <Badge tone="good">DONE</Badge>
-            ) : state.approval ? (
-              <Badge tone="good">BOOKED</Badge>
-            ) : (
-              <Badge tone="caution">NEEDS YOUR DECISION</Badge>
-            )}
-          </span>
-        }
-      >
-        <p className="text-sm font-bold text-ink-soft">From {PROPERTY.tenant}</p>
-        <p className="mt-1 text-lg font-bold">
-          {requestText.length > 120 ? `${requestText.slice(0, 120)}...` : requestText}
-        </p>
-        <div className="mt-2 flex flex-wrap items-center gap-2">
-          {urgency && !state.approval && (
-            <Badge tone={urgency === "routine" ? "good" : "urgent"}>{urgency.toUpperCase()}</Badge>
-          )}
-          {state.tenantAnswers && <Badge tone="good">Tenant answered the questions</Badge>}
-          {state.tenantAccess === "confirmed" && <Badge tone="good">Tenant confirmed the time</Badge>}
-        </div>
-        {vendor && state.approval && (
-          <p className="mt-2 text-ink-soft">
-            {vendor.name}, {state.approval.accessWindow}. (Simulated, nothing was sent.)
-          </p>
-        )}
-        <div className="mt-4 flex flex-col gap-3 sm:flex-row">
-          <Link href={state.approval ? "/owner/book" : "/owner/request"} className="btn btn-primary">
-            {state.approval ? "View the booking" : "Review the request"}
-          </Link>
-          <Link href="/tenant/status" className="btn btn-secondary">
-            See what the tenant sees
-          </Link>
-        </div>
-      </Card>
 
       <div className="grid gap-4 sm:grid-cols-3">
         <Link href="/owner/record" className="card card-lift flex flex-col gap-1 hover:border-ink">

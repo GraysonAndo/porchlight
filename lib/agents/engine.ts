@@ -28,7 +28,7 @@ import {
   WATER_HEATER_JOB,
 } from "../seed";
 import { guideForStep } from "../safetyGuides";
-import { seededHeaterTriage, triageText } from "../triage";
+import { seededHeaterTriage, triageText, urgencyWord } from "../triage";
 import type { Verdict, VendorQuote } from "../types";
 import type {
   AgentName,
@@ -470,7 +470,7 @@ function startCase(w: World, text: string): void {
     "emergency_rules",
     "code",
     "Checked the emergency rules",
-    `No gas smell, fire, sparks, or flooding. This is ${triage.urgency}, not an emergency.`,
+    `No gas smell, fire, sparks, or flooding. Urgency: ${urgencyWord(triage.urgency)}, not an emergency.`,
   );
 
   if (isHeaterJob(text, triage)) {
@@ -512,15 +512,15 @@ function startCase(w: World, text: string): void {
   say(
     w,
     "tenant",
-    `Thanks. I logged this as ${triage.category} (${triage.urgency}). ${triage.summary}${steps.length > 0 ? `\n${numbered(steps)}` : ""}\nYour landlord has been told. I'll update you here.`,
+    `Thanks. I logged this as ${triage.category} (${urgencyWord(triage.urgency)}). ${triage.summary}${steps.length > 0 ? `\n${numbered(steps)}` : ""}\nYour landlord has been told. I'll update you here.`,
   );
   if (triage.alertOwnerNow) {
     tool(w, "triage", "call_owner", "action", "Called the owner", "No-heat problems ring through Do Not Disturb. There are no fix steps for the tenant.");
     say(w, "owner", `Porchlight is calling about ${triage.category.toLowerCase()} at ${PROPERTY.address}.`, { channel: "call" });
     say(w, "owner", `Urgent: ${triage.category} at ${PROPERTY.address}. The tenant has no fix steps. I called you. ${triage.summary}`);
   } else {
-    tool(w, "triage", "notify_owner", "action", "Sent a silent heads-up to the owner", `This is ${triage.urgency}, not an emergency, so there is no phone call. The owner can keep sleeping.`);
-    say(w, "owner", `${triage.category} request at ${PROPERTY.address} (${triage.urgency}). ${triage.summary} I'm handling it. Nothing needed from you.`, { silent: true });
+    tool(w, "triage", "notify_owner", "action", "Sent a silent heads-up to the owner", `Urgency is ${urgencyWord(triage.urgency)}, not an emergency, so there is no phone call. The owner can keep sleeping.`);
+    say(w, "owner", `${triage.category} request at ${PROPERTY.address} (${urgencyWord(triage.urgency)}). ${triage.summary} I'm handling it. Nothing needed from you.`, { silent: true });
   }
 }
 
@@ -557,7 +557,7 @@ function answerElectrical(w: World, text: string): void {
   say(
     w,
     "tenant",
-    `Good. Two quick steps:\n${numbered(steps)}\nNot sure how? Reply HELP for a step-by-step guide. Don't touch the heater if you're standing in water. Reply DONE when you're finished.`,
+    `Good. Two quick steps:\n${numbered(steps)}\nNot sure how? Reply HELP for a step-by-step guide. Don't touch the heater if you're standing in water, and never touch the gas valve. If you smell gas, leave and call 911. Reply DONE when you're finished.`,
     {
       actions: [
         { id: "done", label: "Done", text: "done" },
@@ -565,7 +565,7 @@ function answerElectrical(w: World, text: string): void {
       ],
     },
   );
-  tool(w, "triage", "notify_owner", "action", "Sent a silent heads-up to the owner", "This is urgent, not an emergency, so there is no phone call. The owner can keep sleeping.");
+  tool(w, "triage", "notify_owner", "action", "Sent a silent heads-up to the owner", "Urgency is soon, not an emergency, so there is no phone call. The owner can keep sleeping.");
   say(
     w,
     "owner",

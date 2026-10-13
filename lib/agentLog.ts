@@ -4,6 +4,7 @@
 // lib/scenario.ts uses the same tool names and the same rules.
 
 import { monthYear } from "./format";
+import { urgencyWord } from "./triage";
 import { SAMPLE_PHOTO_PATH } from "./seed";
 import { agentEventsFor, scenarioById, type AgentEvent } from "./scenario";
 import type { Approval, Photo, TriageResult, WaterHeaterRecord } from "./types";
@@ -62,7 +63,7 @@ export function triageEvents({ request, triage, record }: TriageEventsInput): Ag
         ? "This is never a do-it-yourself problem. Fix steps are skipped, and the owner is alerted right now."
         : triage.alertOwnerNow
           ? "Not an emergency, but it needs fast attention, so the owner is alerted right away. No fix steps are given."
-          : `No gas smell, fire, sparks, or flooding. This is ${triage.urgency}, not an emergency.`,
+          : `No gas smell, fire, sparks, or flooding. Urgency: ${urgencyWord(triage.urgency)}, not an emergency.`,
   });
 
   events.push({
@@ -117,7 +118,7 @@ export function triageEvents({ request, triage, record }: TriageEventsInput): Ag
       tool: "notify_owner",
       engine: "action",
       title: "Sent a silent heads-up to the owner",
-      detail: `This is ${triage.urgency}, not an emergency, so there is no phone call. The owner can keep sleeping.`,
+      detail: `Urgency is ${urgencyWord(triage.urgency)}, not an emergency, so there is no phone call. The owner can keep sleeping.`,
     });
   }
 

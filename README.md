@@ -50,7 +50,7 @@ The design and the architecture are in [`docs/BLUEPRINT.md`](docs/BLUEPRINT.md).
 
 ## The demo flow
 
-**Start with `/sms` (the SMS console) or `/live` ("Watch Porchlight work").** `/live` is a guided story. It plays a 4 AM story with a tenant phone, the agent log, and an owner phone side by side. Two stories: a water heater leak (urgent, quiet heads-up, one owner tap, $400 saved) and a gas smell (emergency, no fix steps, the owner's phone rings through Do Not Disturb, nothing is booked). The numbers in the story come from the same logic the other screens use.
+**Start with `/sms` (the SMS console) or `/live` ("Watch Porchlight work").** `/live` is a guided story. It plays a 4 AM story with a tenant phone, the agent log, and an owner phone side by side. Two stories: a water heater leak (soon, quiet heads-up, one owner tap, $400 saved) and a gas smell (emergency, no fix steps, the owner's phone rings through Do Not Disturb, nothing is booked). The numbers in the story come from the same logic the other screens use.
 
 There are two sides to the real flow, and each side only sees what it needs. **Porchlight** is the AI property manager in the middle.
 
@@ -75,18 +75,18 @@ The **Demo guide** at the top of any screen jumps to any screen, grouped by side
 | 1 | `/tenant/request` | Report a leaking water heater, with a sample photo button. Says plainly that the owner makes the repair decision. |
 | 2 | `/tenant/safety` | Urgency in plain words, safety steps with a "How to do this" guide under every step, follow-up questions, and whether the owner was quietly told or called. Emergencies and no-heat problems get no fix steps. A folded "See what Porchlight did" agent log. |
 | 3 | `/tenant/label` | "One quick photo". Only asked when the record lacks the brand, model, and serial, and only for a water heater repair. Photo of the label, Porchlight reads it, the tenant confirms the smudged field, and it goes into the house record. "I cannot reach it" hands it to the owner. A gas emergency never asks for a photo. |
-| 4 | `/tenant/status` | A status timeline (reported, owner notified, label photo, owner choosing a plumber, plumber booked, confirm the time, fixed), the owner's message, and "That time works" or "I need a different time". |
+| 4 | `/tenant/status` | A status timeline (reported, owner notified, label photo, owner choosing a plumber, plumber booked, confirm the time, fixed), the owner's message, "That time works" or "I need a different time", a demo **rent payment** card ("Pay $3,200 (demo)", nothing is charged), and **Ask about your home**: a Q&A chat that answers only from the house record and the lease on file, and says "I don't know" with an "Ask the owner" button when it is not there. |
 
 **Owner side (5 screens), then planning tools**
 
 | Step | Screen | What it shows |
 | --- | --- | --- |
-| 0 | `/owner` | Owner home: "While you were away" (what Porchlight did, with chips, and $ saved), the tenant's request and status, and shortcuts. |
+| 0 | `/owner` | Owner home, built as an **approval inbox**: the repair request with a status tracker (new, quoted, approved, booked, done) that moves on its own, Porchlight's plan already worked out, and one big **Approve** button. After booking, one **Mark done** button. Also the rent status (with a demo "Mark as paid"), "While you were away" (what Porchlight did, with chips, and $ saved), and shortcuts. |
 | 1 | `/owner/request` | The tenant's report and photo, urgency, the full agent log, what Porchlight found, the equipment involved, what the tenant was told, and the tenant's answers. |
 | 2 | `/owner/record` | The house record. The heater starts as "about 2015, details missing". The tenant's label photo fills in brand, model, and serial, with the source shown. If the tenant could not reach it, the owner is asked. |
 | 3 | `/owner/quote` | Porchlight collected 3 itemized quotes and checked each one with plain code. Best pick (cheapest fair quote from a vendor that shows a license), skipped vendors with the reason, a line-by-line table, and a **paste a quote** tool (plain code reads the lines, flags totals that do not add up). |
 | 4 | `/owner/decide` | Repair vs replace with the rules and real numbers shown ("How we decided"), using the best quote. |
-| 5 | `/owner/book` | **One tap**: "Approve Porchlight's plan" (Willow Glen, $2,450, limit $2,695, saves $400). Or pick a different vendor and limit yourself. After approving, the agent log shows what happened, then a demo button, "the plumber finishes the job", adds the new heater to the house record automatically. |
+| 5 | `/owner/book` | **One tap**: "Approve Porchlight's plan" (Willow Glen, $2,450, limit $2,695, saves $400). Or pick a different vendor and limit yourself. The drafted messages can be edited in place, and nothing has to be typed or fixed to approve. After approving, the agent log shows what happened, and **Mark job done** adds the new heater to the house record automatically. |
 | Tool | `/owner/forecast` | 5-year replacement forecast, CSS bar chart, and a set-aside figure per year and per month. |
 | Tool | `/owner/rent` | California AB 1482 rent increase screen with a copyable notice draft. |
 | Optional | `/owner/label` | Add equipment by photo **or by typing**, and compare with the record. |
@@ -124,8 +124,8 @@ I made these calls without asking. Please check the ones that matter to you.
 - A photo is optional on the request form.
 - Screens opened directly (for example by the Demo guide) fall back to the seed scenario, so any screen works on its own. The owner side always has a sample request from the sample tenant waiting.
 - **Roles.** The tenant side has only what a tenant needs: report, safety steps, status. Quote check, repair or replace, the forecast, and rent are owner decisions and are not shown to tenants. Forecast and rent are planning tools, not part of one repair, so they sit outside the numbered owner flow.
-- **The house record is built from a label photo, then keeps itself up to date.** The home inspection only says "water heater, about 2015", so the brand, model, and serial are unknown at the start. The first label photo (from the tenant, or typed or photographed by the owner) fills them in. After that, new equipment is added automatically when an installer finishes a job (simulated by the "Demo: the plumber finishes the job" button). An earlier version assumed the heater was already on file. The venture docs say the label photo is how the record starts, so this version follows them.
-- **Emergencies skip fix steps.** Gas smell and similar emergencies tell the tenant to get safe and call for help, and ring the owner right now. No label photo is asked for and nothing is quoted. No-heat problems also alert the owner with no fix steps. Ordinary urgent problems (the heater leak) give the owner a silent heads-up, not a call.
+- **The house record is built from a label photo, then keeps itself up to date.** The home inspection only says "water heater, about 2015", so the brand, model, and serial are unknown at the start. The first label photo (from the tenant, or typed or photographed by the owner) fills them in. After that, new equipment is added automatically when an installer finishes a job (simulated by the **Mark done** button). An earlier version assumed the heater was already on file. The venture docs say the label photo is how the record starts, so this version follows them.
+- **Emergencies skip fix steps.** Gas smell and similar emergencies tell the tenant to get safe and call for help, and ring the owner right now. No label photo is asked for and nothing is quoted. No-heat problems also alert the owner with no fix steps. Ordinary "soon" problems (the heater leak) give the owner a silent heads-up, not a call. **Urgency uses the three buckets from the product spec: EMERGENCY, SOON, ROUTINE.** Whether the demo's water heater leak should be an emergency is a team call that is still open. It is "soon" here because the tenant is only asked to close the water valve and stay away from electricity.
 - **Plain code decides, AI only reads and writes.** Quote verdicts, the recommended vendor, the spending limit (quote plus 10%), repair or replace, the forecast, and the rent cap are plain code. The recommended vendor is the cheapest quote that is a fair price from a vendor that shows a license. A missing permit line is flagged, not hidden.
 - **The `/live` story and the agent logs are scripted** from the real rules and numbers. Times (4:07 AM and so on) are sample times.
 - The quote screens and booking are written for the water heater scenario. Other kinds of requests get triage and safety steps, but the quote, decide, and book screens still show the water heater job.
@@ -144,7 +144,7 @@ I made these calls without asking. Please check the ones that matter to you.
 - **Standing permission.** Porchlight may ask vendors for quotes without a tap, because that commits nothing. It may not book, negotiate, or spend without a tap. Every third-party message the owner approves is sent word for word.
 - **Rent notices are mailed, not texted.** A statutory notice has to be properly served. The sentinel's tap simulates certified mail with tracking and proof of service. A real version should also respect what the lease allows (for example email service).
 - **Emergencies** (gas smell, smoke or sparks, flooding, water near electricity, no heat) call the owner by voice and text, skip fix steps, and start no quotes. A new emergency interrupts any case in progress.
-- **The owner gets a silent heads-up** for an urgent but not emergency problem, and one decision card when the quotes are in. If the owner does not answer in 45 minutes, Porchlight sends a reminder and calls.
+- **The owner gets a silent heads-up** for a "soon" problem that is not an emergency, and one decision card when the quotes are in. If the owner does not answer in 45 minutes, Porchlight sends a reminder and calls.
 - **The agent wording is deterministic sample text** in the same spirit as `lib/mockAI.ts`. Typed tenant and owner replies use simple keyword matching, with a polite fallback.
 - **Times** are simulated. The story starts at 4:07 AM, the lease check runs on a later Monday at 9:00 AM, and the sample notice date is October 19, 2026.
 - **The label photo, serial, and quotes are the same samples** for any photo. The blurry photo button sends an unreadable one on purpose.
@@ -152,7 +152,8 @@ I made these calls without asking. Please check the ones that matter to you.
 **Safety guides**
 - Each safety step on the tenant's safety screen has a "How to do this" guide (`lib/safetyGuides.ts`): time needed, what you need, why, numbered steps, a "Stop and get help if" list, and a valve diagram where it helps.
 - The guides are **written by hand, not generated by the AI**, because safety advice should be reviewed. The AI only chooses which safety steps apply.
-- Guides use the house record. The seeded heater is a natural gas heater, so the guide shows the gas steps. If the record says electric (for example after checking a label), the "gas valve" step becomes "turn off the power at the breaker".
+- **A tenant is never told to touch a gas valve, light, or relight anything.** For a gas smell (or dizziness near a gas appliance, which can mean carbon monoxide) the steps are get out and call for help. For the heater leak the steps are: close the water valve, keep items off the floor, stay away from electricity if standing in water, and "if you smell gas at any time, leave and call 911. Do not touch the gas valve." Shutting off the gas is left to the plumber.
+- Every other common problem (clogs, an overflowing toilet, appliances, electrical, pests, roof) gets 2 to 4 safe steps that match it, and the plumbing ones have hand-written guides too.
 - Guides do not name real utilities. They tell the tenant to use the emergency number on their gas bill or meter, and to call 911.
 - **Before real use**, have a licensed plumber, electrician, and your gas utility review every guide. They are general information, not professional advice.
 
@@ -166,10 +167,20 @@ I made these calls without asking. Please check the ones that matter to you.
 - Cap percent is `min(5 + CPI, 10)`. Maximum new rent is current rent times `(1 + cap)`, rounded **down** to the cent. Money math is done in whole cents.
 - Notice period is 30 days if the increase is 10% or less, otherwise 90 days. Exactly 10% counts as 30 days.
 - "May be exempt" is shown when **either** (single family home or condo, AND not owned by a REIT, corporation, or LLC with a corporate member, AND the written exemption notice was given) **or** the building is less than 15 years old. The cap calculation is still available underneath.
-- The "12+ months" answer is recorded. It only changes a note on screen. The note says the state cap generally applies no matter how long the tenant has lived there. **Please verify this with an attorney.**
+- The form no longer asks how long the tenant has lived there, because the state cap does not depend on it. A note says so (and that just cause rules start after 12 months). **Please verify this with an attorney.**
+- Clearing a number box does not leave a stale result: the result waits with a message until the number is back (and snaps back to the last number when you leave the box). A CPI below 0% or above 10% is flagged, not changed.
+- The rent page is labeled "California only, for now", names AB 1482, and links the statute ([Civil Code 1947.12](https://leginfo.legislature.ca.gov/faces/codes_displaySection.xhtml?lawCode=CIV&sectionNum=1947.12)). I could not confirm a California Attorney General page address, so the statute is linked instead.
 - The cap is really measured over any 12 months. This prototype tests only the single proposed increase against the current rent. If one earlier increase was given, a note says earlier increases count toward the cap.
 - Two or more increases in the last 12 months shows a red warning.
 - The notice date defaults to today and is editable. The effective date is the notice date plus the notice period.
+
+**Pricing, FAQ, and trust**
+- `/pricing` shows $4, $6, and $8 per unit per month, month to month, with what each tier includes. The tier contents are **my draft for the team to change**, and the page is labeled as a placeholder pricing test. Visitors can say which tier they would pick, and the pick shows on `/feedback` and in "Copy all as text".
+- `/about` has "How our price ranges work", an FAQ (emergencies, what the tenant sees, what the AI does and does not decide, data, legal advice, states), and a contact section. The contact email is a placeholder (`example.com`).
+- The home page says "California only, for now", walks through the whole chain in six steps, and has one sentence on why Porchlight is not a bigger property tool. **That sentence about MagicDoor and Hemlane comes from the team's competitive analysis. Please check it before showing it to an instructor.**
+- Routes people expect now work: `/login`, `/tenant`, `/tenant/requests/new`, and `/requests/new` redirect to the real page, and an unknown page shows a friendly "not part of the demo" page.
+- The tenant's "One quick photo" step shows as **skipped** (not done) in the progress bar when the tenant taps "I cannot reach it".
+- The label year is marked "Inferred from the serial" and "This year is a guess", and stays editable.
 
 ## Placeholder numbers list
 
@@ -178,7 +189,7 @@ Everything below is "Illustrative placeholder, not market data" and is labeled t
 | Number | Where it appears |
 | --- | --- |
 | Market range for a 40 gallon gas water heater swap: $1,600 to $2,600 | Owner quote check, repair or replace, vendor badges on approve and book |
-| Labor range $700 to $1,100 and other line ranges: unit $600 to $1,000, permit $100 to $250, haul away $50 to $150, expansion tank $150 to $300, fittings $100 to $250, seismic kit $25 to $75 | Owner quote check |
+| Line ranges that add up to the $1,600 to $2,600 total: unit $555 to $830, labor $620 to $1,030, permit $100 to $150, haul away $50 to $120, expansion tank $150 to $250, fittings $100 to $180, seismic kit $25 to $40 (a test checks the sum) | Owner quote check |
 | Vendor quotes: Bayside $2,850 (7 lines), Willow Glen $2,450 (7 lines), A1 Rapid $2,100 (no permit line, no license shown), and the pasted sample quote (Harbor View, $3,170) | Owner quote check, repair or replace, approve and book |
 | Possible savings (computed from the quote) and $400 saved vs the highest quote | Owner quote check, owner home, book |
 | Repair estimate $450 | Owner repair or replace |

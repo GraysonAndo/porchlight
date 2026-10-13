@@ -137,7 +137,7 @@ export function AgentLogDetails({
     <details open={open} className="rounded-2xl border border-line bg-white px-4">
       <summary className="flex min-h-11 cursor-pointer items-center gap-2 font-bold">
         <RobotIcon size={20} /> {summary}
-        <span className="ml-1 text-sm font-normal text-ink-soft">({events.length} steps)</span>
+        <span className="ml-1 text-sm font-normal text-ink-soft">{" "}({events.length} steps)</span>
       </summary>
       <div className="pb-4 pt-1">
         <AgentFeed events={events} />

@@ -30,7 +30,7 @@ export function DemoGuide() {
         >
           <span>
             Demo guide
-            <span className="ml-2 font-normal text-ink-soft">{currentLabel}</span>
+            <span className="ml-1 font-normal text-ink-soft">{" "}{currentLabel}</span>
           </span>
           <span aria-hidden="true" className="text-lg">
             {open ? "Hide ▲" : "Show ▼"}
@@ -45,7 +45,7 @@ export function DemoGuide() {
                 <section key={flowId} aria-labelledby={`guide-${flowId}`}>
                   <h2 id={`guide-${flowId}`} className="text-sm font-extrabold uppercase tracking-wide text-ink-soft">
                     {flow.label}
-                    <span className="ml-2 font-semibold normal-case tracking-normal">{flow.blurb}</span>
+                    <span className="ml-1 font-semibold normal-case tracking-normal">{" "}{flow.blurb}</span>
                   </h2>
                   <ol className="mt-1 grid gap-1">
                     {steps.map((step, i) => {
@@ -69,7 +69,7 @@ export function DemoGuide() {
                             </span>
                             <span>
                               {step.title}
-                              {active && <span className="ml-2 text-sm font-semibold">(you are here)</span>}
+                              {active && <span className="ml-1 text-sm font-semibold">{" "}(you are here)</span>}
                             </span>
                           </Link>
                         </li>

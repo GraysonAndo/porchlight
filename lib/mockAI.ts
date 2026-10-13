@@ -121,7 +121,7 @@ export function createMockAI(options: MockAIOptions = {}): AIProvider {
         `This is ${input.ownerName}. I booked ${input.vendorName} to replace the water heater at ${input.address}.`,
         "",
         `Visit window: ${input.accessWindow}.`,
-        "Please make sure they can get to the garage. Keep the water and gas valves off until they arrive.",
+        "Please make sure they can get to the garage, and keep the water valve closed until they arrive. Do not touch the gas valve. If you ever smell gas, leave and call 911.",
         "",
         "Text me if the time does not work or if the leak gets worse.",
         "",

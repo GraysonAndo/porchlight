@@ -5,13 +5,10 @@ import { AlertIcon, CheckIcon, ShieldIcon } from "./icons";
 import { SafetyGuideCard } from "./SafetyGuideCard";
 import { Card } from "./ui";
 import { guideForStep, type HouseContext } from "@/lib/safetyGuides";
+import { URGENCY_LABEL } from "@/lib/triage";
 import type { TriageResult, Urgency } from "@/lib/types";
 
-export const URGENCY_LABEL: Record<Urgency, string> = {
-  emergency: "EMERGENCY",
-  urgent: "URGENT",
-  routine: "ROUTINE",
-};
+export { URGENCY_LABEL };
 
 const NOTE: Record<"tenant" | "owner", Record<Urgency, string>> = {
   tenant: {

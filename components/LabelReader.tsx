@@ -260,6 +260,7 @@ export function LabelReader({
                             ) : (
                               <Badge tone="caution">Different from the record</Badge>
                             ))}
+                            {key === "manufactureDate" && !typing && <Badge tone="info" icon={false}>Inferred from the serial</Badge>}
                             {flagged && !done && <Badge tone="caution">Please confirm</Badge>}
                             {flagged && done && <Badge tone="good">Confirmed</Badge>}
                           </span>
@@ -286,10 +287,10 @@ export function LabelReader({
                           />
                         )}
                         {compare && !typing && !matches && <p className="hint">The record says: {compare[key]}</p>}
-                        {key === "manufactureDate" && !tenant && (
+                        {key === "manufactureDate" && !typing && (
                           <p className="hint">
-                            Check this against the label. The age, forecast, and repair or replace answer all depend on this
-                            year.
+                            This year is a guess. It is worked out from the serial number, and the label does not always
+                            say it. {tenant ? "Check it against the sticker, and change it if it is wrong." : "Check it against the label. The age, forecast, and repair or replace answer all depend on this year, and you can edit it."}
                           </p>
                         )}
                         {flagged && !done && (

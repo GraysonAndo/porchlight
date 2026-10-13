@@ -4,6 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { AgentFeed, EngineChip, PlainCodeNote } from "@/components/Agent";
 import { StepShell } from "@/components/StepShell";
+import { JobStatusTracker } from "@/components/JobStatusTracker";
 import { CheckIcon, HammerIcon, TapIcon } from "@/components/icons";
 import { Badge, Callout, Card, NumberField, PlaceholderNote } from "@/components/ui";
 import { VERDICT_LABEL, VERDICT_TONE } from "@/components/verdict";
@@ -15,6 +16,7 @@ import { PLAN } from "@/lib/plan";
 import { verdictFor } from "@/lib/quote";
 import { ACCESS_WINDOWS, PROPERTY, VENDORS, WATER_HEATER_JOB, type Vendor } from "@/lib/seed";
 import { useDemo } from "@/lib/store";
+import { useJobStatus } from "@/lib/useJobStatus";
 import type { Approval } from "@/lib/types";
 
 const JOB_TEXT = "Replace a leaking 40 gallon natural gas water heater.";
@@ -56,10 +58,14 @@ function Timeline({ approval, vendor }: { approval: Approval; vendor: Vendor }) 
 function ApproveBody() {
   const { state, actions } = useDemo();
   const approval = state.approval;
+  const status = useJobStatus();
 
   const [vendorId, setVendorId] = useState<string | null>(null);
   const [nteEdit, setNteEdit] = useState<{ vendorId: string; value: number } | null>(null);
   const [accessWindow, setAccessWindow] = useState(ACCESS_WINDOWS[0]);
+  // The drafted messages can be edited before sending. Edits are kept per draft.
+  const [vendorEdit, setVendorEdit] = useState<{ base: string; text: string } | null>(null);
+  const [tenantEdit, setTenantEdit] = useState<{ base: string; text: string } | null>(null);
 
   const vendor = VENDORS.find((v) => v.id === vendorId) ?? null;
   const notToExceed = vendor ? (nteEdit?.vendorId === vendor.id ? nteEdit.value : defaultNotToExceed(vendor)) : 0;
@@ -105,6 +111,13 @@ function ApproveBody() {
     const sentVendor = VENDORS.find((v) => v.id === approval.vendorId) ?? VENDORS[0];
     return (
       <StepShell stepId="owner-book">
+        <Card title="Where this job stands">
+          <JobStatusTracker status={status} />
+          <p className="mt-2 text-sm text-ink-soft">
+            It moves on its own. After the visit, tap Mark job done.
+          </p>
+        </Card>
+
         <Callout tone="good" title="✓ Approved and sent" role="status">
           <p>
             You approved <strong>{sentVendor.name}</strong> with a limit of{" "}
@@ -165,9 +178,9 @@ function ApproveBody() {
                 <li>3. The old heater is marked replaced, and the 5-year forecast resets.</li>
               </ol>
               <button type="button" className="btn btn-secondary mt-3" onClick={() => actions.completeJob()}>
-                Demo: the plumber finishes the job
+                Mark job done
               </button>
-              <p className="hint">Simulated. This shows how the record keeps itself up to date.</p>
+              <p className="hint">Tap this after the visit. The new equipment goes into the record on its own (simulated).</p>
             </>
           )}
         </Card>
@@ -332,7 +345,7 @@ function ApproveBody() {
         )}
       </Card>
 
-      <Card title="3. Check the messages">
+      <Card title="3. Messages (optional to edit)">
         {!vendor ? (
           <p className="text-ink-soft">The drafted messages will show up here.</p>
         ) : drafts.loading || !drafts.data ? (
@@ -345,20 +358,33 @@ function ApproveBody() {
             <p className="font-bold">Drafting your messages...</p>
           </div>
         ) : (
+          <>
           <div className="grid gap-5 md:grid-cols-2">
             <div>
-              <h3 className="mb-1 font-extrabold">To the vendor: {vendor.name}</h3>
-              <pre className="whitespace-pre-wrap rounded-xl border border-line bg-cream p-4 text-sm leading-relaxed">
-                {drafts.data.vendorText}
-              </pre>
+              <label htmlFor="vendor-message" className="mb-1 block font-extrabold">
+                To the vendor: {vendor.name}
+              </label>
+              <textarea
+                id="vendor-message"
+                className="field min-h-64 text-sm leading-relaxed"
+                value={vendorEdit && vendorEdit.base === drafts.data.vendorText ? vendorEdit.text : drafts.data.vendorText}
+                onChange={(e) => setVendorEdit({ base: drafts.data!.vendorText, text: e.target.value })}
+              />
             </div>
             <div>
-              <h3 className="mb-1 font-extrabold">To the tenant: {PROPERTY.tenant}</h3>
-              <pre className="whitespace-pre-wrap rounded-xl border border-line bg-cream p-4 text-sm leading-relaxed">
-                {drafts.data.tenantText}
-              </pre>
+              <label htmlFor="tenant-message" className="mb-1 block font-extrabold">
+                To the tenant: {PROPERTY.tenant}
+              </label>
+              <textarea
+                id="tenant-message"
+                className="field min-h-64 text-sm leading-relaxed"
+                value={tenantEdit && tenantEdit.base === drafts.data.tenantText ? tenantEdit.text : drafts.data.tenantText}
+                onChange={(e) => setTenantEdit({ base: drafts.data!.tenantText, text: e.target.value })}
+              />
             </div>
           </div>
+          <p className="hint">Already written for you. Change the words if you like. You do not have to.</p>
+          </>
         )}
       </Card>
 

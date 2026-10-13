@@ -1,8 +1,14 @@
+"use client";
+
+import { useDemo } from "@/lib/store";
 import { FLOWS, flowSteps, positionOf, type Step } from "@/lib/steps";
 
 /** Progress through one flow. Text first, bars second, names on wider screens. */
 export function Stepper({ step }: { step: Step }) {
   const flow = FLOWS[step.flow];
+  const { state } = useDemo();
+  // A step the person chose to skip is not "done".
+  const skipped = (id: string) => id === "tenant-label" && state.tenantSkippedLabel;
 
   // Tools and optional screens are not part of a numbered sequence.
   if (!flow.numbered) {
@@ -28,7 +34,13 @@ export function Stepper({ step }: { step: Step }) {
             <li key={s.id} aria-current={n === index ? "step" : undefined} className="min-w-0 flex-1">
               <span
                 className={`block h-2.5 rounded-full transition-colors ${
-                  n < index ? "bg-good" : n === index ? "bg-glow ring-2 ring-ink" : "bg-line"
+                  skipped(s.id) && n !== index
+                    ? "bg-caution-tint ring-1 ring-glow-deep"
+                    : n < index
+                      ? "bg-good"
+                      : n === index
+                        ? "bg-glow ring-2 ring-ink"
+                        : "bg-line"
                 }`}
               />
               <span
@@ -36,10 +48,11 @@ export function Stepper({ step }: { step: Step }) {
                 className={`mt-1 hidden truncate text-xs font-bold lg:block ${n === index ? "text-ink" : "text-ink-soft"}`}
               >
                 {s.short}
+                {skipped(s.id) ? " (skipped)" : ""}
               </span>
               <span className="sr-only">
                 {s.title}
-                {n < index ? ", done" : n === index ? ", current step" : ""}
+                {skipped(s.id) ? ", skipped" : n < index ? ", done" : n === index ? ", current step" : ""}
               </span>
             </li>
           );

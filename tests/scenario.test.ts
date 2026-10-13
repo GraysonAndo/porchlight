@@ -70,8 +70,8 @@ describe("leak scenario: the agent works within limits", () => {
   const events = leak.steps.flatMap((s) => s.agent);
   const index = (tool: string) => events.findIndex((e) => e.tool === tool);
 
-  it("treats the leak as urgent, not an emergency, and sends only a quiet heads-up", () => {
-    expect(events.find((e) => e.tool === "check_emergency_rules")!.detail).toMatch(/urgent, not an emergency/);
+  it("treats the leak as soon, not an emergency, and sends only a quiet heads-up", () => {
+    expect(events.find((e) => e.tool === "check_emergency_rules")!.detail).toMatch(/soon, not an emergency/);
     const owner = leak.steps.flatMap((s) => s.owner);
     expect(owner[0].kind).toBe("push");
     expect(owner.some((o) => o.kind === "call")).toBe(false);

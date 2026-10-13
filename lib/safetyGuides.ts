@@ -39,13 +39,27 @@ function heaterName(ctx: HouseContext): string | null {
   return parts.length ? parts.join(" ") : null;
 }
 
-function isElectric(ctx: HouseContext): boolean {
-  return /electric/i.test(ctx.fuelType ?? "");
-}
-
 const GENERAL_GAS_WARNING = "You smell gas. Do not touch anything. Leave the home and follow the gas emergency steps.";
 
 const ENTRIES: GuideEntry[] = [
+  // Checked first, because its text also mentions calling 911 or the gas company.
+  {
+    test: /smell gas at any time/i,
+    build: () => ({
+      id: "gas-smell-any-time",
+      title: "If you ever smell gas",
+      time: "Right away",
+      youNeed: "Nothing. Do not stop to find anything.",
+      why: "A gas smell near a water heater can mean a gas leak. Tenants should never try to work on a gas line or valve. Getting out and calling for help is the safe move.",
+      steps: [
+        "Leave the home now, with everyone inside, and leave the door open.",
+        "Do not use light switches, lighters, or anything that could spark while you are inside.",
+        "From outside, call 911 or your gas company's emergency number.",
+        "Do not touch the gas valve or the heater, and do not go back in until you are told it is safe.",
+      ],
+      stopIf: [GENERAL_GAS_WARNING, "Anyone feels dizzy, sick, or has a headache. Get fresh air and call 911."],
+    }),
+  },
   // ---- Fire ----
   {
     test: /flames|heavy smoke/i,
@@ -157,60 +171,6 @@ const ENTRIES: GuideEntry[] = [
         ],
         diagram: "valve",
         recordNote: name ? `Your house record lists this heater as ${name}.` : undefined,
-      };
-    },
-  },
-  {
-    test: /gas valve/i,
-    build: (ctx) => {
-      const name = heaterName(ctx);
-      const fuel = ctx.fuelType ? ctx.fuelType.toLowerCase() : null;
-      const record = [name, fuel].filter(Boolean).join(", ");
-      const recordNote = record ? `Your house record lists this heater as: ${record}.` : undefined;
-
-      if (isElectric(ctx)) {
-        return {
-          id: "heater-power-off",
-          title: "Turn off the power to the water heater",
-          time: "About 3 minutes",
-          youNeed: "A dry floor to stand on and dry hands.",
-          why: "Your record says this heater is electric, so there is no gas valve. Turning off its breaker stops the heating element, which can burn out if the tank empties.",
-          steps: [
-            "Find your electrical panel (breaker box). It is often in a garage, hallway, or utility closet.",
-            "Look for the breaker labeled WATER HEATER. It is often a wide switch, or two switches joined together.",
-            "Stand on a dry spot with dry hands. Flip the switch fully to OFF.",
-            "If you cannot tell which breaker it is, do not guess. Call the owner or an electrician.",
-          ],
-          stopIf: [
-            "There is water on or near the breaker box, or you would have to stand in water to reach it.",
-            "You see sparks or scorch marks, or you smell burning at the panel.",
-          ],
-          recordNote,
-        };
-      }
-
-      return {
-        id: "gas-valve",
-        title: "Turn the gas to the water heater to pilot or off",
-        time: "About 3 minutes",
-        youNeed: "Nothing. A flashlight helps.",
-        why: "Setting the gas control to PILOT or OFF stops the main burner, so the heater is not firing while the tank leaks or empties.",
-        steps: [
-          "First, check that you do not smell gas. If you do, do not touch anything. Leave the home and follow the gas emergency steps.",
-          "Look at the lower front of the tank. The gas control is a box with a knob or dial. The knob usually shows OFF, PILOT, and ON. Some are a temperature dial with a mark for PILOT or VACATION.",
-          "Turn the knob to PILOT. If your model has no PILOT setting, turn it to OFF. Some knobs need a gentle push down while you turn. Do not force it.",
-          "You can also close the gas shut-off valve on the pipe that feeds the heater. When the handle lines up with the pipe, gas is on. When it sits crosswise, a quarter turn away, gas is off.",
-          "Do not try to relight the pilot yourself. Wait for the plumber.",
-        ],
-        stopIf: [
-          GENERAL_GAS_WARNING,
-          "The knob or valve will not turn. Do not force it.",
-          "The floor is wet and you would be standing in water to reach it.",
-        ],
-        diagram: "valve",
-        recordNote:
-          recordNote ??
-          "Not sure if your heater uses gas or electricity? Check the label. Step 3 adds it to your house record.",
       };
     },
   },
@@ -330,6 +290,109 @@ const ENTRIES: GuideEntry[] = [
     }),
   },
   // ---- Generic ----
+  // ---- Clogs, drips, and overflowing toilets ----
+  {
+    test: /do not flush again/i,
+    build: () => ({
+      id: "no-flush",
+      title: "Do not flush again",
+      time: "1 minute",
+      youNeed: "Nothing.",
+      why: "Every flush sends more water toward the bowl. If the toilet is blocked, it will keep overflowing.",
+      steps: [
+        "Do not flush this toilet again, and ask everyone in the home not to.",
+        "If water is backing up in other drains too, do not use them either.",
+        "Keep children and pets away from the water. Overflow water can carry germs.",
+        "If you clean up, wear rubber gloves and wash your hands afterward.",
+      ],
+      stopIf: ["Water is reaching outlets, power strips, or other rooms.", "Water or sewage is coming up in more than one drain."],
+    }),
+  },
+  {
+    test: /flapper/i,
+    build: () => ({
+      id: "stop-toilet-water",
+      title: "Stop the water into the toilet",
+      time: "2 minutes",
+      youNeed: "A towel. Rubber gloves if you have them.",
+      why: "Stopping the water that keeps filling the bowl is the fastest way to stop an overflow.",
+      steps: [
+        "Lift the lid off the tank (the box behind the bowl) and set it somewhere safe.",
+        "Push the round rubber flapper at the bottom of the tank down. That stops water going into the bowl.",
+        "Or turn the small valve on the wall behind the toilet clockwise (to the right) until it stops. Do not force it.",
+        "Mop up with towels, and tell the owner what happened.",
+      ],
+      stopIf: ["The valve will not turn.", "Water keeps coming even after you pushed the flapper down and closed the valve."],
+    }),
+  },
+  {
+    test: /towels around the base/i,
+    build: () => ({
+      id: "towels-toilet",
+      title: "Keep water away from electricity",
+      time: "3 minutes",
+      youNeed: "Towels, a bucket if you have one.",
+      why: "Water spreading across a floor can reach outlets and power strips, which is a shock risk.",
+      steps: [
+        "Unplug nothing that is in the water. Do not touch anything plugged in while you are standing in water.",
+        "Move power strips, chargers, and cords up and away from the wet area.",
+        "Lay towels around the base of the toilet to hold the water back.",
+        "Wring towels into a bucket or the tub, not the floor.",
+      ],
+      stopIf: ["Water is reaching an outlet or a power strip.", "You would have to stand in water to reach anything electrical."],
+    }),
+  },
+  {
+    test: /stop using the fixture/i,
+    build: () => ({
+      id: "stop-using-fixture",
+      title: "Stop using the blocked fixture",
+      time: "1 minute",
+      youNeed: "Nothing. A plunger helps.",
+      why: "More use pushes more water toward the rim. Chemical drain cleaners can damage old pipes, and they can burn skin if they splash.",
+      steps: [
+        "Stop using the toilet, sink, or tub that is slow or blocked.",
+        "Do not pour chemical drain cleaner into it. Leave that to a plunger or the plumber.",
+        "If water is low in the bowl or sink, push a plunger down gently several times. Do not plunge if water is already at the rim.",
+        "Tell the owner if the water does not drain.",
+      ],
+      stopIf: ["Water is rising toward the rim or spilling out.", "Water is coming up in more than one drain."],
+    }),
+  },
+  {
+    test: /towel or bucket under any drip/i,
+    build: () => ({
+      id: "catch-drip",
+      title: "Catch the drip",
+      time: "2 minutes",
+      youNeed: "A bucket or bowl, and a towel.",
+      why: "A small drip can soak a cabinet or a floor if nobody catches it.",
+      steps: [
+        "Put a bucket or bowl under the drip.",
+        "Lay a towel around it for splashes.",
+        "Move rugs, boxes, and anything that soaks up water away from the area.",
+        "Empty the bucket before it fills, and tell the owner how fast it is filling.",
+      ],
+      stopIf: ["The drip turns into a steady stream.", "Water is near an outlet or an appliance."],
+    }),
+  },
+  {
+    test: /small valve under the sink or behind the toilet/i,
+    build: () => ({
+      id: "small-valve",
+      title: "Shut the small valve",
+      time: "2 minutes",
+      youNeed: "Nothing. A towel for your hands.",
+      why: "Almost every sink and toilet has its own small shut-off valve. Closing it stops water to that one fixture and nothing else.",
+      steps: [
+        "Find the small oval or round handle on the pipe under the sink, or on the wall behind the toilet near the floor.",
+        "Turn it clockwise (to the right) until it stops. Do not force it.",
+        "Run the fixture once to check that the water has stopped.",
+        "Leave the valve closed and tell the owner.",
+      ],
+      stopIf: ["The handle will not turn.", "Water keeps pouring after the valve is closed. Shut the main water shut-off and call the owner."],
+    }),
+  },
   {
     test: /stop using the item or area/i,
     build: () => ({

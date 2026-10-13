@@ -13,6 +13,7 @@ const REQUESTS = [
   "There is smoke coming from the outlet",
   "A pipe burst and water is everywhere",
   "The toilet is clogged",
+  "The toilet is clogged and overflowing",
   "The cabinet door is loose",
 ];
 
@@ -50,45 +51,14 @@ describe("safety guides", () => {
     expect(g.steps.join(" ")).toMatch(/clockwise/);
   });
 
-  it("warns about gas inside the gas valve guide", () => {
-    const g = guideForStep("Turn the gas valve to pilot or off.")!;
-    expect(g.steps[0]).toMatch(/smell gas/i);
-    expect(g.stopIf.join(" ")).toMatch(/smell gas/i);
-    expect(g.steps.join(" ")).toMatch(/PILOT/);
-  });
-
-  it("tells a tenant not to relight the pilot", () => {
-    const g = guideForStep("Turn the gas valve to pilot or off.")!;
-    expect(g.steps.join(" ")).toMatch(/not try to relight/i);
-  });
-
-  it("uses the house record: an electric heater gets breaker steps, not a gas knob", () => {
-    const g = guideForStep("Turn the gas valve to pilot or off.", {
-      manufacturer: "Hearthline",
-      model: "HL-40E",
-      fuelType: "Electric",
-    })!;
-    expect(g.id).toBe("heater-power-off");
-    expect(g.title).toMatch(/power/i);
-    expect(g.steps.join(" ")).toMatch(/breaker/i);
-    expect(g.steps.join(" ")).not.toMatch(/PILOT/);
-    expect(g.recordNote).toContain("electric");
-  });
-
-  it("uses the house record: a gas heater mentions the saved brand, model, and fuel", () => {
-    const g = guideForStep("Turn the gas valve to pilot or off.", {
-      manufacturer: "Hearthline",
-      model: "HL-40G-NG",
-      fuelType: "Natural gas",
-    })!;
-    expect(g.id).toBe("gas-valve");
-    expect(g.recordNote).toContain("Hearthline HL-40G-NG");
-    expect(g.recordNote).toContain("natural gas");
-  });
-
-  it("points to the label step when the fuel type is not known", () => {
-    const g = guideForStep("Turn the gas valve to pilot or off.")!;
-    expect(g.recordNote).toMatch(/label/i);
+  it("never gives a tenant a guide for operating a gas valve", () => {
+    expect(guideForStep("Turn the gas valve to pilot or off.")).toBeNull();
+    const g = guideForStep("If you smell gas at any time, leave the home and call 911 or your gas company. Do not touch the gas valve.")!;
+    expect(g.id).toBe("gas-smell-any-time");
+    const text = g.steps.join(" ");
+    expect(text).toMatch(/leave the home/i);
+    expect(text).toMatch(/do not touch the gas valve/i);
+    expect(text).not.toMatch(/turn the knob|pilot|relight/i);
   });
 
   it("returns null for text it has no guide for", () => {

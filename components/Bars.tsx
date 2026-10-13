@@ -70,7 +70,6 @@ export function LifespanBar({
   const scaleMax = typicalLifeYears * 1.25;
   const fill = Math.min(100, (ageYears / scaleMax) * 100);
   const lifeTick = (typicalLifeYears / scaleMax) * 100;
-  const replaceTick = ((typicalLifeYears * 0.8) / scaleMax) * 100;
 
   return (
     <div
@@ -79,13 +78,6 @@ export function LifespanBar({
     >
       <div className={`relative rounded-full bg-cream-deep ${compact ? "h-2.5" : "h-4"}`}>
         <div className={`bar-grow h-full rounded-full ${LIFE_COLORS[tone]}`} style={{ width: `${fill}%` }} />
-        {!compact && (
-          <div
-            className="absolute -top-1 -bottom-1 w-0.5 bg-ink/50"
-            style={{ left: `${replaceTick}%` }}
-            title="80% of typical life"
-          />
-        )}
         <div className="absolute -top-1 -bottom-1 w-0.5 bg-ink" style={{ left: `${lifeTick}%` }} />
       </div>
       {!compact && (

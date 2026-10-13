@@ -4,7 +4,19 @@
 // 2. A water heater problem returns the seeded scenario for the demo.
 // 3. Anything else gets a short, honest generic result for its category.
 
-import type { TriageResult } from "./types";
+import type { TriageResult, Urgency } from "./types";
+
+/** The three buckets from the product spec, as shown on screen. */
+export const URGENCY_LABEL: Record<Urgency, string> = {
+  emergency: "EMERGENCY",
+  urgent: "SOON",
+  routine: "ROUTINE",
+};
+
+/** Lower case, for use inside a sentence. */
+export function urgencyWord(urgency: Urgency): string {
+  return URGENCY_LABEL[urgency].toLowerCase();
+}
 
 interface Rule {
   test: RegExp;
@@ -13,7 +25,10 @@ interface Rule {
 const GAS: Rule = {
   test: /(smell|smells|smelling|odor|odour|whiff|hiss|hissing)[^.]{0,30}\bgas\b|\bgas\b[^.]{0,30}(smell|smells|odor|odour|leak|leaking|hiss)|rotten egg|sulfur|sulphur/i,
 };
-const CARBON_MONOXIDE: Rule = { test: /carbon monoxide|\bco (alarm|detector)|co alarm/i };
+// Carbon monoxide: the alarm, or dizziness and headaches near a gas appliance.
+const CARBON_MONOXIDE: Rule = {
+  test: /carbon monoxide|\bco (alarm|detector)|co alarm|(dizzy|dizziness|lightheaded|light-headed|nauseous|nausea|headache)[^.]{0,60}(gas|fumes|furnace|heater|stove|alarm)|(gas|fumes|furnace|heater|stove|alarm)[^.]{0,60}(dizzy|dizziness|lightheaded|light-headed|nauseous|nausea|headache)/i,
+};
 const FIRE_OR_SPARKS: Rule = {
   test: /\bfire\b|\bsmoke\b|smoking|burning smell|smells?( like)?( something)? burning|something (is )?burning|sparks?\b|sparking|arc(ing)?\b|melted (outlet|plug|wire)/i,
 };
@@ -35,6 +50,8 @@ function emergency(partial: Omit<TriageResult, "urgency" | "confidence" | "sugge
   return { ...partial, urgency: "emergency", confidence: 0.9, alertOwnerNow: true };
 }
 
+const TOILET_OVERFLOW: Rule = { test: /toilet[^.]{0,50}(overflow|overflowing|spilling|running over|will not stop|won'?t stop)|overflow(ing)?[^.]{0,20}toilet/i };
+
 const NO_HEAT: Rule = { test: /no heat|without heat|heat (is )?(out|off|not working)|furnace (is )?(out|off|not (working|heating))|heater (is )?(not|n't) (working|heating)|house is freezing|freezing in (here|the house)/i };
 
 const GENERIC_QUESTIONS = [
@@ -48,18 +65,82 @@ interface Category {
   trade: string;
   test: RegExp;
   urgency: "urgent" | "routine";
+  /** 2 to 4 safe steps that match the problem. Never a gas valve, never opening an appliance. */
+  steps: string[];
 }
+
+const GENERAL_STEPS = [
+  "Stop using the item or area until it has been checked.",
+  "Keep children and pets away from it.",
+  "If you see water, smoke, sparks, or smell gas, tell us right away and follow the emergency steps.",
+];
 
 // Checked in order. First match wins. Appliances and roofs come before plumbing,
 // so "dishwasher will not drain" and "roof leak" are not mistaken for pipe problems.
 const CATEGORIES: Category[] = [
-  { name: "HVAC", trade: "Licensed HVAC technician", urgency: "urgent", test: /no heat|heater (is )?(not|n't) working|furnace|thermostat|air condition|\ba\/c\b|\bac\b|no cooling|hvac/i },
-  { name: "Appliance", trade: "Appliance repair technician", urgency: "routine", test: /fridge|refrigerator|dishwasher|oven|stove|\brange\b|washer|dryer|microwave|freezer/i },
-  { name: "Roof and structure", trade: "Roofer or general contractor", urgency: "urgent", test: /roof|ceiling|gutter|crack|mold|mould|leaning|foundation/i },
-  { name: "Plumbing", trade: "Licensed plumber", urgency: "routine", test: /toilet|clog|drain|sink|faucet|shower|bathtub|\btub\b|pipe|plumb|leak|drip/i },
-  { name: "Electrical", trade: "Licensed electrician", urgency: "routine", test: /outlet|electric|breaker|light switch|\blights?\b|wiring|power (is )?out|no power/i },
-  { name: "Locks and doors", trade: "Locksmith or handyperson", urgency: "urgent", test: /\block\b|locked out|\bkey\b|front door|back door|door (won'?t|will not|does not)|broken window|window won'?t/i },
-  { name: "Pests", trade: "Pest control", urgency: "routine", test: /mice|mouse|\brats?\b|roach|cockroach|\bants?\b|bed ?bugs?|termite|pest|bugs/i },
+  {
+    name: "HVAC", trade: "Licensed HVAC technician", urgency: "urgent",
+    test: /no heat|heater (is )?(not|n't) working|furnace|thermostat|air condition|\ba\/c\b|\bac\b|no cooling|hvac/i,
+    steps: [
+      "Check that the thermostat is set to the right mode and has power.",
+      "If you can see a clean filter slot, check that the filter is not blocked.",
+      "Do not open the unit or touch any gas parts.",
+    ],
+  },
+  {
+    name: "Appliance", trade: "Appliance repair technician", urgency: "routine",
+    test: /fridge|refrigerator|dishwasher|oven|stove|\brange\b|washer|dryer|microwave|freezer/i,
+    steps: [
+      "Stop using the appliance, and unplug it only if the cord is dry and easy to reach.",
+      "Keep the floor around it dry.",
+      "Do not take it apart.",
+    ],
+  },
+  {
+    name: "Roof and structure", trade: "Roofer or general contractor", urgency: "urgent",
+    test: /roof|ceiling|gutter|crack|mold|mould|leaning|foundation/i,
+    steps: [
+      "Move furniture and valuables away from any drip or stain.",
+      "Put a bucket under a drip, and keep the room as dry as you can.",
+      "Stay out of a room if the ceiling is sagging.",
+    ],
+  },
+  {
+    name: "Plumbing", trade: "Licensed plumber", urgency: "routine",
+    test: /toilet|clog|drain|sink|faucet|shower|bathtub|\btub\b|pipe|plumb|leak|drip/i,
+    steps: [
+      "Stop using the fixture, and do not pour chemical drain cleaner into it.",
+      "Put a towel or bucket under any drip.",
+      "If water will not stop, turn the small valve under the sink or behind the toilet clockwise.",
+    ],
+  },
+  {
+    name: "Electrical", trade: "Licensed electrician", urgency: "routine",
+    test: /outlet|electric|breaker|light switch|\blights?\b|wiring|power (is )?out|no power/i,
+    steps: [
+      "Stop using the outlet, switch, or light that is not working.",
+      "Do not touch bare wires, and keep the area dry.",
+      "Check whether the problem is only one room. Tell us what you find.",
+    ],
+  },
+  {
+    name: "Locks and doors", trade: "Locksmith or handyperson", urgency: "urgent",
+    test: /\block\b|locked out|\bkey\b|front door|back door|door (won'?t|will not|does not)|broken window|window won'?t/i,
+    steps: [
+      "Do not force the lock or the door.",
+      "If you are locked out, wait somewhere safe and tell us.",
+      "If a window or door will not lock, do not leave the home unattended.",
+    ],
+  },
+  {
+    name: "Pests", trade: "Pest control", urgency: "routine",
+    test: /mice|mouse|\brats?\b|roach|cockroach|\bants?\b|bed ?bugs?|termite|pest|bugs/i,
+    steps: [
+      "Keep food in sealed containers and take out the trash.",
+      "Do not set out poison. It can harm children and pets.",
+      "Take a photo of anything you find, so the owner can pick the right treatment.",
+    ],
+  },
 ];
 
 function snippet(text: string): string {
@@ -78,9 +159,9 @@ export function seededHeaterTriage(): TriageResult {
       "Tank failure or a corroded tank bottom. A leak from the bottom of the tank usually means the tank has worn through, not that a fitting came loose.",
     safetySteps: [
       "Turn off the water supply valve to the heater.",
-      "Turn the gas valve to pilot or off.",
       "Keep items off the garage floor.",
       "Do not touch the heater if you are standing in water near anything electrical.",
+      "If you smell gas at any time, leave the home and call 911 or your gas company. Do not touch the gas valve.",
     ],
     tenantQuestions: [
       "How fast is the leak: a slow drip, a steady stream, or a gush?",
@@ -156,6 +237,28 @@ export function triageText(description: string): TriageResult {
     });
   }
 
+  if (TOILET_OVERFLOW.test.test(text)) {
+    return {
+      category: "Plumbing",
+      urgency: "urgent",
+      summary: `A toilet is overflowing: "${snippet(text)}". Stop the water first to limit damage, then a plumber should look at it soon.`,
+      likelyCause: "A blockage in the toilet or the drain line, or a fill valve that is stuck open.",
+      safetySteps: [
+        "Do not flush again.",
+        "Lift the tank lid and push the flapper down, or turn the small valve behind the toilet clockwise to stop the water.",
+        "Put towels around the base, and keep power strips and outlets away from the water.",
+      ],
+      tenantQuestions: [
+        "Did the water stop after you closed the valve?",
+        "Is water reaching other rooms, carpet, or outlets?",
+        "Are other drains in the home also slow or backing up?",
+      ],
+      suggestedTrade: "Licensed plumber",
+      confidence: 0.78,
+      alertOwnerNow: false,
+    };
+  }
+
   if (NO_HEAT.test.test(text) && !/water heater|hot water/i.test(text)) {
     return {
       category: "HVAC",
@@ -191,11 +294,7 @@ export function triageText(description: string): TriageResult {
     }`,
     likelyCause:
       "Hard to say from the description alone. A photo or a visit will confirm the cause. This is a rough sample guess.",
-    safetySteps: [
-      "Stop using the item or area until it has been checked.",
-      "Keep children and pets away from it.",
-      "If you see water, smoke, sparks, or smell gas, tell us right away and follow the emergency steps.",
-    ],
+    safetySteps: category ? category.steps : GENERAL_STEPS,
     tenantQuestions: GENERIC_QUESTIONS,
     suggestedTrade: trade,
     confidence: category ? 0.64 : 0.5,
