@@ -18,6 +18,8 @@ export interface Photo {
   isSample: boolean;
 }
 
+import type { World } from "./agents/types";
+
 // ---------- AI inputs and outputs ----------
 
 export interface TriageInput {
@@ -204,6 +206,10 @@ export interface DemoState {
   tenantSkippedLabel: boolean;
   /** When rent for the current month was marked paid (demo only, nothing is charged), or null */
   rentPaidAt: string | null;
+  /** Porchlight's agent: every text, tool call, and record write, shared by the tenant and owner screens */
+  agent: World;
+  /** Whether each person gets Porchlight's updates by text */
+  textUpdates: { tenant: boolean; owner: boolean };
   /** Which pricing tier the visitor said they would pick, for the pricing test */
   pricingPick: "starter" | "plus" | "pro" | "none" | null;
   feedback: FeedbackNote[];

@@ -51,12 +51,12 @@ const WHO = [
   {
     icon: <KeyIcon size={26} />,
     title: "The tenant",
-    body: "Lives in the home. Reports a problem and stays safe. Does not choose or pay for the repair.",
+    body: "Lives in the home. Texts Porchlight a problem and stays safe. Does not choose or pay for the repair.",
   },
   {
     icon: <HomeIcon size={26} />,
     title: "The owner",
-    body: "Owns the home. Reviews the request, compares quotes, and decides what to spend. This is you.",
+    body: "Owns the home. Porchlight lines up the work, and you tap Approve. You can change anything first. This is you.",
   },
   {
     icon: <RobotIcon size={26} />,
@@ -107,7 +107,7 @@ export default function HomePage() {
           </h1>
           <p className="mt-4 max-w-xl text-lg text-ink-soft">
             Porchlight is an AI property manager for small landlords. It does the legwork: it reads the repair request,
-            keeps the house record, collects and checks quotes, and books the plumber. You only tap to approve.
+            keeps the house record, collects and checks quotes, books the plumber, and texts you every update. You only tap to approve.
           </p>
           <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:items-center">
             <Link href="/live" className="btn btn-primary btn-lg">
@@ -135,7 +135,7 @@ export default function HomePage() {
         </h2>
         <ol className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
           {[
-            ["Your tenant reports a problem", "A few words and a photo. Emergencies like a gas smell come first, with safe steps and an alert to you."],
+            ["Your tenant reports a problem", "A few words by text. Emergencies like a gas smell come first, with safe steps and an alert to you."],
             ["Porchlight builds the house record", "One photo of an equipment label fills in the brand, model, and age. After that, new installs add themselves."],
             ["It collects and checks the quotes", "Each quote is checked against typical prices, with a clear fair, high, or low."],
             ["It tells you repair or replace", "A simple rule, shown openly, using the age of the equipment and the price."],
@@ -204,8 +204,8 @@ export default function HomePage() {
           <RoleButton
             icon={<HomeIcon size={28} />}
             title="I am an owner"
-            body="Review a repair request, check the house record, compare a quote, and approve a plumber."
-            steps="5 screens, plus planning tools"
+            body="Everything is already done for you. Check it over, tap Approve, and get a text each time something changes."
+            steps="One inbox, one tap to approve"
             onClick={() => {
               actions.setRole("owner");
               router.push("/owner");
@@ -214,11 +214,11 @@ export default function HomePage() {
           <RoleButton
             icon={<KeyIcon size={28} />}
             title="I am a tenant"
-            body="Report a problem, get simple safety steps, and follow the progress."
-            steps="4 screens"
+            body="Text Porchlight about a problem or a question. It texts you every update, so you never have to chase anyone."
+            steps="One screen, no steps"
             onClick={() => {
               actions.setRole("tenant");
-              router.push("/tenant/request");
+              router.push("/tenant");
             }}
           />
         </div>
@@ -226,7 +226,7 @@ export default function HomePage() {
           <p className="text-sm font-bold">
             You were last using Porchlight as {state.role === "owner" ? "an owner" : "a tenant"}.{" "}
             <Link
-              href={state.role === "owner" ? "/owner" : "/tenant/request"}
+              href={state.role === "owner" ? "/owner" : "/tenant"}
               className="underline underline-offset-4"
             >
               Continue as {state.role === "owner" ? "owner" : "tenant"}

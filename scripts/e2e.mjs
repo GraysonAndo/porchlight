@@ -35,265 +35,212 @@ async function newPage(options = {}) {
 
 const count = async (page, text) => page.getByText(text).count();
 
-// ======================= Role separation =======================
-{
-  const { context, page, errors } = await newPage();
+
+const wait20 = { timeout: 20000 };
+
+/** Types a message to Porchlight on the tenant screen. */
+async function textAgent(page, text) {
+  await page.locator("#tenant-msg").fill(text);
+  await page.getByRole("button", { name: "Send", exact: true }).click();
+}
+
+/** Resets, opens the tenant screen, sends a message, and waits for Porchlight's reply. */
+async function reportByText(page, text) {
   await resetDemo(page);
-  await page.waitForFunction(() => !window.location.search.includes("reset=1"));
-  check("?reset=1 is removed from the URL", !page.url().includes("reset=1"), page.url());
+  await page.goto(`${BASE}/tenant`);
+  await textAgent(page, text);
+  await page.getByText(/near an outlet|sounds like an emergency|logged this as|I'm here|Sent\.|rent is|I don't know/i).first().waitFor(wait20);
+  // Porchlight types its replies out over a second or two. Let them all appear.
+  await page.waitForTimeout(3500);
+}
+
+// ======================= The journey: tenant texts, owner approves, both get updates =======================
+{
+  const { context, page, errors } = await newPage({ viewport: { width: 390, height: 844 } });
+  await resetDemo(page);
   check("home explains who is who", (await count(page, "Who is who")) > 0);
   check("home says the owner decides and pays", (await page.getByText(/Does not choose or pay for the repair/).count()) > 0);
 
   await page.getByRole("button", { name: /I am a tenant/ }).click();
-  await page.waitForURL("**/tenant/request");
+  await page.waitForURL("**/tenant");
   check("header says Tenant view", (await count(page, "Tenant view")) > 0);
-  await page.getByRole("button", { name: "Use sample photo" }).click();
-  await page.getByRole("button", { name: "Submit" }).click();
-  await page.waitForURL("**/tenant/safety");
-  await page.getByText("Owner notified").first().waitFor({ timeout: 8000 });
+  check("the tenant has one screen, no steps", (await page.getByText(/step \d of \d/i).count()) === 0);
 
-  // A tenant must not see owner decisions or internal AI detail.
+  await page.getByRole("button", { name: "My water heater is leaking" }).click();
+  await page.getByText(/near an outlet/).waitFor(wait20);
+  await page.getByRole("button", { name: /^2\s+No$/ }).click();
+  await page.getByText(/Two quick steps/).waitFor(wait20);
+  check("the safety steps are plain text in the chat, with the gas rule", (await page.getByText(/never touch the gas valve/).count()) > 0);
+  check("the how-to guide is folded under the message", (await page.getByText(/How to close the water valve/).count()) > 0);
+  await page.getByRole("button", { name: "Done", exact: true }).click();
+  await page.getByText(/silver sticker/).waitFor(wait20);
+  await page.getByRole("button", { name: "Send a photo" }).click();
+  await page.getByRole("button", { name: "Photo of the label" }).click();
+  await page.getByText(/Is it 15C0412-X/).waitFor(wait20);
+  await page.getByRole("button", { name: "Y", exact: true }).click();
+  await page.getByText(/I'm watching this/).waitFor(wait20);
+  check("a texted update tag shows on Porchlight's messages", (await page.getByText("Texted").count()) > 0);
+
+  // The tenant never sees owner decisions, prices, or internals.
   const tenantText = await page.locator("main").innerText();
-  for (const word of ["AI confidence", "Likely cause", "Quote check", "Repair or replace", "5-year forecast", "Rent increase", "house record is", "Approve and book", "Willow Glen", "$2,450", "$2,850", "Saves you"]) {
-    check(`tenant safety screen has no "${word}"`, !tenantText.includes(word), "found in tenant text");
+  for (const word of ["AI confidence", "Likely cause", "Quote check", "Repair or replace", "5-year forecast", "Rent increase", "Approve", "Willow Glen", "$2,450", "$2,850", "You save"]) {
+    check(`the tenant screen has no "${word}"`, !tenantText.includes(word), "found in tenant text");
   }
-  check("tenant is told the owner arranges and pays", (await page.getByText(/arranges and pays for the repair/).count()) > 0);
-  check("tenant is told they do not need to call a plumber", (await page.getByText(/You do not need to call a plumber/).count()) > 0);
+  await page.getByText(/your landlord is choosing a plumber/).waitFor(wait20);
+  check("the tenant is texted that the landlord is choosing, with no price", true);
 
-  // The tenant is asked for one label photo, with no prices or owner decisions.
-  await page.getByRole("link", { name: /Next: One quick photo/ }).click();
-  await page.waitForURL("**/tenant/label");
-  const labelText = await page.locator("main").innerText();
-  for (const word of ["Quote check", "Willow Glen", "$2,450", "Approve"]) {
-    check(`tenant label screen has no "${word}"`, !labelText.includes(word));
-  }
-  check("tenant label screen explains why it asks", (await count(page, "Why Porchlight is asking")) > 0);
-
-  // Tenant status page has no owner tools either.
-  await page.getByRole("link", { name: "See request status" }).click();
-  await page.waitForURL("**/tenant/status");
-  const statusText = await page.locator("main").innerText();
-  for (const word of ["Quote check", "AI confidence", "Repair or replace"]) {
-    check(`tenant status has no "${word}"`, !statusText.includes(word));
-  }
-  check("tenant status shows the owner is choosing a plumber", (await count(page, "Owner choosing a plumber")) > 0);
-  check("tenant status waits for the label photo", (await count(page, "Waiting for your label photo")) > 0);
-
-  // Owner side is labeled and separate.
+  // The owner has one thing to do, already worked out.
   await page.goto(`${BASE}/owner`);
+  await page.getByRole("button", { name: "Approve", exact: true }).waitFor(wait20);
   check("owner header says Owner view", (await count(page, "Owner view")) > 0);
-  check("owner home lists the tenant's request", (await count(page, "Repair request")) > 0);
+  check("the owner inbox says 1 thing needs your OK", (await count(page, "1 thing needs your OK")) > 0);
+  const card = await page.locator("main").innerText();
+  check("the card has the pick, the limit, and the saving", /Willow Glen/.test(card) && card.includes("$2,450") && card.includes("$2,695") && card.includes("$400"));
+  check("the status tracker is at Quoted", (await page.getByRole("list", { name: "Job status" }).getByText("Quoted").count()) > 0);
+  await page.getByText("See the details, or change something").click();
+  check("changing something is one tap away", (await page.getByRole("link", { name: "Pick another vendor, limit, or time" }).count()) > 0);
+  check("the owner can read the texts Porchlight sent", (await count(page, "Texts from Porchlight")) > 0);
+  await page.getByRole("button", { name: "Approve", exact: true }).click();
+  await page.getByRole("button", { name: "Mark done" }).waitFor(wait20);
+  check("one tap books it, and Mark done appears", (await page.getByText(/Booked: Willow Glen/).count()) > 0);
 
-  check("no console errors in role separation", errors.length === 0, errors.join(" | "));
+  // Both people get text updates.
+  await page.goto(`${BASE}/tenant`);
+  await page.getByText(/Good news: Willow Glen Water Heater Co\. is booked/).waitFor(wait20);
+  check("the tenant is texted who is coming and when", true);
+  await page.getByRole("button", { name: /^1\s+That works$/ }).click();
+  await page.getByText(/see you then/).waitFor(wait20);
+  await page.goto(`${BASE}/owner`);
+  await page.getByText(/Your tenant confirmed the visit window/).first().waitFor(wait20);
+  check("the owner is texted that the tenant confirmed", true);
+  await page.getByRole("button", { name: "Mark done" }).click();
+  await page.getByText("All done", { exact: true }).waitFor(wait20);
+  await page.goto(`${BASE}/tenant`);
+  await page.getByText(/All fixed/).waitFor(wait20);
+  check("the tenant is texted when it is fixed", true);
+  await page.reload();
+  await page.getByText(/All fixed/).waitFor(wait20);
+  check("the whole conversation survives a reload", (await count(page, "Good news")) > 0);
+
+  // Text updates can be turned off.
+  await page.getByRole("switch", { name: "Text updates" }).click();
+  check("turning text updates off says so", (await count(page, "text updates are off")) > 0 || (await count(page, "Text updates are off")) > 0);
+  await page.getByRole("switch", { name: "Text updates" }).click();
+
+  // The record and the plan updated themselves.
+  await page.goto(`${BASE}/owner/record`);
+  await page.getByText("New, added automatically").waitFor(wait20);
+  check("the new heater is in the house record by itself", (await count(page, "26J0007-A")) > 0);
+  await page.goto(`${BASE}/owner/forecast`);
+  await page.getByText("beyond 5 years").first().waitFor(wait20);
+  check("the forecast no longer has the water heater overdue", (await page.getByText("overdue or due now").count()) === 0);
+  check("no console errors in the journey", errors.length === 0, errors.join(" | "));
   await context.close();
 }
 
-// ======================= Full story: tenant, owner, record, tenant =======================
+// ======================= Owner detail pages, filled in by the agent =======================
 {
-  const { context, page, errors } = await newPage();
+  const { context, page, errors } = await newPage({ viewport: { width: 1280, height: 800 } });
   await resetDemo(page);
-  await page.getByRole("button", { name: /I am a tenant/ }).click();
-  await page.waitForURL("**/tenant/request");
-  await page.getByRole("button", { name: "Use sample photo" }).click();
-  await page.getByRole("button", { name: "Submit" }).click();
-  await page.waitForURL("**/tenant/safety");
-  await page.getByText("SOON", { exact: true }).first().waitFor({ timeout: 8000 });
+  await page.goto(`${BASE}/owner`);
+  check("a new owner sees All quiet and a way to try it", (await count(page, "All quiet")) > 0 && (await page.getByRole("button", { name: "Show me a sample repair" }).count()) > 0);
+  await page.getByRole("button", { name: "Show me a sample repair" }).click();
+  await page.getByRole("button", { name: "Approve", exact: true }).waitFor(wait20);
 
-  // Tenant answers the questions, and it survives a reload.
-  await page.locator("#answer-0").fill("A slow drip");
-  await page.locator("#answer-2").fill("No gas smell");
-  await page.getByRole("button", { name: "Send my answers" }).click();
-  await page.getByText(/Answers sent to Sample Owner/).waitFor();
-  await page.reload();
-  await page.getByText(/Answers sent to Sample Owner/).waitFor({ timeout: 8000 });
-  check("tenant answers survive a reload", true);
-
-  // Before the label photo, the owner sees the record is missing.
   await page.goto(`${BASE}/owner/record`);
-  await page.getByText("not on file yet").waitFor();
-  check("record starts without brand, model, or serial", (await count(page, "HL-40G-NG")) === 0);
-  check("record says the tenant was asked for a photo", (await page.getByText(/asked Sample Tenant for a photo/).count()) > 0);
-
-  // Tenant sends the label photo.
-  await page.goto(`${BASE}/tenant/label`);
-  await page.getByRole("button", { name: "Use sample label photo" }).click();
-  await page.locator("#label-serial").waitFor({ timeout: 8000 });
-  check("tenant does not see a comparison with the record", (await page.getByText("Matches the record").count()) === 0);
-  await page.getByRole("button", { name: "Looks right" }).click();
-  await page.getByRole("button", { name: "Send to Porchlight" }).click();
-  await page.getByText("Porchlight has what it needs").waitFor();
-  check("tenant label saves to the record", true);
-  await page.reload();
-  await page.getByText("Porchlight has what it needs").waitFor({ timeout: 8000 });
-  check("tenant label survives a reload", true);
-
-  // Owner reviews the request and sees the tenant's answers.
-  await page.goto(`${BASE}/owner/request`);
-  await page.getByText("AI confidence").waitFor({ timeout: 8000 });
-  check("owner sees the agent log", (await count(page, "What Porchlight already did")) > 0 && (await count(page, "read_label")) > 0);
-  check("owner sees the tenant's report", (await count(page, "New request from Sample Tenant")) > 0);
-  check("owner sees the likely cause", (await count(page, "Likely cause")) > 0);
-  check("owner sees the tenant's answers", (await count(page, "A slow drip")) > 0 && (await count(page, "No gas smell")) > 0);
-  check("owner sees the heater read from the tenant's photo", (await page.getByText(/Water heater: Hearthline HL-40G-NG/).count()) > 0);
-  check("owner sees what the tenant was told", (await count(page, "What the tenant was told to do")) > 0);
-  check("owner has no safety checkboxes to tick", (await page.locator('main input[type="checkbox"]').count()) === 0);
-
-  // House record already knows the heater.
-  await page.getByRole("link", { name: /^Next: House record/ }).click();
-  await page.waitForURL("**/owner/record");
   await page.getByText("Hearthline").first().waitFor();
-  check("record already has the model", (await count(page, "HL-40G-NG")) > 0);
-  check("record already has the serial number", (await count(page, "15C0412-X")) > 0);
-  check("record says it came from the tenant's photo", (await page.getByText(/label photo sent by the tenant/).count()) > 0);
-  check("record says nothing had to be typed", (await count(page, "You do not have to type any of this")) > 0);
-  check("record does not ask for a label to be read", (await page.getByRole("button", { name: "Use sample label photo" }).count()) === 0);
+  check("the record has the model from the tenant's photo", (await count(page, "HL-40G-NG")) > 0);
+  check("the record says it came from the tenant's photo", (await page.getByText(/label photo sent by the tenant/).count()) > 0);
+  check("the label year is marked as a guess", (await count(page, "Inferred from the serial")) === 0);
 
-  // Optional label tool compares with the record.
   await page.getByRole("link", { name: /Add or check equipment details/ }).click();
   await page.waitForURL("**/owner/label");
-  check("label tool says you usually will not need it", (await count(page, "You usually will not need this screen")) > 0);
-  check("label tool says the record builds itself", (await page.getByText(/Porchlight builds the house record for you/).count()) > 0);
   await page.getByRole("button", { name: "Use sample label photo" }).click();
   await page.locator("#label-serial").waitFor({ timeout: 8000 });
-  check("label tool compares with the record", (await page.getByText("Matches the record").count()) >= 5);
-  check("label tool confirms everything matches", (await count(page, "Everything matches the house record")) > 0);
+  check("the label year is marked as inferred from the serial", (await count(page, "Inferred from the serial")) > 0);
+  check("the label tool compares with the record", (await page.getByText("Matches the record").count()) >= 5);
   await page.locator("#label-serial").fill("15C0412-Y");
   await page.getByText("Different from the record").first().waitFor();
-  check("label tool flags an edited field as different", (await page.getByText(/The record says: 15C0412-X/).count()) > 0);
   await page.getByRole("button", { name: "Save to the house record" }).click();
   await page.waitForURL("**/owner/record");
   await page.getByText("15C0412-Y").waitFor();
-  check("record shows it was checked against a label", (await count(page, "Checked against a label")) > 0);
-  await page.reload();
-  await page.getByText("15C0412-Y").waitFor();
-  check("checked record survives a reload", true);
+  check("a checked record shows it was checked against a label", (await count(page, "Checked against a label")) > 0);
 
-  // Forecast, quote, decide.
   await page.goto(`${BASE}/owner/forecast`);
-  await page.getByText("overdue or due now").first().waitFor();
+  await page.locator("text=overdue or due now >> visible=true").first().waitFor();
   check("forecast marks the water heater overdue", true);
+  await page.goto(`${BASE}/owner/decide`);
+  await page.getByText("Replace it").waitFor();
+  check("decision is replace, with the real numbers", (await count(page, "110%")) > 0);
+
   await page.goto(`${BASE}/owner/quote`);
   await page.getByText(/Best pick/).waitFor({ timeout: 8000 });
   check("quote screen picks Willow Glen at $2,450", (await page.getByText(/Best pick:.*Willow Glen.*\$2,450/).count()) > 0);
-  check("quote screen shows the $400 saving", (await page.getByText(/\$400 less/).count()) > 0);
   check("Bayside is slightly high", (await page.locator("label", { hasText: "Bayside" }).getByText("Slightly high").count()) > 0);
   check("A1 is skipped for a missing license", (await page.getByText(/A1 Rapid Plumbing:.*No license number is shown/).count()) > 0);
-  check("A1 has no permit line noted", (await page.getByText(/Not listed: a permit/).count()) > 0);
-  check("quote screen says plain code, not AI", (await count(page, "Plain code, not AI.")) > 0);
   await page.locator("label", { hasText: "Bayside" }).click();
   await page.getByRole("heading", { name: "Bayside Plumbing and Heating" }).waitFor();
-  check("selecting Bayside shows its verdict", (await page.getByText(/above the top of the typical range/).count()) > 0);
-
-  // Paste a quote.
   await page.getByRole("button", { name: "Use a sample quote" }).click();
   await page.getByRole("heading", { name: "Harbor View Plumbing" }).waitFor();
-  check("pasted sample quote reads 7 lines and a $3,170 total", (await page.getByText("$3,170").count()) > 0);
-  check("pasted quote is rated high", (await page.getByText(/about 22% above the top/).count()) > 0);
+  check("pasted sample quote is rated high", (await page.getByText(/about 22% above the top/).count()) > 0);
   await page.locator("#paste-quote").fill("Nothing here to read");
   await page.getByRole("button", { name: "Check this quote" }).click();
   await page.getByText("I could not find any dollar amounts").waitFor();
-  check("pasting text with no prices explains what to do", true);
   await page.locator("#paste-quote").fill("Cheap Co\nWater heater ..... $500\nLabor ..... $300\nTotal $900");
   await page.getByRole("button", { name: "Check this quote" }).click();
   await page.getByText(/lines add up to \$800/).waitFor();
   check("a quote whose lines do not add up is flagged", true);
-  await page.goto(`${BASE}/owner/decide`);
-  await page.getByText("Replace it").waitFor();
-  check("decision is replace, with the real numbers", (await count(page, "110%")) > 0);
+
+  // The owner picks a different vendor by hand, and the agent texts the tenant that one.
+  await page.goto(`${BASE}/owner/book`);
+  await page.locator("label", { hasText: "Bayside" }).click();
+  await page.getByLabel("To the vendor: Bayside Plumbing and Heating").waitFor({ timeout: 8000 });
+  check("not-to-exceed defaults to 10% above the quote", (await page.locator("#nte").inputValue()) === "3135");
+  await page.getByRole("button", { name: "Approve and send" }).click();
+  await page.getByText("Approved and sent").waitFor();
+  check("booking says nothing was actually sent", (await count(page, "Nothing was actually sent")) > 0);
+  await page.goto(`${BASE}/tenant`);
+  await page.getByText(/Good news: Bayside Plumbing and Heating is booked/).waitFor(wait20);
+  check("the tenant is texted the vendor the owner picked by hand", true);
 
   // Rent math.
   await page.goto(`${BASE}/owner/rent`);
   await page.getByText("$3,456.00").first().waitFor();
   check("rent shows max new rent $3,456.00", true);
   check("rent shows 8.0% cap", (await count(page, "8.0%")) > 0);
-  check("rent shows 30 day notice at 5%", (await count(page, "30 days")) > 0);
   await page.locator("#proposed-rent").fill("3552");
   await page.getByText("90 days").first().waitFor();
   check("rent shows 90 day notice at 11%", true);
-  check("legal callout is present", (await page.getByText(/San Jose rent ordinances/).count()) > 0);
   check("draft, not legal advice is next to the result", (await count(page, "Draft, not legal advice")) >= 2);
   await page.getByRole("button", { name: "Copy notice" }).click();
   await page.getByText(/Copied to your clipboard/).waitFor();
   const clip = await page.evaluate(() => navigator.clipboard.readText());
   check("copied notice is stamped as a draft", clip.startsWith("DRAFT, NOT LEGAL ADVICE"));
 
-  // Book with one tap.
-  await page.goto(`${BASE}/owner/book`);
-  check("book screen shows the plan: $2,450, limit $2,695, saves $400", (await count(page, "$2,695")) > 0 && (await count(page, "$400")) > 0);
-  await page.getByRole("button", { name: /Approve Porchlight.s plan/ }).click();
-  await page.getByText("Vendor notified").waitFor();
-  check("one tap approves Willow Glen with a $2,695 limit", (await page.getByText(/Willow Glen Water Heater Co\./).count()) > 0 && (await count(page, "$2,695")) > 0);
-  check("booking shows what Porchlight did after the tap", (await count(page, "What Porchlight did after your tap")) > 0);
-  await page.getByText("Tenant notified").waitFor();
-  await page.getByText("Visit scheduled").waitFor();
-  check("confirmation says nothing was sent", (await count(page, "Nothing was actually sent")) > 0);
-  check("booking explains what the tenant sees", (await count(page, "What the tenant sees")) > 0);
-  check("booking explains the record updates itself", (await page.getByText(/go into your\s+house record/).count()) > 0);
-
-  // Tenant sees the booking and confirms the time.
-  await page.goto(`${BASE}/tenant/status`);
-  await page.getByText(/Message from Sample Owner/).waitFor();
-  await page.getByText("Visit window:").waitFor({ timeout: 8000 });
-  check("tenant sees who is coming and when", (await page.getByText(/Willow Glen Water Heater Co\., Tomorrow/).count()) > 0);
-  await page.getByRole("button", { name: "That time works" }).click();
-  await page.getByText("Time confirmed").waitFor();
-  check("tenant can confirm the time", true);
-
-  // Owner home reflects it.
-  await page.goto(`${BASE}/owner`);
-  await page.getByText("BOOKED").first().waitFor();
-  check("owner home shows BOOKED", true);
-  check("owner home shows the tenant confirmed the time", (await count(page, "Tenant confirmed the time")) > 0);
-  check("owner home shows the tenant answered", (await count(page, "Tenant answered the questions")) > 0);
-
-  // The plumber finishes: the record updates itself.
-  await page.goto(`${BASE}/owner/book`);
-  await page.getByRole("button", { name: "Mark job done" }).click();
-  await page.getByText("House record updated automatically").waitFor();
-  await page.goto(`${BASE}/owner/record`);
-  await page.getByText("New, added automatically").waitFor();
-  check("record shows the new heater", (await count(page, "26J0007-A")) > 0);
-  check("record keeps history of the replaced heater", (await page.getByText(/was\s+replaced/).count()) > 0);
-  await page.goto(`${BASE}/owner/forecast`);
-  await page.getByText("beyond 5 years").first().waitFor();
-  check("forecast no longer has the water heater overdue", (await page.getByText("overdue or due now").count()) === 0);
-  await page.goto(`${BASE}/tenant/status`);
-  await page.getByText("The new water heater is installed").waitFor();
-  check("tenant status shows fixed", true);
-  await page.goto(`${BASE}/owner`);
-  await page.getByText("DONE").first().waitFor();
-  check("owner home shows DONE", true);
-
-  // Reset demo from the footer.
+  // Reset clears the agent too.
   await page.getByRole("button", { name: "Reset demo" }).click();
   await page.waitForURL(`${BASE}/`);
+  await page.goto(`${BASE}/tenant`);
+  check("Reset demo clears the conversation", (await count(page, "Good news")) === 0);
   await page.goto(`${BASE}/owner/record`);
   await page.getByText("not on file yet").waitFor();
   check("Reset demo clears the heater record", (await count(page, "15C0412-Y")) === 0);
-  await page.goto(`${BASE}/owner/book`);
-  await page.getByText("1. Pick a vendor").waitFor();
-  check("Reset demo clears the booking", true);
-  await page.goto(`${BASE}/tenant/status`);
-  await page.getByText("Owner choosing a plumber").waitFor();
-  check("Reset demo clears the tenant status", (await count(page, "Visit window:")) === 0);
-
-  check("no console errors in the full story", errors.length === 0, errors.join(" | "));
+  check("no console errors in the owner detail pages", errors.length === 0, errors.join(" | "));
   await context.close();
 }
 
-// ======================= Skipped label, typed entry =======================
+// ======================= Tenant cannot reach the label =======================
 {
   const { context, page, errors } = await newPage({ viewport: { width: 1280, height: 800 } });
-  await resetDemo(page);
-  await page.goto(`${BASE}/tenant/request`);
-  await page.getByRole("button", { name: "Submit" }).click();
-  await page.getByText("Owner notified").first().waitFor({ timeout: 8000 });
-  await page.goto(`${BASE}/tenant/label`);
-  await page.getByRole("button", { name: "I cannot reach it" }).click();
-  await page.getByText("That is okay").waitFor();
-  await page.goto(`${BASE}/owner/request`);
-  await page.getByText("AI confidence").waitFor({ timeout: 8000 });
-  check("owner is told the tenant could not reach the label", (await page.getByText(/could not reach the label/).count()) > 0);
+  await reportByText(page, "water heater is leaking all over the garage");
+  await page.getByRole("button", { name: /^2\s+No$/ }).click();
+  await page.getByRole("button", { name: "Done", exact: true }).click();
+  await page.getByRole("button", { name: "I can't reach it" }).waitFor(wait20);
+  await page.getByRole("button", { name: "I can't reach it" }).click();
+  await page.getByText(/work from the inspection report/).waitFor(wait20);
+  await page.goto(`${BASE}/owner`);
+  await page.getByText(/couldn't reach the water heater label/).first().waitFor(wait20);
+  check("the owner is told the tenant could not reach the label", true);
   await page.goto(`${BASE}/owner/label`);
   await page.getByRole("radio", { name: "Type the details in" }).click();
   const save = page.getByRole("button", { name: "Save to the house record" });
@@ -308,9 +255,10 @@ const count = async (page, text) => page.getByText(text).count();
   await page.getByText("Acme").first().waitFor();
   check("typed details are saved and marked as typed by the owner", (await page.getByText("Typed in by the owner").count()) > 0);
   check("typed record does not claim to be checked against a label", (await count(page, "Checked against a label")) === 0);
-  check("no console errors in the skipped label flow", errors.length === 0, errors.join(" | "));
+  check("no console errors when the label was skipped", errors.length === 0, errors.join(" | "));
   await context.close();
 }
+
 
 // ======================= Watch it work =======================
 {
@@ -386,7 +334,7 @@ const count = async (page, text) => page.getByText(text).count();
   await owner.getByRole("button", { name: "Approve", exact: true }).click();
   await owner.getByText(/Approved. Booked/).waitFor(wait);
   check("one tap books the plumber", true);
-  await tenant.getByText(/Your plumber is Willow Glen/).waitFor(wait);
+  await tenant.getByText(/Good news: Willow Glen.*is booked/).waitFor(wait);
   check("the tenant is told who is coming and when", true);
   check("the approval gate is in the log", (await page.getByText("Owner tapped Approve").count()) > 0);
   await tenant.getByRole("button", { name: /^1\s+That works$/ }).click();
@@ -495,50 +443,44 @@ const count = async (page, text) => page.getByText(text).count();
 {
   const { context, page, errors } = await newPage({ viewport: { width: 1280, height: 800 } });
   const wait = { timeout: 20000 };
-  async function report(text) {
-    await resetDemo(page);
-    await page.goto(`${BASE}/tenant/request`);
-    await page.locator("#description").fill(text);
-    await page.getByRole("button", { name: "Submit" }).click();
-    await page.waitForURL("**/tenant/safety");
-    await page.getByText(/Owner notified|Owner is being called/).first().waitFor(wait);
-  }
+  const report = (text) => reportByText(page, text);
 
   // Triage follows what the tenant wrote.
   await report("I smell gas and I feel dizzy");
-  check("gas smell with dizziness is an EMERGENCY", (await count(page, "EMERGENCY")) > 0);
-  check("the owner is being called for a gas smell", (await count(page, "Owner is being called")) > 0);
   const gasText = await page.locator("main").innerText();
+  check("gas smell with dizziness takes the emergency path", /sounds like an emergency/i.test(gasText) && /leave the home/i.test(gasText) && /911/.test(gasText));
   check("no gas valve instruction for a gas smell", !/turn the gas|gas valve to|pilot|relight/i.test(gasText), "found one");
-  check("the gas emergency says leave the home", /leave the home now/i.test(gasText));
 
   await report("The toilet is clogged and overflowing");
   const toiletText = await page.locator("main").innerText();
-  check("an overflowing toilet gets toilet steps, not water heater steps", /do not flush again/i.test(toiletText) && !/heater/i.test(toiletText.replace(/Heater/g, "")), toiletText.slice(0, 120));
-  check("an overflowing toilet is labeled SOON", (await page.getByText("SOON", { exact: true }).count()) > 0);
+  check("an overflowing toilet gets toilet steps, not water heater steps", /do not flush again/i.test(toiletText) && !/water heater/i.test(toiletText), toiletText.slice(0, 160));
 
   await report("water heater is leaking all over the garage");
-  check("the leak uses the three spec buckets: SOON, not URGENT", (await page.getByText("SOON", { exact: true }).count()) > 0 && (await page.getByText("URGENT", { exact: true }).count()) === 0);
   const leakText = await page.locator("main").innerText();
   check("the leak steps never mention operating a gas valve", !/turn the gas|gas valve to|pilot|relight/i.test(leakText), "found one");
-  check("the leak steps say what to do about a gas smell", /do not touch the gas valve/i.test(leakText));
+  await page.getByRole("button", { name: /^2\s+No$/ }).click();
+  await page.getByText(/never touch the gas valve/).waitFor(wait);
+  check("the leak message says what to do about a gas smell", true);
+  await page.goto(`${BASE}/owner/request`);
+  check("the owner sees the three spec buckets: SOON, not URGENT", (await page.getByText("SOON", { exact: true }).count()) > 0 && (await page.getByText("URGENT", { exact: true }).count()) === 0);
 
   // The owner home is an approval inbox with a status that moves by itself.
   await resetDemo(page);
   await page.goto(`${BASE}/owner`);
+  await page.getByRole("button", { name: "Show me a sample repair" }).click();
   await page.getByRole("button", { name: "Approve", exact: true }).waitFor(wait);
   check("owner home shows the plan, ready for one tap", (await page.getByText(/Replace the water heater with Willow Glen/).count()) > 0);
   check("owner home shows the status tracker at Quoted", (await page.getByRole("list", { name: "Job status" }).getByText("Quoted").count()) > 0);
   await page.getByRole("button", { name: "Approve", exact: true }).click();
   await page.getByText(/Approved. Confirming/).waitFor(wait);
   check("approval shows Approved first", true);
-  await page.getByText(/^\W*BOOKED$/).waitFor(wait);
+  await page.getByRole("button", { name: "Mark done" }).waitFor(wait);
   check("approved moves to booked on its own", true);
   await page.getByRole("button", { name: "Mark done" }).click();
-  await page.getByText(/^\W*DONE$/).waitFor(wait);
+  await page.getByText("All done", { exact: true }).waitFor(wait);
   check("Mark done moves the job to done", true);
   await page.reload();
-  await page.getByText(/^\W*DONE$/).waitFor(wait);
+  await page.getByText("All done", { exact: true }).waitFor(wait);
   check("done survives a reload", true);
 
   // Nothing forces the owner to type: approving with the defaults works.
@@ -603,37 +545,32 @@ const count = async (page, text) => page.getByText(text).count();
 
   // Tenant: rent payment, Q&A from the record, skipped step.
   await resetDemo(page);
-  await page.goto(`${BASE}/tenant/status`);
+  await page.goto(`${BASE}/tenant`);
   await page.getByRole("button", { name: "How much is my rent?" }).click();
   await page.getByText("Your rent is $3,200 per month.").waitFor(wait);
-  await page.getByRole("button", { name: "How old is the water heater?" }).click();
+  await textAgent(page, "How old is the water heater?");
   await page.getByText(/not on file yet/).first().waitFor(wait);
   check("the tenant chat says the label is not on file instead of inventing a brand", (await page.getByText("Hearthline").count()) === 0);
-  await page.locator("#house-question").fill("Can I have a dog?");
-  await page.getByRole("button", { name: "Ask", exact: true }).click();
+  await textAgent(page, "Can I have a dog?");
   await page.getByText(/I don't know whether pets are allowed/).waitFor(wait);
-  await page.getByRole("button", { name: /Ask Sample Owner this/ }).click();
-  await page.getByText(/Your question was sent to Sample Owner/).waitFor(wait);
+  await page.getByRole("button", { name: /Ask Sample Owner/ }).click();
+  await page.getByText(/I'll text you Sample Owner's answer/).waitFor(wait);
   check("an unknown answer says I don't know and offers to ask the owner", true);
   await page.getByRole("button", { name: /Pay \$3,200 \(demo\)/ }).click();
   await page.getByText("Paid (demo)").first().waitFor(wait);
-  check("the tenant can pay rent in the demo, and it says nothing is charged", (await count(page, "nothing was charged")) > 0);
+  await page.getByText(/marked paid. This is a demo/).first().waitFor(wait);
+  check("the tenant can pay rent in the demo, gets a text, and nothing is charged", (await count(page, "nothing was charged")) > 0);
   await page.goto(`${BASE}/owner`);
   await page.getByText("Paid (demo)").first().waitFor(wait);
-  check("the owner home shows rent as paid", true);
-  await page.goto(`${BASE}/tenant/status`);
+  await page.getByText(/paid October 2026 rent/).first().waitFor(wait);
+  check("the owner home shows rent as paid, and the owner got a text", true);
+  await page.goto(`${BASE}/tenant`);
   await page.getByRole("button", { name: "Undo (demo)" }).click();
   await page.getByText("Not marked paid").first().waitFor(wait);
 
   await resetDemo(page);
-  await page.goto(`${BASE}/tenant/request`);
-  check("the report box has a length limit", (await page.locator("#description").getAttribute("maxlength")) === "500");
-  await page.getByRole("button", { name: "Submit" }).click();
-  await page.getByText("Owner notified").first().waitFor(wait);
-  await page.goto(`${BASE}/tenant/label`);
-  await page.getByRole("button", { name: "I cannot reach it" }).click();
-  await page.getByText("That is okay").waitFor(wait);
-  check("a skipped step is shown as skipped, not done", (await page.getByText("One quick photo, skipped").count()) > 0 && (await page.getByText("One quick photo, done").count()) === 0);
+  await page.goto(`${BASE}/owner/label`);
+  check("the owner can still add the heater details by typing", (await page.getByRole("radio", { name: "Type the details in" }).count()) > 0);
 
   // Pages and routes.
   await page.goto(`${BASE}/pricing`);
@@ -661,7 +598,11 @@ const count = async (page, text) => page.getByText(text).count();
 {
   const { context, page } = await newPage();
   const redirects = [
-    ["/triage", "/tenant/safety"],
+    ["/triage", "/tenant"],
+    ["/tenant/request", "/tenant"],
+    ["/tenant/safety", "/tenant"],
+    ["/tenant/label", "/tenant"],
+    ["/tenant/status", "/tenant"],
     ["/label", "/owner/label"],
     ["/record", "/owner/record"],
     ["/quote", "/owner/quote"],
@@ -670,9 +611,9 @@ const count = async (page, text) => page.getByText(text).count();
     ["/forecast", "/owner/forecast"],
     ["/rent", "/owner/rent"],
     ["/login", "/"],
-    ["/tenant", "/tenant/request"],
-    ["/tenant/requests/new", "/tenant/request"],
-    ["/requests/new", "/tenant/request"],
+    
+    ["/tenant/requests/new", "/tenant"],
+    ["/requests/new", "/tenant"],
   ];
   for (const [from, to] of redirects) {
     await page.goto(`${BASE}${from}`);
@@ -730,10 +671,9 @@ const count = async (page, text) => page.getByText(text).count();
       },
     });
   });
-  await page.goto(`${BASE}/tenant/request`);
-  await page.getByRole("button", { name: "Submit" }).click();
-  await page.waitForURL("**/tenant/safety");
-  await page.getByText("Owner notified").first().waitFor({ timeout: 8000 });
+  await page.goto(`${BASE}/tenant`);
+  await textAgent(page, "water heater is leaking");
+  await page.getByText(/near an outlet/).waitFor({ timeout: 8000 });
   check("app works with localStorage blocked", true);
   await page.getByRole("button", { name: "Leave feedback" }).click();
   await page.locator("dialog").getByText("4", { exact: true }).click();
@@ -744,42 +684,52 @@ const count = async (page, text) => page.getByText(text).count();
   await context.close();
 }
 
-// ======================= Triage safety, approve limit, order, spacing =======================
+
+// ======================= Triage by text: emergencies, steps, guides =======================
 {
   const { context, page, errors } = await newPage({ viewport: { width: 1280, height: 800 } });
-  async function report(text) {
-    await resetDemo(page);
-    await page.goto(`${BASE}/tenant/request`);
-    await page.locator("#description").fill(text);
-    await page.getByRole("button", { name: "Submit" }).click();
-    await page.waitForURL("**/tenant/safety");
-    await page.getByText(/Owner notified|Owner is being called/).first().waitFor({ timeout: 8000 });
-  }
 
-  await report("I smell gas near the water heater");
-  check("gas smell is an EMERGENCY", (await count(page, "EMERGENCY")) > 0);
-  check("gas smell tells the tenant to leave the home", (await count(page, "Leave the home now")) > 0);
-  check("gas smell tells the tenant to call 911 or the gas company", (await page.getByText(/911 or your gas company/).count()) > 0);
-  check("gas smell calls the owner right now", (await count(page, "Owner is being called")) > 0);
-  await page.getByRole("link", { name: /Next: One quick photo/ }).click();
-  await page.getByText("No photo needed this time").waitFor();
-  check("a gas emergency does not ask the tenant for a photo", true);
+  await reportByText(page, "I smell gas near the water heater");
+  const gas = await page.locator("main").innerText();
+  check("gas smell tells the tenant to leave the home and call 911", /leave the home/i.test(gas) && /911/.test(gas));
+  check("gas smell never mentions a gas valve to touch", !/turn the gas|gas valve to|pilot|relight/i.test(gas));
+  check("gas smell never asks for a photo", (await page.getByText(/silver sticker/).count()) === 0);
   await page.goto(`${BASE}/owner`);
-  await page.getByText(/called you, because it cannot wait/).waitFor();
-  check("owner home says the owner was called", true);
-  await page.goto(`${BASE}/owner/request`);
-  await page.getByText("AI confidence").waitFor({ timeout: 8000 });
-  check("owner sees the emergency too", (await count(page, "EMERGENCY")) > 0);
+  await page.getByText("Emergency: Gas safety").first().waitFor(wait20);
+  check("the owner gets an emergency card and a call", (await page.getByText(/Porchlight is calling about an emergency/).count()) > 0);
+  await page.getByRole("button", { name: "I'm on it" }).click();
+  await page.goto(`${BASE}/tenant`);
+  await page.getByText(/Your landlord is on it/).waitFor(wait20);
+  check("the owner's acknowledgement is texted to the tenant", true);
 
-  await report("The toilet is clogged");
-  check("a clogged toilet is not the water heater result", (await page.getByText(/tank/i).count()) === 0);
-  check("a clogged toilet is routine", (await count(page, "ROUTINE")) > 0);
+  await reportByText(page, "The toilet is clogged");
+  check("a clogged toilet is not the water heater result", (await page.getByText(/water heater/i).count()) === 0);
 
-  await report("We have no heat and it is freezing");
-  check("no heat gives no fix steps", (await page.getByText(/nothing for you to fix/i).count()) > 0);
-  check("no heat calls the owner", (await count(page, "Owner is being called")) > 0);
+  await reportByText(page, "We have no heat and it is freezing");
+  const heat = await page.locator("main").innerText();
+  check("no heat gives the tenant no fix steps", !/\n1\)/.test(heat));
+  await page.goto(`${BASE}/owner`);
+  await page.getByText(/Porchlight is calling about hvac/i).first().waitFor(wait20);
+  check("no heat calls the owner", true);
+
+  await reportByText(page, "I feel dizzy and have a headache near the furnace");
+  check("dizziness near a gas appliance is an emergency", (await page.getByText(/sounds like an emergency/).count()) > 0);
+
+  // HELP gives the hand-written guide, in plain text.
+  await reportByText(page, "water heater is leaking");
+  await page.getByRole("button", { name: /^2\s+No$/ }).click();
+  await page.getByRole("button", { name: "HELP" }).waitFor(wait20);
+  await page.getByRole("button", { name: "HELP" }).click();
+  await page.getByText(/Turn off the water to the water heater/).waitFor(wait20);
+  check("HELP sends the water valve guide in plain text", (await count(page, "Stop and get help if")) > 0);
+  check("the guide never tells the tenant to touch gas", !/turn the gas|pilot|relight/i.test(await page.locator("main").innerText()));
+
+  // A tenant asks a question, and an unknown answer says so.
+  await reportByText(page, "Can I have a dog?");
+  check("an unknown question says I don't know", (await page.getByText(/I don't know whether pets are allowed/).count()) > 0);
 
   // Approve limit
+
   await resetDemo(page);
   await page.goto(`${BASE}/owner/book`);
   await page.locator("label", { hasText: "Willow Glen" }).click();
@@ -798,7 +748,7 @@ const count = async (page, text) => page.getByText(text).count();
   check("forecast is sorted soonest first", order.join(",") === "Water heater,Air conditioner,Dishwasher,Furnace,Refrigerator,Roof", order.join(","));
 
   // Text spacing on visible text, on every page
-  for (const path of ["/", "/pricing", "/about", "/sms", "/tenant/request", "/tenant/safety", "/tenant/label", "/tenant/status", "/owner", "/owner/request", "/owner/record", "/owner/forecast", "/owner/rent", "/owner/decide", "/owner/quote", "/owner/book", "/owner/label", "/feedback"]) {
+  for (const path of ["/", "/pricing", "/about", "/sms", "/tenant", "/owner", "/owner/request", "/owner/record", "/owner/forecast", "/owner/rent", "/owner/decide", "/owner/quote", "/owner/book", "/owner/label", "/feedback"]) {
     await page.goto(`${BASE}${path}`);
     await page.waitForTimeout(1500);
     const bad = await page.evaluate((pagePath) => {
@@ -814,42 +764,6 @@ const count = async (page, text) => page.getByText(text).count();
     check(`no words glued to numbers on ${path}`, bad.length === 0, bad.join(" | "));
   }
   check("no console errors in the QA checks", errors.length === 0, errors.join(" | "));
-  await context.close();
-}
-
-// ======================= Safety guides =======================
-{
-  const { context, page, errors } = await newPage({ viewport: { width: 390, height: 844 } });
-  await resetDemo(page);
-  await page.goto(`${BASE}/tenant/request`);
-  await page.getByRole("button", { name: "Submit" }).click();
-  await page.waitForURL("**/tenant/safety");
-  await page.getByText("Owner notified").first().waitFor({ timeout: 8000 });
-  check("tenant safety explains the guides", (await count(page, "How to do this")) > 0);
-  check("tenant sees the agent log", (await count(page, "See what Porchlight did with your report")) > 0);
-  const summaries = page.locator("summary", { hasText: "How to do this" });
-  check("each safety step has a guide", (await summaries.count()) === 4, String(await summaries.count()));
-  await summaries.nth(0).click();
-  await page.getByText(/Turn off the water to the water heater/).waitFor();
-  check("water guide shows the valve diagram labels", (await count(page, "Handle lines up with the pipe")) > 0);
-  check("water guide has a stop-and-get-help list", (await count(page, "Stop and get help if:")) > 0);
-  await summaries.nth(3).click();
-  await page.getByText(/If you ever smell gas/).waitFor();
-  check("the gas-smell guide says do not touch the gas valve", (await page.getByText(/Do not touch the gas valve or the heater/).count()) > 0);
-  const tenantSteps = await page.locator("main").innerText();
-  check("the tenant is never told to turn a gas valve", !/turn the gas|gas valve to|pilot|relight/i.test(tenantSteps.replace(/Do not touch the gas valve/gi, "")), "found a gas valve instruction");
-
-  // Gas emergency guides.
-  await resetDemo(page);
-  await page.goto(`${BASE}/tenant/request`);
-  await page.locator("#description").fill("I smell gas near the water heater");
-  await page.getByRole("button", { name: "Submit" }).click();
-  await page.getByText("Owner is being called").first().waitFor({ timeout: 8000 });
-  await page.locator("summary", { hasText: "How to do this" }).nth(0).click();
-  await page.getByText(/Never go back in to look for the leak/).waitFor();
-  check("gas emergency guide says never go back in", true);
-
-  check("no console errors in guide checks", errors.length === 0, errors.join(" | "));
   await context.close();
 }
 

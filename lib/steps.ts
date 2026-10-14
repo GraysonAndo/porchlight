@@ -1,6 +1,6 @@
 // The screens of the demo, grouped by who is using them.
 //
-//  tenant   : the person living in the home. Reports a problem, stays safe, follows progress.
+//  tenant   : the person living in the home. One screen: text Porchlight and get updates.
 //  owner    : the person who owns the home. Decides and approves spending.
 //  tools    : owner "plan ahead" tools that are not part of one repair.
 //  optional : owner side tool for older equipment, not part of the main flow.
@@ -42,8 +42,8 @@ export const FLOWS: Record<FlowId, FlowInfo> = {
   tenant: {
     id: "tenant",
     label: "Tenant",
-    blurb: "Reports a problem, stays safe, follows progress",
-    numbered: true,
+    blurb: "One screen: text Porchlight, get updates",
+    numbered: false,
     home: "/",
     homeLabel: "Back to home",
   },
@@ -93,36 +93,12 @@ export const STEPS: Step[] = [
   },
   // ---- Tenant ----
   {
-    id: "tenant-report",
+    id: "tenant-home",
     flow: "tenant",
-    path: "/tenant/request",
-    short: "Report",
-    title: "Report a problem",
-    why: "Tenants describe the problem in their own words and attach a photo. This replaces a long thread of texts and phone calls. The tenant does not choose or pay for the repair. The owner does.",
-  },
-  {
-    id: "tenant-safety",
-    flow: "tenant",
-    path: "/tenant/safety",
-    short: "Safety",
-    title: "What to do right now",
-    why: "While the owner decides what to do, the tenant needs to stay safe and limit the damage. Each step has simple instructions, so nobody has to search the web in a stressful moment.",
-  },
-  {
-    id: "tenant-label",
-    flow: "tenant",
-    path: "/tenant/label",
-    short: "Photo",
-    title: "One quick photo",
-    why: "Porchlight builds the house record from the label on the equipment, so the owner never has to hunt for paperwork. The tenant is only asked when the record is missing the details, and only once. If the label is hard to reach, they can skip it and the owner adds it instead.",
-  },
-  {
-    id: "tenant-status",
-    flow: "tenant",
-    path: "/tenant/status",
-    short: "Status",
-    title: "Request status",
-    why: "Tenants should never have to chase anyone to find out what is happening. This shows each stage, and asks the tenant to confirm the time the plumber can come.",
+    path: "/tenant",
+    short: "Home",
+    title: "How can we help?",
+    why: "A tenant should not have to learn an app. They text Porchlight about a problem or a question, and it handles the rest: safety first, one photo if needed, and a text each time something changes. The tenant never sees prices, quotes, or the owner's decisions.",
   },
   // ---- Owner repair flow ----
   {

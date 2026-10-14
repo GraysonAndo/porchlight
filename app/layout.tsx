@@ -8,6 +8,7 @@ import { SiteFooter } from "@/components/SiteFooter";
 import { DemoGuide } from "@/components/DemoGuide";
 import { FeedbackButton } from "@/components/FeedbackButton";
 import { ResetOnQuery } from "@/components/ResetOnQuery";
+import { AgentDriver } from "@/components/AgentDriver";
 
 const nunito = Nunito_Sans({
   variable: "--font-nunito",
@@ -47,6 +48,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           <SiteFooter />
           <FeedbackButton />
           <ResetOnQuery />
+          <AgentDriver />
         </StoreProvider>
       </body>
     </html>

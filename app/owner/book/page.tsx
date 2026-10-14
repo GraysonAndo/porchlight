@@ -142,8 +142,8 @@ function ApproveBody() {
             {PROPERTY.tenant} gets the booking, the plumber&apos;s name, and the time on their status page, and is asked to
             confirm the time.
           </p>
-          <Link href="/tenant/status" className="btn btn-secondary mt-3">
-            See the tenant&apos;s status page
+          <Link href="/tenant" className="btn btn-secondary mt-3">
+            See what the tenant sees
           </Link>
         </Card>
 
@@ -185,11 +185,6 @@ function ApproveBody() {
           )}
         </Card>
 
-        <div>
-          <button type="button" className="btn btn-secondary" onClick={() => actions.clearApproval()}>
-            Start this step over
-          </button>
-        </div>
       </StepShell>
     );
   }

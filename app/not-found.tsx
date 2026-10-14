@@ -13,8 +13,8 @@ export default function NotFound() {
         <Link href="/owner" className="btn btn-secondary">
           Owner home
         </Link>
-        <Link href="/tenant/request" className="btn btn-secondary">
-          Report a problem
+        <Link href="/tenant" className="btn btn-secondary">
+          Tenant view
         </Link>
       </div>
     </div>

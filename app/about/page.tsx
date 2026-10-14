@@ -8,7 +8,7 @@ const FAQ: { q: string; a: string }[] = [
   },
   {
     q: "What does my tenant see?",
-    a: "A simple page, or text messages. They report a problem with a photo, get safe steps, send one photo of an equipment label if it is needed, follow the status, and ask questions about the home. Answers come only from the house record and the lease on file, and if it is not there, Porchlight says it does not know. They never see prices, quotes, or your decisions.",
+    a: "A simple page, or text messages. They text a problem (or a question) on one screen, get safe steps, send one photo of an equipment label if asked, and get a text for every update. Answers come only from the house record and the lease on file, and if it is not there, Porchlight says it does not know. They never see prices, quotes, or your decisions.",
   },
   {
     q: "Does the AI set prices or the rent cap?",

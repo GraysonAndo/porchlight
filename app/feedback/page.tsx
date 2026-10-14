@@ -88,7 +88,7 @@ export default function FeedbackPage() {
           <p className="text-lg font-bold">No notes yet.</p>
           <p className="text-ink-soft">
             Open any screen and tap &quot;Leave feedback&quot; to add one.{" "}
-            <Link href="/tenant/request" className="font-bold underline underline-offset-4">
+            <Link href="/tenant" className="font-bold underline underline-offset-4">
               Start the demo
             </Link>
           </p>

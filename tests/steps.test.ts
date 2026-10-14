@@ -14,8 +14,9 @@ describe("steps", () => {
     }
   });
 
-  it("gives the tenant 4 screens and the owner repair flow 5", () => {
-    expect(flowSteps("tenant").map((s) => s.short)).toEqual(["Report", "Safety", "Photo", "Status"]);
+  it("gives the tenant one screen and the owner repair details 5", () => {
+    expect(flowSteps("tenant").map((s) => s.short)).toEqual(["Home"]);
+    expect(FLOWS.tenant.numbered).toBe(false);
     expect(flowSteps("owner").map((s) => s.short)).toEqual(["Request", "Record", "Quote", "Decide", "Book"]);
   });
 
@@ -45,11 +46,11 @@ describe("steps", () => {
     expect(neighbors(quote).next?.id).toBe("owner-decide");
     expect(neighbors(stepById("owner-request")).prev).toBeUndefined();
     expect(neighbors(stepById("owner-book")).next).toBeUndefined();
-    expect(neighbors(stepById("tenant-status")).next).toBeUndefined();
+    expect(neighbors(stepById("tenant-home")).next).toBeUndefined();
   });
 
   it("names screens for the feedback notes", () => {
-    expect(screenNameFor("/tenant/safety")).toBe("Tenant, screen 2 of 4: What to do right now");
+    expect(screenNameFor("/tenant")).toBe("Tenant: How can we help?");
     expect(screenNameFor("/owner/decide")).toBe("Owner, screen 4 of 5: Repair or replace");
     expect(screenNameFor("/owner/forecast")).toBe("Plan ahead: 5-year forecast");
     expect(screenNameFor("/owner")).toBe("Owner home");
@@ -57,7 +58,7 @@ describe("steps", () => {
   });
 
   it("knows which side a path belongs to", () => {
-    expect(roleForPath("/tenant/status")).toBe("tenant");
+    expect(roleForPath("/tenant")).toBe("tenant");
     expect(roleForPath("/owner/record")).toBe("owner");
     expect(roleForPath("/")).toBeNull();
     expect(roleForPath("/feedback")).toBeNull();

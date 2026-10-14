@@ -26,7 +26,7 @@ const PHOTO_ALT: Record<PhotoKind, string> = {
   blurry: "Photo sent by the tenant: the sticker on the water heater, too blurry to read",
 };
 
-function Typing() {
+export function Typing() {
   return (
     <div className="flex items-end gap-2" role="status" aria-label="Porchlight is typing">
       <span className="shrink-0">
@@ -52,7 +52,7 @@ function Attachment({ title, body }: { title: string; body: string }) {
   );
 }
 
-function Bubble({ msg, perspective }: { msg: Msg; perspective: Party }) {
+export function Bubble({ msg, perspective, via }: { msg: Msg; perspective: Party; via?: "text" | "app" }) {
   const mine = msg.dir === "in" && msg.party === perspective;
 
   if (msg.channel === "call") {
@@ -93,6 +93,7 @@ function Bubble({ msg, perspective }: { msg: Msg; perspective: Party }) {
             </span>
           )}
           {mine && <span>Delivered</span>}
+          {!mine && via && <span>{via === "text" ? "Texted" : "In app only"}</span>}
           <span>{clockText(msg.at)}</span>
         </p>
       </div>
@@ -100,7 +101,7 @@ function Bubble({ msg, perspective }: { msg: Msg; perspective: Party }) {
   );
 }
 
-function OwnerButtons({ msg, onTap }: { msg: Msg; onTap: (msgId: string, action: string) => void }) {
+export function OwnerButtons({ msg, onTap }: { msg: Msg; onTap: (msgId: string, action: string) => void }) {
   if (!msg.actions) return null;
   return (
     <div className="reveal -mt-1 flex flex-wrap gap-2 pl-8" role="group" aria-label="Quick replies">
@@ -139,10 +140,28 @@ interface SmsPhoneProps {
   suggestions?: { label: string; text: string }[];
 }
 
-export function SmsPhone({ party, title, label, msgs, typing, clock, quiet, placeholder, onSend, onTap, onPhoto, suggestions }: SmsPhoneProps) {
+export interface ComposerProps {
+  party: "tenant" | "owner";
+  last: Msg | undefined;
+  placeholder: string;
+  onSend: (text: string) => void;
+  onPhoto?: (kind: PhotoKind) => void;
+  suggestions?: { label: string; text: string }[];
+  /** Words for the photo menu, for example "Photo of the label" */
+  photoLabels?: [PhotoKind, string][];
+  className?: string;
+}
+
+const DEFAULT_PHOTOS: [PhotoKind, string][] = [
+  ["label", "Label photo"],
+  ["blurry", "Blurry photo"],
+  ["leak", "Photo of the leak"],
+];
+
+/** The message box: quick replies, a photo button, and a text field. */
+export function Composer({ party, last, placeholder, onSend, onPhoto, suggestions, photoLabels = DEFAULT_PHOTOS, className = "border-t border-line bg-white/80 p-2" }: ComposerProps) {
   const [draft, setDraft] = useState("");
   const [menu, setMenu] = useState(false);
-  const last = msgs[msgs.length - 1];
   // Tenant quick replies live under the latest message from Porchlight, until the tenant answers.
   const chips = party === "tenant" && last && last.dir === "out" && last.actions ? last.actions : [];
 
@@ -154,8 +173,8 @@ export function SmsPhone({ party, title, label, msgs, typing, clock, quiet, plac
     setDraft("");
   }
 
-  const footer = (
-    <div className="border-t border-line bg-white/80 p-2">
+  return (
+    <div className={className}>
       {(chips.length > 0 || (suggestions && suggestions.length > 0)) && (
         <div className="mb-2 flex flex-wrap gap-1.5" role="group" aria-label="Quick replies">
           {chips.map((c) => (
@@ -172,13 +191,7 @@ export function SmsPhone({ party, title, label, msgs, typing, clock, quiet, plac
       )}
       {menu && onPhoto && (
         <div className="mb-2 flex flex-wrap gap-1.5" role="group" aria-label="Choose a photo to send">
-          {(
-            [
-              ["label", "Label photo"],
-              ["blurry", "Blurry photo"],
-              ["leak", "Photo of the leak"],
-            ] as const
-          ).map(([kind, text]) => (
+          {photoLabels.map(([kind, text]) => (
             <button
               key={kind}
               type="button"
@@ -216,6 +229,10 @@ export function SmsPhone({ party, title, label, msgs, typing, clock, quiet, plac
       </form>
     </div>
   );
+}
+
+export function SmsPhone({ party, title, label, msgs, typing, clock, quiet, placeholder, onSend, onTap, onPhoto, suggestions }: SmsPhoneProps) {
+  const footer = <Composer party={party} last={msgs[msgs.length - 1]} placeholder={placeholder} onSend={onSend} onPhoto={onPhoto} suggestions={suggestions} />;
 
   return (
     <PhoneFrame title={title} clock={clock} statusNote={quiet ? "DND on" : "5G"} scrollKey={msgs.length * 2 + (typing ? 1 : 0)} label={label} footer={footer}>
@@ -246,6 +263,7 @@ const AGENT_LABEL: Record<ToolCall["agent"], string> = {
   quote: "Quote audit",
   sentinel: "Compliance sentinel",
   gate: "Approval gate",
+  chat: "Home Q&A",
 };
 
 export function ToolLog({ entries }: { entries: Entry[] }) {

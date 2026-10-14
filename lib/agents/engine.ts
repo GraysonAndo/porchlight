@@ -17,14 +17,18 @@ import { COLLECTED, PLAN } from "../plan";
 import { compareQuote, percentOverTop, verdictFor } from "../quote";
 import { SAMPLE_QUOTE_TEXT, parseQuoteText } from "../quoteParse";
 import { buildNotice, calculateRent, effectiveDateFor } from "../rent";
+import { answerHouseQuestion, classifyTenantText } from "../houseQa";
+import { recordFromValues } from "./record";
 import {
   ACCESS_WINDOWS,
   DEFAULT_RENT_FORM,
   EQUIPMENT,
   NEW_HEATER_RECORD,
   PROPERTY,
+  RENT_MONTH,
   REPAIR_ESTIMATE,
   SAMPLE_LABEL_READING,
+  VENDORS,
   WATER_HEATER_JOB,
 } from "../seed";
 import { guideForStep } from "../safetyGuides";
@@ -39,14 +43,16 @@ import type {
   Ev,
   Msg,
   MsgAction,
+  MsgCard,
   Party,
   PhotoKind,
   TimerId,
   World,
 } from "./types";
 
-/** The story starts at 4:07 AM on day 0. */
-export const START_CLOCK = 4 * 60 + 7;
+import { START_CLOCK, createWorld } from "./world";
+
+export { START_CLOCK, createWorld };
 
 const MINUTES_PER_DAY = 1440;
 const MAX_TIMELINE = 400;
@@ -90,19 +96,6 @@ export const SAMPLE_NOTICE_DATE = "2026-10-19";
 // ---------------------------------------------------------------------------
 // World
 // ---------------------------------------------------------------------------
-
-export function createWorld(): World {
-  return {
-    clock: START_CLOCK,
-    seq: 0,
-    timeline: [],
-    pending: [],
-    triage: { stage: "idle", photoTries: 0, labelSkipped: false, ownerAcked: false, tenantConfirmed: false },
-    quote: { stage: "idle", total: 0, draft: "", counters: 0, counterTotal: 0 },
-    sentinel: { stage: "idle", proposed: 0 },
-    stats: { ownerTaps: 0, saved: 0 },
-  };
-}
 
 /** "4:07 AM", or "Tue 11:20 AM" on later days. */
 export function clockText(at: number): string {
@@ -150,6 +143,7 @@ interface SayOptions {
   actions?: MsgAction[];
   attachment?: Attachment;
   photo?: PhotoKind;
+  card?: MsgCard;
 }
 
 function say(w: World, party: Party, text: string, opts: SayOptions = {}): Msg {
@@ -165,6 +159,7 @@ function say(w: World, party: Party, text: string, opts: SayOptions = {}): Msg {
     actions: opts.actions,
     attachment: opts.attachment,
     photo: opts.photo,
+    card: opts.card,
   };
   push(w, msg);
   return msg;
@@ -239,8 +234,8 @@ export function openOwnerMessage(w: World): Msg | undefined {
 const YES = /^\s*(1|y|yes|yep|yeah|ok|okay|sure|works|that works|correct|right|done)\b/i;
 const NO = /^\s*(2|n|no|nope|nah)\b/i;
 
-function windowText(): string {
-  return ACCESS_WINDOWS[0].replace("Tomorrow, ", "tomorrow ").replace(" to ", " to ");
+function windowText(window: string = ACCESS_WINDOWS[0]): string {
+  return window.replace("Tomorrow, ", "tomorrow ").replace("In 2 days, ", "in 2 days, ");
 }
 
 // ---------------------------------------------------------------------------
@@ -295,6 +290,13 @@ function handle(w: World, ev: Ev): void {
       return onContractorCounter(w, ev.total);
     case "cron.lease":
       return onLeaseCheck(w);
+    case "rent.paid":
+      return onRentPaid(w, ev.paid);
+    case "owner.markDone":
+      return onMarkDone(w);
+    case "owner.choose":
+      w.choice = { vendorId: ev.vendorId, notToExceed: ev.notToExceed, accessWindow: ev.accessWindow };
+      return;
     case "timer":
       return onTimer(w, ev.id);
   }
@@ -311,6 +313,23 @@ function onTimer(w: World, id: TimerId): void {
     case "notice_delivered":
       return noticeDelivered(w);
   }
+}
+
+/** Rent marked paid (demo): both people get a text. Marking it unpaid again sends nothing. */
+function onRentPaid(w: World, paid: boolean): void {
+  if (w.rentPaid === paid) return;
+  w.rentPaid = paid;
+  if (!paid) return;
+  tool(w, "chat", "record_rent_payment", "action", "Rent marked paid (demo)", `${RENT_MONTH}: ${usd(PROPERTY.rent)}. Nothing was charged.`);
+  say(w, "tenant", `Thanks! Your ${RENT_MONTH} rent of ${usd(PROPERTY.rent)} is marked paid. This is a demo, so nothing was charged.`);
+  say(w, "owner", `${PROPERTY.tenant} paid ${RENT_MONTH} rent: ${usd(PROPERTY.rent)} (demo, nothing was charged).`, { silent: true });
+}
+
+/** The owner taps "Mark done": the booked job finishes now instead of at its scheduled time. */
+function onMarkDone(w: World): void {
+  if (w.triage.stage !== "booked") return;
+  const job = w.pending.find((p) => p.id === "job_done");
+  runDue(w, job ? job.at : w.clock + 1);
 }
 
 function onOwnerTap(w: World, msgId: string, action: string): void {
@@ -409,7 +428,15 @@ function emergencyPath(w: World, category: string, steps: string[], why: string)
     w,
     "owner",
     `EMERGENCY at ${PROPERTY.address}: ${category}. The tenant was told to get safe and call 911. I called you. I will not get quotes or book anyone until the home is cleared.`,
-    { actions: [{ id: "ack", label: "I'm on it" }] },
+    {
+      card: {
+        kind: "emergency",
+        title: `Emergency: ${category}`,
+        summary: "Porchlight told your tenant to get safe and call for help, and called you. Nothing is quoted or booked until the home is clear.",
+        facts: [{ label: "Tenant was told", value: "Get out and call 911", tone: "urgent" }],
+      },
+      actions: [{ id: "ack", label: "I'm on it" }],
+    },
   );
 }
 
@@ -432,6 +459,12 @@ function onTenantText(w: World, raw: string): void {
     );
     return;
   }
+
+  // "Please ask the owner" after an "I don't know".
+  if (/^please ask (sample owner|the owner|my landlord)/i.test(text)) return relayQuestion(w);
+
+  // A question about the home or the lease is answered from the data on file, not treated as a repair.
+  if (QUESTION_STAGES.has(stage) && classifyTenantText(text) === "question") return answerQuestion(w, text);
 
   switch (stage) {
     case "idle":
@@ -460,6 +493,40 @@ function onTenantText(w: World, raw: string): void {
     default:
       say(w, "tenant", "Got it, I added that to your case. If anything gets worse or you smell gas, text EMERGENCY and I'll call your landlord.");
   }
+}
+
+const QUESTION_STAGES = new Set<string>(["idle", "closed", "done", "quotes_pending", "decision_sent", "booked"]);
+
+function answerQuestion(w: World, text: string): void {
+  const values = recordAt(w.timeline, w.timeline.length).values;
+  const reply = answerHouseQuestion(text, { heater: recordFromValues(values), rentPaidAt: w.rentPaid ? "paid" : null });
+  tool(
+    w,
+    "chat",
+    "answer_from_record",
+    "code",
+    reply.known ? "Answered from the house record" : "Said I don't know",
+    reply.known
+      ? `Source: ${reply.source ?? "house record"}. Only data on file is used, so nothing is made up.`
+      : "The answer is not in the house record or lease, so Porchlight did not guess.",
+  );
+  say(w, "tenant", reply.answer, {
+    actions: reply.known ? undefined : [{ id: "askowner", label: `Ask ${PROPERTY.owner}`, text: `Please ask ${PROPERTY.owner}` }],
+  });
+}
+
+function relayQuestion(w: World): void {
+  let question = "";
+  for (let i = w.timeline.length - 2; i >= 0; i--) {
+    const e = w.timeline[i];
+    if (e.kind === "msg" && e.party === "tenant" && e.dir === "in" && e.text && !/^please ask/i.test(e.text)) {
+      question = e.text;
+      break;
+    }
+  }
+  tool(w, "chat", "ask_owner", "action", "Passed the question to the owner", "Sent as a quiet text. The owner answers when they can.");
+  say(w, "tenant", `Sent. I'll text you ${PROPERTY.owner}'s answer as soon as I have it.`);
+  say(w, "owner", `${PROPERTY.tenant} asked: "${question || "a question about the home"}". It is not in your records. Reply here and I will pass it on.`, { silent: true });
 }
 
 function startCase(w: World, text: string): void {
@@ -559,6 +626,7 @@ function answerElectrical(w: World, text: string): void {
     "tenant",
     `Good. Two quick steps:\n${numbered(steps)}\nNot sure how? Reply HELP for a step-by-step guide. Don't touch the heater if you're standing in water, and never touch the gas valve. If you smell gas, leave and call 911. Reply DONE when you're finished.`,
     {
+      attachment: valveGuideAttachment(),
       actions: [
         { id: "done", label: "Done", text: "done" },
         { id: "help", label: "HELP", text: "help" },
@@ -572,6 +640,16 @@ function answerElectrical(w: World, text: string): void {
     `Water heater leak at ${PROPERTY.address}. Tenant is safe, water and gas are being shut off. I'm handling it. Nothing needed from you.`,
     { silent: true },
   );
+}
+
+/** The hand-written "how to close the valve" guide, folded under the message. */
+function valveGuideAttachment(): Attachment | undefined {
+  const guide = guideForStep("Turn off the water supply valve to the heater.", {});
+  if (!guide) return undefined;
+  return {
+    title: "How to close the water valve (tap to open)",
+    body: `${numbered(guide.steps)}\nStop and get help if: ${guide.stopIf.join(" ")}`,
+  };
 }
 
 function afterSteps(w: World, text: string): void {
@@ -784,6 +862,17 @@ function quotesArrive(w: World): void {
     "owner",
     `DECISION NEEDED: ${decision.recommendation} the water heater\nWhy: ${decision.reasons.slice(0, 2).join(" ")}\n3 quotes, all checked by plain code:\n${lines}\nMy pick: ${shortName(PLAN.vendorName)}. Saves ${usd(PLAN.savedVsHighest)} vs the highest. Limit ${usd(PLAN.notToExceed)}. Visit ${windowText()}.`,
     {
+      card: {
+        kind: "decision",
+        title: `Replace the water heater with ${shortName(PLAN.vendorName)}`,
+        summary: `The heater is ${age} years old and the tank is leaking, so it cannot be repaired. Porchlight checked 3 quotes and picked the best one for you.`,
+        facts: [
+          { label: "Price", value: `${usd(PLAN.total)}, a fair price`, tone: "good" },
+          { label: "Spending limit", value: usd(PLAN.notToExceed) },
+          { label: "You save", value: `${usd(PLAN.savedVsHighest)} vs the highest quote`, tone: "good" },
+          { label: "Visit", value: windowText() },
+        ],
+      },
       actions: [
         { id: "approve", label: "Approve" },
         { id: "others", label: "Other quotes" },
@@ -792,6 +881,7 @@ function quotesArrive(w: World): void {
     },
   );
   w.triage.stage = "decision_sent";
+  say(w, "tenant", "Update: your landlord is choosing a plumber now. I'll text you the moment one is booked.");
   later(w, 45, "owner_nudge");
 }
 
@@ -841,26 +931,29 @@ function triageOwnerAction(w: World, action: string): void {
     return;
   }
 
-  // approve
+  // approve: the owner's own pick if they chose one by hand, otherwise Porchlight's plan
+  const pick = w.choice ?? { vendorId: PLAN.vendorId, notToExceed: PLAN.notToExceed, accessWindow: ACCESS_WINDOWS[0] };
+  const vendor = VENDORS.find((v) => v.id === pick.vendorId) ?? VENDORS[0];
+  const highest = Math.max(...VENDORS.map((v) => v.total));
   tool(
     w,
     "gate",
     "approval_gate",
     "human",
     "Owner tapped Approve",
-    `One-tap token for ${PLAN.vendorName}, limit ${usd(PLAN.notToExceed)}, expires in 24 hours. Nothing was spent before this tap.`,
+    `One-tap token for ${vendor.name}, limit ${usd(pick.notToExceed)}, expires in 24 hours. Nothing was spent before this tap.`,
   );
-  tool(w, "triage", "book_vendor", "action", `Booked ${PLAN.vendorName}`, `${ACCESS_WINDOWS[0]}. Not-to-exceed ${usd(PLAN.notToExceed)}: the vendor must call the owner before going over.`);
+  tool(w, "triage", "book_vendor", "action", `Booked ${vendor.name}`, `${pick.accessWindow}. Not-to-exceed ${usd(pick.notToExceed)}: the vendor must call the owner before going over.`);
   say(
     w,
     "contractor",
-    `Booking confirmed: ${PLAN.vendorName}, ${windowText()}, ${PROPERTY.address}. Quoted ${usd(PLAN.total)}. Not-to-exceed ${usd(PLAN.notToExceed)}. Please call the owner before going over.`,
-    { attachment: { title: "Booking confirmation", body: `Job: replace the water heater\nVendor: ${PLAN.vendorName}\nVisit: ${ACCESS_WINDOWS[0]}\nQuote: ${usd(PLAN.total)}\nNot to exceed: ${usd(PLAN.notToExceed)}` } },
+    `Booking confirmed: ${vendor.name}, ${windowText(pick.accessWindow)}, ${PROPERTY.address}. Quoted ${usd(vendor.total)}. Not-to-exceed ${usd(pick.notToExceed)}. Please call the owner before going over.`,
+    { attachment: { title: "Booking confirmation", body: `Job: replace the water heater\nVendor: ${vendor.name}\nVisit: ${pick.accessWindow}\nQuote: ${usd(vendor.total)}\nNot to exceed: ${usd(pick.notToExceed)}` } },
   );
   say(
     w,
     "tenant",
-    `Your plumber is ${PLAN.vendorName}, ${windowText()}. Please be home or leave access. Reply 1 if that works, 2 for another time.`,
+    `Good news: ${vendor.name} is booked for ${windowText(pick.accessWindow)}. Please be home or leave access. Reply 1 if that works, 2 for another time.`,
     {
       actions: [
         { id: "1", label: "1  That works", text: "1" },
@@ -868,9 +961,9 @@ function triageOwnerAction(w: World, action: string): void {
       ],
     },
   );
-  say(w, "owner", `Approved. Booked ${PLAN.vendorName}, limit ${usd(PLAN.notToExceed)}. I'm telling the tenant and the vendor now. I'll text you when it's done and add the new heater to your record.`);
+  say(w, "owner", `Approved. Booked ${vendor.name}, limit ${usd(pick.notToExceed)}. I'm telling the tenant and the vendor now. I'll text you when it's done and add the new heater to your record.`);
   w.stats.ownerTaps += 1;
-  w.stats.saved += PLAN.savedVsHighest;
+  w.stats.saved += Math.max(0, highest - vendor.total);
   w.triage.stage = "booked";
   w.pending = w.pending.filter((p) => p.id !== "owner_nudge");
   const tomorrowAfternoon = MINUTES_PER_DAY + 11 * 60 + 20;
@@ -987,6 +1080,19 @@ function auditMessage(w: World, quote: VendorQuote, draft: string, intro: string
     "owner",
     `${intro}\nAUDIT (plain code):\n${bullets.map((b) => `- ${b}`).join("\n")}\nI drafted a reply for you (attached). Nothing is sent until you say so.`,
     {
+      card: {
+        kind: "quote",
+        title: `${shortName(quote.vendorName)} quote is ${VERDICT_WORDS[cmp.total.verdict]}`,
+        summary:
+          cmp.total.verdict === "fair"
+            ? "The price is inside the typical range. A reply is drafted if you want to confirm the details."
+            : "Porchlight wrote a polite reply asking for a better price. It is ready to send.",
+        facts: [
+          { label: "Their price", value: usd(quote.total), tone: cmp.total.verdict === "fair" ? "good" : "caution" },
+          { label: "Typical range", value: usdRange(cmp.total.range.low, cmp.total.range.high) },
+          ...(hourly ? [{ label: "Labor", value: hourly.replace(/^Labor /, ""), tone: "caution" as const }] : []),
+        ],
+      },
       attachment: { title: `Draft reply to ${quote.vendorName}`, body: draft },
       actions: [
         { id: "qsend", label: "👍 Send it" },
@@ -1156,6 +1262,17 @@ function onLeaseCheck(w: World): void {
     "owner",
     `Unit A's lease anniversary is in 62 days.\nMax legal increase today: ${result.capPercent.toFixed(1)}% (${usd(DEFAULT_RENT_FORM.currentRent)} to ${usdCents(result.maxNewRent)}). Cap = the lesser of 5% plus local CPI, or 10%.\nNotice period: ${result.noticeDays} days (90 if over 10%).\nDraft notice is ready (attached). DRAFT, NOT LEGAL ADVICE: local rules, like San Jose's, can be stricter.`,
     {
+      card: {
+        kind: "lease",
+        title: "You can raise rent on Unit A",
+        summary: "The lease anniversary is coming up. Porchlight worked out the legal maximum and drafted the notice.",
+        facts: [
+          { label: "Legal maximum", value: `${result.capPercent.toFixed(1)}% (${usdCents(result.maxNewRent)})` },
+          { label: "Suggested", value: `5% (${usd(3360)})`, tone: "good" },
+          { label: "Notice period", value: `${result.noticeDays} days` },
+          { label: "Sent by", value: "Certified mail, with proof" },
+        ],
+      },
       attachment: { title: "Draft rent notice", body: notice },
       actions: [
         { id: "rent5", label: `Mail at 5% (${usd(3360)})` },

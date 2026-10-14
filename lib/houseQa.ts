@@ -139,3 +139,18 @@ export function answerHouseQuestion(question: string, facts: HouseFacts): QaAnsw
 
   return dontKnow("the answer to that");
 }
+
+const PROBLEM_WORDS =
+  /\b(leak|leaks|leaking|broken|broke|not working|isn'?t working|won'?t|doesn'?t|stopped|clog|clogged|overflow|overflowing|flood|flooding|burst|smell|smells|smoke|spark|sparking|noise|noisy|drip|dripping|stuck|cracked|no heat|no power|no hot water|mold|mice|mouse|roach|roaches|pests?)\b/i;
+
+/**
+ * Is a tenant's text a repair problem or a question about the home? Problems always win,
+ * so "why is my water heater leaking?" is a problem. Otherwise a question mark or a
+ * question word means a question.
+ */
+export function classifyTenantText(text: string): "problem" | "question" {
+  const t = text.trim();
+  if (PROBLEM_WORDS.test(t)) return "problem";
+  if (/\?\s*$/.test(t) || /^(how|when|what|where|who|why|can|could|may|do|does|is|are|will|am|did|which)\b/i.test(t)) return "question";
+  return "problem";
+}

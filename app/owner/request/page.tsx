@@ -162,7 +162,7 @@ export default function OwnerRequestPage() {
                 </ol>
                 <p className="mt-2 text-sm text-ink-soft">
                   You do not need to wait for the answers to keep going.{" "}
-                  <Link href="/tenant/safety" className="font-bold underline underline-offset-4">
+                  <Link href="/tenant" className="font-bold underline underline-offset-4">
                     See the tenant&apos;s screen
                   </Link>
                 </p>

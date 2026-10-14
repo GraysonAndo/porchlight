@@ -1,6 +1,7 @@
 // All demo data lives here. Everything is fictional.
 // Numbers marked "placeholder" are NOT market data. See README, "Placeholder numbers".
 
+import { createWorld } from "./agents/world";
 import type {
   DemoState,
   EquipmentItem,
@@ -21,6 +22,7 @@ export const PROPERTY = {
   owner: "Sample Owner",
   tenant: "Sample Tenant",
   tenantPhone: "(555) 010-0142",
+  ownerPhone: "(555) 010-0100",
   tenantEmail: "sample.tenant@example.com",
   rent: 3200,
   tenantSince: 2023,
@@ -216,6 +218,8 @@ export const INITIAL_STATE: DemoState = {
   jobCompletedAt: null,
   tenantSkippedLabel: false,
   rentPaidAt: null,
+  agent: createWorld(),
+  textUpdates: { tenant: true, owner: true },
   pricingPick: null,
   feedback: [],
 };

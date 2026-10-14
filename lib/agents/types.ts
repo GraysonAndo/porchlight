@@ -8,7 +8,7 @@ import type { Engine } from "../scenario";
 export type { Engine };
 
 export type Party = "tenant" | "owner" | "contractor";
-export type AgentName = "triage" | "quote" | "sentinel" | "gate";
+export type AgentName = "triage" | "quote" | "sentinel" | "gate" | "chat";
 export type Channel = "sms" | "call" | "email";
 
 export type PhotoKind = "leak" | "label" | "blurry";
@@ -26,6 +26,15 @@ export interface Attachment {
   body: string;
 }
 
+/** A message the owner can act on, shown as a card: already worked out, one tap to approve. */
+export interface MsgCard {
+  kind: "decision" | "quote" | "lease" | "emergency";
+  title: string;
+  /** One plain sentence on what this is */
+  summary: string;
+  facts: { label: string; value: string; tone?: "good" | "caution" | "urgent" }[];
+}
+
 export interface Msg {
   kind: "msg";
   id: string;
@@ -40,6 +49,9 @@ export interface Msg {
   attachment?: Attachment;
   /** Delivered without a sound or a buzz (Do Not Disturb) */
   silent?: boolean;
+  card?: MsgCard;
+  /** Wall-clock time (ms) after which the screen shows this entry, so replies arrive at a human pace */
+  revealAt?: number;
   actions?: MsgAction[];
   /** Set once one of the actions was used */
   usedAction?: string;
@@ -49,6 +61,7 @@ export interface ToolCall {
   kind: "tool";
   id: string;
   at: number;
+  revealAt?: number;
   agent: AgentName;
   tool: string;
   engine: Engine;
@@ -61,6 +74,7 @@ export interface RecordWrite {
   kind: "record";
   id: string;
   at: number;
+  revealAt?: number;
   patch: Record<string, string>;
   history?: string;
 }
@@ -77,6 +91,9 @@ export type Ev =
   | { type: "contractor.quote" }
   | { type: "contractor.counter"; total: number }
   | { type: "cron.lease" }
+  | { type: "rent.paid"; paid: boolean }
+  | { type: "owner.markDone" }
+  | { type: "owner.choose"; vendorId: string; notToExceed: number; accessWindow: string }
   | { type: "timer"; id: TimerId };
 
 export type TimerId = "quotes_in" | "owner_nudge" | "job_done" | "notice_delivered";
@@ -132,4 +149,8 @@ export interface World {
     ownerTaps: number;
     saved: number;
   };
+  /** Whether this month's rent was marked paid (demo) */
+  rentPaid: boolean;
+  /** The vendor, limit, and time the owner picked by hand instead of Porchlight's plan */
+  choice: { vendorId: string; notToExceed: number; accessWindow: string } | null;
 }

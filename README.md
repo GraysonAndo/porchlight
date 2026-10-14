@@ -2,7 +2,7 @@
 
 ## What Porchlight is
 
-Porchlight is an AI property manager for owners with 1 to 10 rental units, the small landlords who do not want to pay a full property management company. It is built to look and feel agentic: a tenant reports a problem, and Porchlight does the legwork (reads the photo, checks the emergency rules, builds the house record from a label photo, collects and checks quotes, picks one, and drafts the messages). The owner only taps to approve. Every step shows who did the work: the AI, plain code, Porchlight acting inside the owner's limits, or a person. This repo is a clickable, low-fidelity prototype built for TMP 122 customer feedback interviews. Everything is fictional and nothing real happens behind the screens.
+Porchlight is an AI property manager for owners with 1 to 10 rental units, the small landlords who do not want to pay a full property management company. It is built to look and feel agentic: a tenant texts a problem on one simple screen, and Porchlight does the legwork (reads the photo, checks the emergency rules, builds the house record from a label photo, collects and checks quotes, picks one, and drafts the messages). The owner opens an approval inbox where everything is already done and only taps **Approve** (they can edit anything if they want). Porchlight texts both people every update, and either can turn text updates off. Every step shows who did the work: the AI, plain code, Porchlight acting inside the owner's limits, or a person. This repo is a clickable, low-fidelity prototype built for TMP 122 customer feedback interviews. Everything is fictional and nothing real happens behind the screens.
 
 ## How to run
 
@@ -54,7 +54,7 @@ The design and the architecture are in [`docs/BLUEPRINT.md`](docs/BLUEPRINT.md).
 
 There are two sides to the real flow, and each side only sees what it needs. **Porchlight** is the AI property manager in the middle.
 
-- The **tenant** lives in the home. They report a problem, stay safe, send one label photo if the record needs it, and follow progress. They never see prices, quotes, or owner decisions, and they do **not** choose or pay for the repair.
+- The **tenant** lives in the home. They text Porchlight about a problem or a question on one screen, stay safe, send one label photo if asked, and get a text for every update. They never see prices, quotes, or owner decisions, and they do **not** choose or pay for the repair.
 - The **owner** owns the home. They review what Porchlight already did, check the house record, look at the quotes Porchlight collected, and tap to approve.
 
 Who does what, shown with a chip on every agent step:
@@ -68,20 +68,19 @@ Who does what, shown with a chip on every agent step:
 
 The **Demo guide** at the top of any screen jumps to any screen, grouped by side. Every screen has a collapsible "Why this screen exists" line for interviews. The header always says "Tenant view" or "Owner view", with a "Switch role" link.
 
-**Tenant side (4 screens)**
+**Tenant side (one screen)**
+
+| Screen | What it shows |
+| --- | --- |
+| `/tenant` | "How can we help?" A single chat with Porchlight. Four tap-to-start examples (water heater leak, gas smell, overflowing toilet, rent question) or type anything. Porchlight asks the safety question, gives two safe steps (with a text-me-HELP guide), asks for one label photo (or "I can't reach it"), then texts the tenant who is coming and when ("Reply 1 if that works"), and "All fixed" at the end. Questions about the home or lease ("How much is my rent?", "Can I have a dog?") are answered only from the house record and lease, or "I don't know" with an "Ask owner" relay. Below the chat: a text-updates switch and a demo rent payment card. No steps, no prices, no quotes, no owner decisions. |
+
+The old tenant pages (`/tenant/request`, `/tenant/safety`, `/tenant/label`, `/tenant/status`) now redirect to `/tenant`.
+
+**Owner side: an approval inbox, then detail pages and planning tools**
 
 | Step | Screen | What it shows |
 | --- | --- | --- |
-| 1 | `/tenant/request` | Report a leaking water heater, with a sample photo button. Says plainly that the owner makes the repair decision. |
-| 2 | `/tenant/safety` | Urgency in plain words, safety steps with a "How to do this" guide under every step, follow-up questions, and whether the owner was quietly told or called. Emergencies and no-heat problems get no fix steps. A folded "See what Porchlight did" agent log. |
-| 3 | `/tenant/label` | "One quick photo". Only asked when the record lacks the brand, model, and serial, and only for a water heater repair. Photo of the label, Porchlight reads it, the tenant confirms the smudged field, and it goes into the house record. "I cannot reach it" hands it to the owner. A gas emergency never asks for a photo. |
-| 4 | `/tenant/status` | A status timeline (reported, owner notified, label photo, owner choosing a plumber, plumber booked, confirm the time, fixed), the owner's message, "That time works" or "I need a different time", a demo **rent payment** card ("Pay $3,200 (demo)", nothing is charged), and **Ask about your home**: a Q&A chat that answers only from the house record and the lease on file, and says "I don't know" with an "Ask the owner" button when it is not there. |
-
-**Owner side (5 screens), then planning tools**
-
-| Step | Screen | What it shows |
-| --- | --- | --- |
-| 0 | `/owner` | Owner home, built as an **approval inbox**: the repair request with a status tracker (new, quoted, approved, booked, done) that moves on its own, Porchlight's plan already worked out, and one big **Approve** button. After booking, one **Mark done** button. Also the rent status (with a demo "Mark as paid"), "While you were away" (what Porchlight did, with chips, and $ saved), and shortcuts. |
+| 0 | `/owner` | The **approval inbox**. A "Today" banner says "All quiet", "1 thing needs your OK", or "All done". Each approval is a card with the answer first (pick, price, spending limit, saving, visit time), one big **Approve**, plus "Other quotes", "Call me", and "See the details, or change something" for anyone who wants to edit. After booking, one **Mark done**. Also: the texts Porchlight sent the owner, a text-updates switch, the rent status (demo "Mark as paid"), "See what Porchlight did for you (N steps)", shortcuts, and an empty-state **Show me a sample repair** button. |
 | 1 | `/owner/request` | The tenant's report and photo, urgency, the full agent log, what Porchlight found, the equipment involved, what the tenant was told, and the tenant's answers. |
 | 2 | `/owner/record` | The house record. The heater starts as "about 2015, details missing". The tenant's label photo fills in brand, model, and serial, with the source shown. If the tenant could not reach it, the owner is asked. |
 | 3 | `/owner/quote` | Porchlight collected 3 itemized quotes and checked each one with plain code. Best pick (cheapest fair quote from a vendor that shows a license), skipped vendors with the reason, a line-by-line table, and a **paste a quote** tool (plain code reads the lines, flags totals that do not add up). |
@@ -120,10 +119,9 @@ I made these calls without asking. Please check the ones that matter to you.
 - **Security scan.** An automated DAST scan hook was suggested, but it needs an API key that is not set in this environment, so no scan was run. The app has no backend, so there is little to scan.
 
 **Product**
-- The tenant's description box is **pre-filled** with the seed text so interview demos do not need typing. It is editable.
-- A photo is optional on the request form.
 - Screens opened directly (for example by the Demo guide) fall back to the seed scenario, so any screen works on its own. The owner side always has a sample request from the sample tenant waiting.
-- **Roles.** The tenant side has only what a tenant needs: report, safety steps, status. Quote check, repair or replace, the forecast, and rent are owner decisions and are not shown to tenants. Forecast and rent are planning tools, not part of one repair, so they sit outside the numbered owner flow.
+- **One agent, two people.** The agent's whole world (messages, tool log, house record, pending timers) is saved in the demo state, so the tenant screen, the owner inbox, and the detail pages are three views of the same conversation. Replies appear with a short typing pause. Vendor quotes arrive on their own a few seconds after the tenant confirms the label (`components/AgentDriver.tsx`). The older detail pages (record, quote, decide, book, forecast) are kept in step by `lib/agents/sync.ts`. The `/sms` console runs its own separate agent world.
+- **Roles.** The tenant side is one chat screen. Quote check, repair or replace, the forecast, and rent increases are owner decisions and are not shown to tenants. Forecast and rent are planning tools, not part of one repair, so they sit outside the numbered owner flow.
 - **The house record is built from a label photo, then keeps itself up to date.** The home inspection only says "water heater, about 2015", so the brand, model, and serial are unknown at the start. The first label photo (from the tenant, or typed or photographed by the owner) fills them in. After that, new equipment is added automatically when an installer finishes a job (simulated by the **Mark done** button). An earlier version assumed the heater was already on file. The venture docs say the label photo is how the record starts, so this version follows them.
 - **Emergencies skip fix steps.** Gas smell and similar emergencies tell the tenant to get safe and call for help, and ring the owner right now. No label photo is asked for and nothing is quoted. No-heat problems also alert the owner with no fix steps. Ordinary "soon" problems (the heater leak) give the owner a silent heads-up, not a call. **Urgency uses the three buckets from the product spec: EMERGENCY, SOON, ROUTINE.** Whether the demo's water heater leak should be an emergency is a team call that is still open. It is "soon" here because the tenant is only asked to close the water valve and stay away from electricity.
 - **Plain code decides, AI only reads and writes.** Quote verdicts, the recommended vendor, the spending limit (quote plus 10%), repair or replace, the forecast, and the rent cap are plain code. The recommended vendor is the cheapest quote that is a fair price from a vendor that shows a license. A missing permit line is flagged, not hidden.
@@ -178,8 +176,8 @@ I made these calls without asking. Please check the ones that matter to you.
 - `/pricing` shows $4, $6, and $8 per unit per month, month to month, with what each tier includes. The tier contents are **my draft for the team to change**, and the page is labeled as a placeholder pricing test. Visitors can say which tier they would pick, and the pick shows on `/feedback` and in "Copy all as text".
 - `/about` has "How our price ranges work", an FAQ (emergencies, what the tenant sees, what the AI does and does not decide, data, legal advice, states), and a contact section. The contact email is a placeholder (`example.com`).
 - The home page says "California only, for now", walks through the whole chain in six steps, and has one sentence on why Porchlight is not a bigger property tool. **That sentence about MagicDoor and Hemlane comes from the team's competitive analysis. Please check it before showing it to an instructor.**
-- Routes people expect now work: `/login`, `/tenant`, `/tenant/requests/new`, and `/requests/new` redirect to the real page, and an unknown page shows a friendly "not part of the demo" page.
-- The tenant's "One quick photo" step shows as **skipped** (not done) in the progress bar when the tenant taps "I cannot reach it".
+- Routes people expect now work: `/login`, `/tenant/requests/new`, `/requests/new`, and the old multi-step tenant pages redirect to the real page, and an unknown page shows a friendly "not part of the demo" page.
+- If the tenant taps "I can't reach it", Porchlight works from the inspection report and tells the owner it could not read the label.
 - The label year is marked "Inferred from the serial" and "This year is a guess", and stays editable.
 
 ## Placeholder numbers list

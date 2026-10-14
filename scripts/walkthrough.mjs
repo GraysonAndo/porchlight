@@ -55,7 +55,7 @@ async function run(browser, vp) {
   await snap(page, vp, "01-home");
 
   await page.getByRole("button", { name: /Demo guide/ }).click();
-  await page.getByRole("link", { name: /Report a problem/ }).waitFor();
+  await page.getByRole("link", { name: /How can we help/ }).waitFor();
   await snap(page, vp, "02-demo-guide-open");
   await page.getByRole("button", { name: /Demo guide/ }).click();
 
@@ -117,128 +117,82 @@ async function run(browser, vp) {
   await ownerPhone.getByText(/EMERGENCY at/).waitFor({ timeout: 20000 });
   await snap(page, vp, "06f-sms-gas-emergency");
 
-  // ---------- Tenant ----------
+  // ---------- Tenant: one screen, texting Porchlight ----------
+  const W = { timeout: 20000 };
   await resetDemo(page);
   await page.getByRole("button", { name: /I am a tenant/ }).click();
-  await page.waitForURL("**/tenant/request");
-  await page.getByRole("button", { name: "Use sample photo" }).click();
-  await page.getByAltText(/Sample photo of a water heater leaking/).waitFor();
-  await snap(page, vp, "07-tenant-1-report");
-  await page.getByRole("button", { name: "Submit" }).click();
+  await page.waitForURL("**/tenant");
+  await page.locator("#tenant-msg").waitFor();
+  await snap(page, vp, "07-tenant-start");
+  await page.locator("#tenant-msg").fill("My water heater is leaking");
+  await page.getByRole("button", { name: "Send", exact: true }).click();
+  await page.getByText(/near an outlet/).waitFor(W);
+  await snap(page, vp, "08-tenant-safety-question");
+  await page.getByRole("button", { name: /^2\s+No$/ }).click();
+  await page.getByRole("button", { name: "Done", exact: true }).waitFor(W);
+  await snap(page, vp, "09-tenant-quick-steps");
+  await page.getByRole("button", { name: "Done", exact: true }).click();
+  await page.getByText(/silver sticker/).waitFor(W);
+  await page.getByRole("button", { name: "Send a photo" }).click();
+  await snap(page, vp, "10-tenant-photo-menu");
+  await page.getByRole("button", { name: "Photo of the label" }).click();
+  await page.getByText(/Is it 15C0412-X/).waitFor(W);
+  await snap(page, vp, "11-tenant-label-read");
+  await page.getByRole("button", { name: "Y", exact: true }).click();
+  await page.getByText(/I'm watching this/).waitFor(W);
+  await snap(page, vp, "12-tenant-waiting");
 
-  await page.waitForURL("**/tenant/safety");
-  await page.getByText("Reading your request and photo").waitFor();
-  await snap(page, vp, "08-tenant-2-safety-thinking");
-  await page.getByText("Owner notified").first().waitFor({ timeout: 8000 });
-  await snap(page, vp, "09-tenant-2-safety");
-  await page.locator("summary", { hasText: "How to do this" }).first().click();
-  await page.getByText("Stop and get help if:").first().waitFor();
-  await snap(page, vp, "10-tenant-2-safety-guide-open");
-  await page.locator("summary", { hasText: "How to do this" }).first().click();
-  await page.locator("summary", { hasText: "See what Porchlight did with your report" }).click();
-  await page.getByText("check_emergency_rules").waitFor();
-  await snap(page, vp, "11-tenant-2-agent-log");
-  await page.locator("#answer-0").fill("A slow, steady drip");
-  await page.locator("#answer-1").fill("No, only the garage floor");
-  await page.locator("#answer-2").fill("No gas smell");
-  await page.getByRole("button", { name: "Send my answers" }).click();
-  await page.getByText(/Answers sent to Sample Owner/).waitFor();
-  await snap(page, vp, "12-tenant-2-answers-sent");
-  await page.getByRole("link", { name: /Next: One quick photo/ }).click();
+  // ---------- Owner: everything is already done, one tap to approve ----------
+  await page.goto(`${BASE}/owner`);
+  await page.getByRole("button", { name: "Approve", exact: true }).waitFor(W);
+  await snap(page, vp, "13-owner-inbox-needs-ok");
+  await page.getByRole("button", { name: "Approve", exact: true }).click();
+  await page.getByRole("button", { name: "Mark done" }).waitFor(W);
+  await snap(page, vp, "14-owner-inbox-booked");
+  await page.goto(`${BASE}/tenant`);
+  await page.getByText(/Good news: Willow Glen/).waitFor(W);
+  await snap(page, vp, "15-tenant-booked");
+  await page.getByRole("button", { name: /^1\s+That works$/ }).click();
+  await page.getByText(/see you then/).waitFor(W);
+  await snap(page, vp, "16-tenant-confirmed");
+  await page.goto(`${BASE}/owner`);
+  await page.getByRole("button", { name: "Mark done" }).click();
+  await page.getByText("All done", { exact: true }).waitFor(W);
+  await snap(page, vp, "17-owner-inbox-done");
+  await page.goto(`${BASE}/tenant`);
+  await page.getByText(/All fixed/).waitFor(W);
+  await snap(page, vp, "18-tenant-fixed");
+  await page.getByRole("switch", { name: "Text updates" }).click();
+  await snap(page, vp, "19-tenant-text-updates-off");
 
-  await page.waitForURL("**/tenant/label");
-  await page.getByText("Why Porchlight is asking").waitFor();
-  await snap(page, vp, "13-tenant-3-label-ask");
-  await page.getByRole("button", { name: "Use sample label photo" }).click();
-  await page.getByText("Reading brand, model, serial").waitFor();
-  await snap(page, vp, "14-tenant-3-label-scanning");
-  await page.locator("#label-serial").waitFor({ timeout: 8000 });
-  await snap(page, vp, "15-tenant-3-label-read");
-  await page.getByRole("button", { name: "Looks right" }).click();
-  await page.getByRole("button", { name: "Send to Porchlight" }).click();
-  await page.getByText("Porchlight has what it needs").waitFor();
-  await snap(page, vp, "16-tenant-3-label-saved");
-  await page.getByRole("link", { name: "See request status" }).click();
-
-  await page.waitForURL("**/tenant/status");
-  await page.getByText("Your label photo was read").waitFor();
-  await snap(page, vp, "17-tenant-4-status-waiting");
-  await page.getByRole("link", { name: "Continue as the owner" }).click();
-
-  // ---------- Owner repair flow ----------
-  await page.waitForURL("**/owner/request");
-  await page.getByText("AI confidence").waitFor({ timeout: 8000 });
-  await snap(page, vp, "18-owner-1-request");
-  await page.getByRole("link", { name: /^Next: House record/ }).click();
-
-  await page.waitForURL("**/owner/record");
-  await page.getByText("Hearthline").first().waitFor();
-  await snap(page, vp, "19-owner-2-record");
+  // ---------- Owner detail pages, filled in by the agent ----------
+  await page.goto(`${BASE}/owner/request`);
+  await snap(page, vp, "20-owner-request-details");
+  await page.goto(`${BASE}/owner/record`);
+  await page.getByText("New, added automatically").waitFor(W);
+  await snap(page, vp, "21-owner-record-after-install");
   await page.getByRole("link", { name: /Add or check equipment details/ }).click();
   await page.waitForURL("**/owner/label");
-  await snap(page, vp, "20-optional-label-intro");
+  await snap(page, vp, "22-owner-label-intro");
   await page.getByRole("radio", { name: "Type the details in" }).click();
   await page.locator("#label-manufacturer").waitFor();
-  await snap(page, vp, "21-optional-label-typing");
-  await page.goto(`${BASE}/owner/record`);
-  await page.getByRole("link", { name: /^Next: Quote check/ }).click();
-
-  await page.waitForURL("**/owner/quote");
-  await page.getByText(/Best pick/).waitFor();
-  await page.getByText("Line by line").waitFor();
-  await snap(page, vp, "22-owner-3-quote");
+  await snap(page, vp, "23-owner-label-typing");
+  await page.goto(`${BASE}/owner/quote`);
+  await page.getByText(/Best pick/).waitFor({ timeout: 8000 });
+  await snap(page, vp, "24-owner-quote");
   await page.locator("label", { hasText: "Bayside Plumbing and Heating" }).click();
   await page.getByRole("heading", { name: "Bayside Plumbing and Heating" }).waitFor();
-  await snap(page, vp, "23-owner-3-quote-bayside");
   await page.getByRole("button", { name: "Use a sample quote" }).click();
   await page.getByRole("heading", { name: "Harbor View Plumbing" }).waitFor();
-  await snap(page, vp, "24-owner-3-quote-pasted");
-  await page.getByRole("link", { name: /Next: Repair or replace/ }).click();
-
-  await page.waitForURL("**/owner/decide");
+  await snap(page, vp, "25-owner-quote-pasted");
+  await page.goto(`${BASE}/owner/decide`);
   await page.getByText("Replace it").waitFor();
-  await snap(page, vp, "25-owner-4-decide");
-  await page.getByRole("link", { name: /^Next: Approve and book/ }).click();
-
-  await page.waitForURL("**/owner/book");
-  await snap(page, vp, "26-owner-5-book-plan");
-  await page.getByText("A1 Rapid Plumbing").first().click();
-  await page.getByText("To the vendor: A1 Rapid Plumbing").waitFor({ timeout: 8000 });
-  await snap(page, vp, "27-owner-5-book-a1-selected");
-  await page.getByRole("button", { name: /Approve Porchlight.s plan/ }).click();
-  await page.getByText("Nothing was actually sent").waitFor();
-  await snap(page, vp, "28-owner-5-booked");
-  // The tenant sees the booking and confirms the time.
-  await page.goto(`${BASE}/tenant/status`);
-  await page.getByText(/Message from Sample Owner/).waitFor();
-  await page.getByText("Visit window:").waitFor({ timeout: 8000 });
-  await snap(page, vp, "29-tenant-4-status-booked");
-  await page.getByRole("button", { name: "That time works" }).click();
-  await page.getByText("Time confirmed").waitFor();
-  await snap(page, vp, "30-tenant-4-status-confirmed");
-
-  // The plumber finishes, and the record updates itself.
+  await snap(page, vp, "26-owner-decide");
   await page.goto(`${BASE}/owner/book`);
-  await page.getByRole("button", { name: "Mark job done" }).click();
-  await page.getByText("House record updated automatically").waitFor();
-  await snap(page, vp, "31-owner-5-record-updated-automatically");
-
-  await page.goto(`${BASE}/owner/record`);
-  await page.getByText("New, added automatically").waitFor();
-  await snap(page, vp, "32-owner-2-record-after-install");
-
-  await page.goto(`${BASE}/tenant/status`);
-  await page.getByText("The new water heater is installed").waitFor();
-  await snap(page, vp, "33-tenant-4-status-fixed");
-
-  // ---------- Owner home ----------
-  await page.goto(`${BASE}/owner`);
-  await page.getByText("DONE").first().waitFor();
-  await snap(page, vp, "34-owner-home-done");
+  await snap(page, vp, "27-owner-book");
 
   // ---------- Plan ahead tools ----------
-  await page.getByRole("link", { name: /5-year forecast/ }).first().click();
-  await page.waitForURL("**/owner/forecast");
+  await page.goto(`${BASE}/owner/forecast`);
   await page.getByText("Plan to set aside each year").waitFor();
   await snap(page, vp, "35-tool-forecast");
   await page.getByRole("link", { name: /^Next: Rent increase/ }).click();
@@ -254,51 +208,51 @@ async function run(browser, vp) {
   await page.getByText(/May be exempt from the state cap/).waitFor();
   await snap(page, vp, "38-tool-rent-exempt");
 
-  // ---------- Tenant could not reach the label ----------
+  // ---------- Tenant cannot reach the label ----------
   await resetDemo(page);
-  await page.goto(`${BASE}/tenant/request`);
-  await page.getByRole("button", { name: "Submit" }).click();
-  await page.getByText("Owner notified").first().waitFor({ timeout: 8000 });
-  await page.goto(`${BASE}/tenant/label`);
-  await page.getByRole("button", { name: "I cannot reach it" }).click();
-  await page.getByText("That is okay").waitFor();
-  await snap(page, vp, "39-tenant-3-label-skipped");
+  await page.goto(`${BASE}/tenant`);
+  await page.locator("#tenant-msg").fill("water heater is leaking all over the garage");
+  await page.getByRole("button", { name: "Send", exact: true }).click();
+  await page.getByText(/near an outlet/).waitFor(W);
+  await page.getByRole("button", { name: /^2\s+No$/ }).click();
+  await page.getByRole("button", { name: "Done", exact: true }).click();
+  await page.getByRole("button", { name: "I can't reach it" }).waitFor(W);
+  await page.getByRole("button", { name: "I can't reach it" }).click();
+  await page.getByText(/work from the inspection report/).waitFor(W);
+  await snap(page, vp, "39-tenant-label-skipped");
   await page.goto(`${BASE}/owner/record`);
-  await page.getByText("not on file yet").waitFor();
-  await snap(page, vp, "40-owner-2-record-missing");
+  await snap(page, vp, "40-owner-record-missing");
 
   // ---------- Emergency example ----------
   await resetDemo(page);
-  await page.goto(`${BASE}/tenant/request`);
-  await page.locator("#description").fill("I smell gas near the water heater");
-  await page.getByRole("button", { name: "Submit" }).click();
-  await page.getByText("Owner is being called").first().waitFor({ timeout: 8000 });
+  await page.goto(`${BASE}/tenant`);
+  await page.getByRole("button", { name: "I smell gas" }).click();
+  await page.getByText(/leave the home/i).first().waitFor(W);
+  await page.waitForTimeout(2500);
   await snap(page, vp, "41-tenant-emergency-gas");
-  await page.goto(`${BASE}/owner/request`);
-  await page.getByText("AI confidence").waitFor({ timeout: 8000 });
-  await snap(page, vp, "42-owner-emergency-gas");
   await page.goto(`${BASE}/owner`);
-  await page.getByText("Porchlight sorted a new request").waitFor();
-  await snap(page, vp, "43-owner-home-emergency");
+  await page.getByText("Emergency: Gas safety").first().waitFor(W);
+  await snap(page, vp, "43-owner-inbox-emergency");
 
-  // ---------- Owner inbox, tenant chat and rent, pricing, FAQ, edge states ----------
+  // ---------- Empty state, sample repair, questions, rent ----------
   await resetDemo(page);
   await page.goto(`${BASE}/owner`);
-  await page.getByRole("button", { name: "Approve", exact: true }).waitFor();
-  await snap(page, vp, "46-owner-home-ready-for-ok");
+  await page.getByText("All quiet").waitFor();
+  await snap(page, vp, "45-owner-inbox-empty");
+  await page.getByRole("button", { name: "Show me a sample repair" }).click();
+  await page.getByRole("button", { name: "Approve", exact: true }).waitFor(W);
+  await snap(page, vp, "46-owner-inbox-sample-repair");
   await page.getByRole("button", { name: "Approve", exact: true }).click();
-  await page.getByText(/Approved. Confirming/).waitFor();
-  await snap(page, vp, "47-owner-home-approved");
-  await page.getByRole("button", { name: "Mark done" }).waitFor({ timeout: 10000 });
-  await snap(page, vp, "48-owner-home-booked");
+  await page.getByRole("button", { name: "Mark done" }).waitFor(W);
+  await snap(page, vp, "48-owner-inbox-booked");
   await resetDemo(page);
-  await page.goto(`${BASE}/tenant/status`);
+  await page.goto(`${BASE}/tenant`);
   await page.getByRole("button", { name: "How much is my rent?" }).click();
-  await page.locator("#house-question").fill("Can I have a dog?");
-  await page.getByRole("button", { name: "Ask", exact: true }).click();
-  await page.getByText(/I don't know whether pets are allowed/).waitFor();
-  await page.getByRole("button", { name: /Pay \$3,200 \(demo\)/ }).click();
-  await snap(page, vp, "49-tenant-status-chat-and-rent");
+  await page.getByText(/\$3,200 per month/).waitFor(W);
+  await page.locator("#tenant-msg").fill("Can I have a dog?");
+  await page.getByRole("button", { name: "Send", exact: true }).click();
+  await page.getByText(/I don't know whether pets are allowed/).waitFor(W);
+  await snap(page, vp, "49-tenant-question-answered");
   await page.goto(`${BASE}/owner/rent`);
   await page.locator("#current-rent").fill("");
   await page.getByText("Fill in the numbers to see the result").waitFor();
