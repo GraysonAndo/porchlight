@@ -229,6 +229,8 @@ export const INITIAL_STATE: DemoState = {
   tenantAccess: null,
   jobCompletedAt: null,
   rentPaidAt: null,
+  payments: [],
+  prefs: { tenantEmail: true, tenantAutopay: false, ownerEmail: true, ownerEmergencyCalls: true },
   agent: createWorld(),
   textUpdates: { tenant: true, owner: true },
   pricingPick: null,

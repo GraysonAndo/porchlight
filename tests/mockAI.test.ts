@@ -31,7 +31,9 @@ describe("mockAI", () => {
     expect(r.marketLow).toBe(1600);
     expect(r.marketHigh).toBe(2600);
     expect(r.flaggedLines.map((f) => f.line)).toEqual(["Labor", "Expansion tank"]);
-    expect(r.questionsToAsk).toHaveLength(3);
+    expect(r.questionsToAsk).toHaveLength(2);
+    // Bayside's quote already has a permit line, so GoHome does not ask about the permit.
+    expect(r.questionsToAsk.join(" ")).not.toMatch(/permit/i);
     expect(r.estimatedSavingsLow).toBe(250);
     expect(r.estimatedSavingsHigh).toBe(500);
   });

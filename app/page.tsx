@@ -47,6 +47,9 @@ export default function GatePage() {
       <header className="mx-auto flex w-full max-w-5xl items-center justify-between px-4 py-4 sm:px-6">
         <Logo />
         <nav aria-label="More about GoHome" className="flex gap-1 text-sm font-bold">
+          <Link href="/about#team" className="inline-flex min-h-11 items-center rounded-lg px-3 text-ink-soft hover:bg-white hover:text-ink">
+            Our team
+          </Link>
           <Link href="/about" className="inline-flex min-h-11 items-center rounded-lg px-3 text-ink-soft hover:bg-white hover:text-ink">
             About
           </Link>

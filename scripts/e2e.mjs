@@ -51,6 +51,9 @@ async function reportByText(page, text) {
 
 const tabs = (page, name) => page.getByRole("tab", { name });
 
+/** What is said in the chat, without the live preview banner around it. */
+const chatText = (page) => page.getByRole("log", { name: "Messages" }).innerText();
+
 // ======================= The landing page =======================
 {
   const { context, page, errors } = await newPage({ viewport: { width: 390, height: 844 } });
@@ -64,7 +67,7 @@ const tabs = (page, name) => page.getByRole("tab", { name });
   await page.getByRole("button", { name: /Tenant/ }).click();
   await page.waitForURL("**/tenant");
   check("choosing tenant opens the tenant side", true);
-  check("the tenant side has only Help and My home in its tabs", (await page.getByRole("navigation", { name: "Tenant tabs" }).getByRole("link").allInnerTexts()).join() === "Help,My home");
+  check("the tenant side has only Help, My home, and Pay in its tabs", (await page.getByRole("navigation", { name: "Tenant tabs" }).getByRole("link").allInnerTexts()).join() === "Help,My home,Pay");
   await page.getByRole("link", { name: "Switch" }).click();
   await page.waitForURL(`${BASE}/`);
   await page.getByRole("button", { name: /Owner/ }).click();
@@ -84,7 +87,7 @@ const tabs = (page, name) => page.getByRole("tab", { name });
   check("the idle agent panel says what GoHome is always watching", (await count(page, "Always watching")) > 0);
   await page.getByRole("button", { name: "My water heater is leaking" }).click();
   await page.getByText(/near an outlet/).waitFor(wait20);
-  const first = await page.locator("main").innerText();
+  const first = await chatText(page);
   check("GoHome already knows the exact heater, so it does not ask for a label", /Hearthline HL-40G-NG/.test(first) && !/sticker|label/i.test(first));
   await page.getByText(/Found your water heater in your home record: Hearthline HL-40G-NG/).waitFor(wait20);
   check("the agent panel shows GoHome finding the heater in the home record", true);
@@ -105,7 +108,7 @@ const tabs = (page, name) => page.getByRole("tab", { name });
   await dialog.getByRole("button", { name: "Done" }).click();
   await page.getByRole("button", { name: "Done", exact: true }).click();
   await page.getByText(/I'm watching this/).waitFor(wait20);
-  const chat = await page.locator("main").innerText();
+  const chat = await chatText(page);
   check("the tenant is never asked for a photo of a label", !/sticker|silver|label photo/i.test(chat));
   check("the tenant never sees a price or a quote", !/\$\d|\bquote/i.test(chat), chat.slice(0, 100));
   await page.getByText(/Looking for licensed plumbers who can come soon/).waitFor(wait20);
@@ -146,11 +149,12 @@ const tabs = (page, name) => page.getByRole("tab", { name });
   await page.getByText(/All fixed/).waitFor(wait20);
   check("the whole conversation survives a reload", (await count(page, "Good news")) > 0);
 
-  // Text updates live under My home.
+  // Text updates live in Settings.
+  await page.goto(`${BASE}/tenant/settings`);
+  await page.getByRole("switch", { name: "Text updates" }).click();
+  check("turning text updates off says so", (await page.getByRole("switch", { name: "Text updates" }).getAttribute("aria-checked")) === "false" && (await count(page, "Updates only show here in the app.")) > 0);
+  await page.getByRole("switch", { name: "Text updates" }).click();
   await page.goto(`${BASE}/tenant/home`);
-  await page.getByRole("switch", { name: "Text updates" }).click();
-  check("turning text updates off says so", (await count(page, "Text updates are off")) > 0);
-  await page.getByRole("switch", { name: "Text updates" }).click();
 
   // The record and the plan updated themselves.
   check("My home shows the new heater model and serial", (await count(page, "26J0007-A")) > 0);
@@ -194,17 +198,10 @@ const tabs = (page, name) => page.getByRole("tab", { name });
   check("no tenant page links to quotes, forecast, rent increase, or the record", !hrefs.some((h) => /owner|quote|forecast|decide|rent$|record/.test(h ?? "")), hrefs.join(","));
   check("the tenant footer has no pricing link", !hrefs.includes("/pricing"));
 
-  // Rent: pay, and the owner sees it.
+  // My home points to the Pay page instead of holding a pay button.
   await page.goto(`${BASE}/tenant/home`);
-  await page.getByRole("button", { name: "Pay $3,200" }).click();
-  await page.getByText(/Marked paid on/).first().waitFor(wait20);
-  check("the tenant can pay rent and sees it as paid", (await count(page, /Marked paid on/)) > 0);
-  await page.goto(`${BASE}/owner`);
-  await page.getByText(/Marked paid on/).first().waitFor(wait20);
-  check("the owner sees the rent as paid", true);
-  await page.goto(`${BASE}/tenant/home`);
-  await page.getByRole("button", { name: "Undo" }).click();
-  await page.getByText("Not marked paid").first().waitFor(wait20);
+  check("My home shows what is due and links to the Pay page", (await count(page, "$3,292.18")) > 0 && (await page.getByRole("link", { name: "Pay now" }).count()) === 1);
+  check("the notification switch is not on My home, it is in Settings", (await page.getByRole("switch", { name: "Text updates" }).count()) === 0);
   check("no console errors on the tenant side", errors.filter((e) => !/404/.test(e)).length === 0, errors.join(" | "));
   await context.close();
 }
@@ -240,6 +237,15 @@ const tabs = (page, name) => page.getByRole("tab", { name });
   check("A1 is skipped for a missing license", (await page.getByText(/A1 Rapid Plumbing:.*No license number is shown/).count()) > 0);
   await page.locator("label", { hasText: "Bayside" }).click();
   await page.getByRole("heading", { name: "Bayside Plumbing and Heating" }).waitFor();
+  await page.getByText("See the line by line math").click();
+  const num = (str) => Number(str.replace(/[^0-9]/g, ""));
+  const typical = await page.locator("details tbody tr td:nth-child(3)").allInnerTexts();
+  const lows = typical.map((t) => num(t.split("to")[0]));
+  const highs = typical.map((t) => num(t.split("to")[1]));
+  const totalCell = await page.locator("details tfoot td:nth-child(3)").first().innerText();
+  check("the typical total equals the sum of the typical line ranges", lows.reduce((a, c) => a + c, 0) === num(totalCell.split("to")[0]) && highs.reduce((a, c) => a + c, 0) === num(totalCell.split("to")[1]), `${lows} ${highs} ${totalCell}`);
+  const rowTexts = await page.locator("details tbody tr td:nth-child(1)").allInnerTexts();
+  check("every quote row has a pill", rowTexts.every((r) => /OK|High|Slightly high|Low|Ask|Not compared/.test(r)), rowTexts.join(" | "));
   await page.getByRole("button", { name: "Use a sample quote" }).click();
   await page.getByRole("heading", { name: "Harbor View Plumbing" }).waitFor();
   check("pasted sample quote is rated high", (await page.getByText(/about 22% above the top/).count()) > 0);
@@ -258,8 +264,13 @@ const tabs = (page, name) => page.getByRole("tab", { name });
   await page.locator("#nte").fill("1000");
   check("a limit below the quote shows an error", (await page.getByText(/cannot be lower than the quote/).count()) > 0);
   check("a limit below the quote disables Approve and send", await page.getByRole("button", { name: "Approve and send" }).isDisabled());
+  await page.locator("#nte").fill("99999999");
+  check("an absurdly high limit is refused", (await page.getByText(/more than double the quote/).count()) === 1 && (await page.getByRole("button", { name: "Approve and send" }).isDisabled()));
+  await page.locator("#nte").fill("2450.5");
+  check("a limit with cents is rounded to whole dollars", await page.locator("#nte").evaluate((el) => Number.isInteger(Number(el.value)) || el.value === "2450.5"));
   await page.locator("#nte").fill("2700");
   check("a whole-dollar limit is valid", await page.locator("#nte").evaluate((el) => el.checkValidity()));
+  check("the vendor message does not ask about a permit the quote already lists", !/permit is included/i.test(await page.getByLabel("To the vendor: Willow Glen Water Heater Co.").inputValue()));
   await page.getByLabel("To the vendor: Willow Glen Water Heater Co.").fill("Hello, edited by the owner.");
   check("the drafted vendor message can be edited in place", (await page.getByLabel("To the vendor: Willow Glen Water Heater Co.").inputValue()) === "Hello, edited by the owner.");
 
@@ -276,6 +287,15 @@ const tabs = (page, name) => page.getByRole("tab", { name });
   check("an empty current rent blocks the result instead of using an old number", (await page.getByText("Highest allowed new rent").count()) === 0);
   await page.locator("#current-rent").blur();
   await page.getByText("Highest allowed new rent").first().waitFor(wait20);
+  await page.locator("#proposed-rent").fill("-100");
+  await page.getByText("Fill in the numbers to see the result").waitFor(wait20);
+  check("a negative new rent shows no result", (await page.getByText("Highest allowed new rent").count()) === 0);
+  await page.locator("#proposed-rent").fill("3520.01");
+  check("a rent with cents shows no float artifact", !/\d\.\d{3,}/.test(await page.locator("main").innerText()));
+  await page.locator("#proposed-rent").fill("3360");
+  await page.locator("#increases").fill("-1");
+  check("negative earlier increases are not accepted", (await page.locator("#increases").inputValue()) !== "-1" || (await page.locator("#increases").evaluate((el) => !el.checkValidity())));
+  await page.locator("#increases").fill("0");
   await page.locator("#cpi").fill("-5");
   await page.getByText(/Check this number/).waitFor(wait20);
   check("a negative CPI is flagged", true);
@@ -312,7 +332,7 @@ const tabs = (page, name) => page.getByRole("tab", { name });
   const { context, page, errors } = await newPage();
 
   await reportByText(page, "I smell gas and I feel dizzy");
-  const gas = await page.locator("main").innerText();
+  const gas = await chatText(page);
   check("gas smell with dizziness takes the emergency path", /sounds like an emergency/i.test(gas) && /leave the home/i.test(gas) && /911/.test(gas));
   check("gas smell never mentions a gas valve to touch", !/turn the gas|gas valve to|pilot|relight/i.test(gas));
   check("gas smell never opens a picture guide or asks for a photo", (await page.getByRole("button", { name: "Show me how" }).count()) === 0 && !/sticker|label/i.test(gas));
@@ -325,12 +345,12 @@ const tabs = (page, name) => page.getByRole("tab", { name });
   check("the owner's acknowledgement is texted to the tenant", true);
 
   await reportByText(page, "The toilet is clogged and overflowing");
-  const toilet = await page.locator("main").innerText();
+  const toilet = await chatText(page);
   check("an overflowing toilet gets toilet steps, not water heater steps", /do not flush again/i.test(toilet) && !/water heater/i.test(toilet), toilet.slice(0, 160));
   check("an overflowing toilet offers its own picture guide", (await page.getByRole("button", { name: "Show me how" }).count()) === 1);
 
   await reportByText(page, "We have no heat and it is freezing");
-  const heat = await page.locator("main").innerText();
+  const heat = await chatText(page);
   check("no heat gives the tenant no fix steps", !/\n1\)/.test(heat));
   await page.goto(`${BASE}/owner`);
   await page.getByText(/Called your landlord|calling about hvac/i).first().waitFor(wait20).catch(() => {});
@@ -345,11 +365,11 @@ const tabs = (page, name) => page.getByRole("tab", { name });
   await page.getByRole("button", { name: "HELP" }).click();
   await page.getByText(/Stop and get help if/).filter({ visible: true }).first().waitFor(wait20);
   check("HELP sends the guide for the exact heater", (await page.getByRole("button", { name: "Show me how" }).count()) >= 1);
-  check("the guide never tells the tenant to touch gas", !/turn the gas|pilot|relight/i.test(await page.locator("main").innerText()));
+  check("the guide never tells the tenant to touch gas", !/turn the gas|pilot|relight/i.test(await chatText(page)));
 
   // Questions answered from the record, and the unknown says so.
   await reportByText(page, "How old is the water heater?");
-  const age = await page.locator("main").innerText();
+  const age = await chatText(page);
   check("the tenant is told the exact brand, model, and age from the record", /Hearthline HL-40G-NG/.test(age) && /11 years/.test(age), age.slice(0, 200));
   await reportByText(page, "What is the serial number of the water heater?");
   check("the tenant is told the serial from the record", (await count(page, /15C0412-X/)) > 0);
@@ -359,6 +379,192 @@ const tabs = (page, name) => page.getByRole("tab", { name });
   await page.getByText(/I'll text you Sample Owner's answer/).waitFor(wait20);
   check("GoHome offers to ask the owner and does", true);
   check("no console errors in triage", errors.length === 0, errors.join(" | "));
+  await context.close();
+}
+
+// ======================= Paying rent and utilities =======================
+{
+  const { context, page, errors } = await newPage();
+  await resetApp(page);
+  await page.goto(`${BASE}/tenant/pay`);
+  check("the Pay page shows the amount due and each bill", (await count(page, "$3,292.18")) > 0 && (await count(page, "October 2026 rent")) > 0 && (await count(page, "Water and trash")) > 0);
+  check("the Pay page says gas and electric are paid to the utility", (await count(page, /paid directly to your utility company/)) > 0);
+  const checkout = page.frameLocator('iframe[title="Secure checkout"]');
+  await checkout.getByText("Secure checkout").waitFor(wait20);
+  check("the checkout is its own embedded page", (await page.locator('iframe[title="Secure checkout"]').getAttribute("src"))?.startsWith("/checkout") === true);
+
+  // Mistakes are caught, in plain words.
+  await checkout.getByRole("button", { name: /^Pay \$/ }).click();
+  check("an empty card form says what is wrong", (await checkout.getByText("Enter the name on the card.").count()) === 1 && (await checkout.getByText(/card number does not look right/).count()) === 1);
+  await checkout.getByLabel("Name on card").fill("Sample Tenant");
+  await checkout.getByLabel("Card number").fill("4242 4242 4242 4241");
+  await checkout.getByLabel("Expires").fill("1230");
+  await checkout.getByLabel("CVC").fill("123");
+  await checkout.getByLabel("ZIP").fill("95100");
+  await checkout.getByRole("button", { name: /^Pay \$/ }).click();
+  check("a card number that fails the check is refused", (await checkout.getByText(/card number does not look right/).count()) === 1);
+  check("an expiry is shown as MM/YY", (await checkout.getByLabel("Expires").inputValue()) === "12/30");
+  check("the card form limits what can be typed", (await checkout.getByLabel("CVC").getAttribute("maxlength")) === "4");
+
+  // The fee depends on how you pay.
+  check("a card shows a fee", (await checkout.getByText("Card fee (2.9% + $0.30)").count()) === 1 && (await checkout.getByText("$3,387.95").count()) >= 1);
+  await checkout.getByText("Bank account", { exact: true }).click();
+  check("a bank transfer has no fee", (await checkout.getByText("Bank transfer fee").count()) === 1 && (await checkout.getByText("$3,292.18").count()) >= 2);
+  await checkout.getByRole("button", { name: "Use the sample bank account" }).click();
+  await checkout.getByLabel("Routing number").fill("110000001");
+  await checkout.getByRole("button", { name: /^Pay \$/ }).click();
+  check("a bad routing number is refused", (await checkout.getByText(/routing number has 9 digits/).count()) === 1);
+
+  // Paying by card.
+  await checkout.getByText("Card", { exact: true }).click();
+  await checkout.getByRole("button", { name: "Use the sample card" }).click();
+  await checkout.getByRole("checkbox", { name: /Water and trash/ }).uncheck();
+  check("unticking a bill changes the total", (await checkout.getByRole("button", { name: /Pay \$3,\d{3}\.\d\d/ }).count()) === 1 && (await checkout.getByText("$3,200.00").count()) >= 1);
+  await checkout.getByRole("button", { name: /^Pay \$/ }).click();
+  await checkout.getByText("Processing...").waitFor();
+  check("paying shows a processing state", true);
+  await checkout.getByText("Payment received").waitFor(wait20);
+  check("a receipt shows the confirmation number and only the last four digits", (await checkout.getByText("Confirmation GH-100042").count()) === 1 && (await checkout.getByText(/ending in 4242/).count()) === 1);
+  const stored = await page.evaluate(() => JSON.stringify(window.localStorage));
+  check("the full card number and CVC are never saved", !stored.includes("4242 4242 4242 4242") && !stored.includes("4242424242424242") && !/"cvc"/.test(stored));
+  await page.getByText(/Confirmation GH-100042/).first().waitFor(wait20);
+  check("the payment shows up in the history and the amount due drops", (await count(page, "$92.18")) > 0 && (await page.getByText("$3,292.18").count()) === 0);
+  await checkout.getByRole("button", { name: "Done" }).click();
+  await checkout.getByText("Water and trash").first().waitFor(wait20);
+  check("after Done, a fresh checkout shows only what is still due", (await checkout.getByText("October 2026 rent").count()) === 0);
+
+  // Both people hear about it.
+  await page.goto(`${BASE}/tenant`);
+  await page.getByText(/Your October 2026 rent of \$3,200 was received/).waitFor(wait20);
+  check("the tenant is texted a receipt with the confirmation", true);
+  await page.goto(`${BASE}/owner`);
+  await page.getByText(/card ending in 4242\. Confirmation GH-100042/).first().waitFor(wait20);
+  check("the owner sees the rent as received, how, and the confirmation", true);
+  await tabs(page, /Texts from GoHome/).click();
+  await page.getByText(/paid October 2026 rent/).first().waitFor(wait20);
+  check("the owner is texted that rent was paid", true);
+
+  // Utilities by bank transfer, in a new checkout.
+  await page.goto(`${BASE}/tenant/pay`);
+  const next = page.frameLocator('iframe[title="Secure checkout"]');
+  await next.getByText("Water and trash").first().waitFor(wait20);
+  await next.getByText("Bank account", { exact: true }).click();
+  await next.getByRole("button", { name: "Use the sample bank account" }).click();
+  await next.getByRole("button", { name: "Pay $92.18" }).click();
+  await next.getByText("Payment received").waitFor(wait20);
+  check("utilities can be paid by bank transfer with no fee", (await next.getByText("Confirmation GH-100043").count()) === 1);
+  await next.getByRole("button", { name: "Done" }).click();
+  await page.getByText("You are all paid up").waitFor(wait20);
+  check("when everything is paid the page says so", (await count(page, "Nothing to pay right now")) > 0);
+  check("no console errors while paying", errors.length === 0, errors.join(" | "));
+  await context.close();
+}
+
+// ======================= Settings on both sides =======================
+{
+  const { context, page, errors } = await newPage();
+  await resetApp(page);
+  await page.goto(`${BASE}/tenant`);
+  await page.getByRole("link", { name: "Settings" }).click();
+  await page.waitForURL("**/tenant/settings");
+  const tenant = await page.locator("main").innerText();
+  check("tenant settings has account, notifications, payments, and data", ["Your account", "Notifications", "Payments", "Your data"].every((t) => tenant.includes(t)));
+  check("tenant settings has no owner topics", !/quote|forecast|spending limit|approve/i.test(tenant), tenant.slice(0, 80));
+  check("autopay needs a saved payment method first", await page.getByRole("switch", { name: "Autopay" }).isDisabled());
+  await page.getByRole("switch", { name: "Email receipts and updates" }).click();
+  check("a tenant setting can be changed", (await page.getByRole("switch", { name: "Email receipts and updates" }).getAttribute("aria-checked")) === "false");
+  await page.reload();
+  check("a setting is remembered after a reload", (await page.getByRole("switch", { name: "Email receipts and updates" }).getAttribute("aria-checked")) === "false");
+
+  await page.goto(`${BASE}/owner`);
+  check("the notification switch is not in the owner inbox", (await page.getByRole("switch", { name: "Text updates" }).count()) === 0);
+  await page.getByRole("link", { name: "Settings" }).click();
+  await page.waitForURL("**/owner/settings");
+  const owner = await page.locator("main").innerText();
+  check("owner settings has account, notifications, approvals, and data", ["Your account", "Notifications", "What GoHome may do without asking", "Your data"].every((t) => owner.includes(t)));
+  await page.getByRole("switch", { name: "Text updates" }).click();
+  check("the owner can turn text updates off", (await page.getByRole("switch", { name: "Text updates" }).getAttribute("aria-checked")) === "false");
+  await page.getByLabel("Your data").getByRole("button", { name: "Reset sample data" }).click();
+  await page.waitForTimeout(400);
+  check("reset in settings restores the defaults", (await page.getByRole("switch", { name: "Text updates" }).getAttribute("aria-checked")) === "true");
+
+  // Settings shows up in the navigation of both sides.
+  await page.goto(`${BASE}/tenant/pay`);
+  check("the Settings gear is in the header on every page", (await page.locator("header").getByRole("link", { name: "Settings" }).count()) === 1);
+  check("no console errors in settings", errors.length === 0, errors.join(" | "));
+  await context.close();
+}
+
+// ======================= The team =======================
+{
+  const { context, page, errors } = await newPage();
+  await page.goto(`${BASE}/about`);
+  const team = page.locator("#team");
+  await team.waitFor();
+  const text = await team.innerText();
+  check("the team section has all three names and titles", ["Grayson Ando", "Chief Executive Officer", "Ezekiel Thun", "Chief Creative Officer", "Hayden Haar", "Chief Financial Officer"].every((t) => text.includes(t)));
+  const links = await team.locator("a[href*='linkedin.com/in/']").evaluateAll((els) => els.map((e) => e.getAttribute("href")));
+  check("each leader links to their LinkedIn", links.length === 3 && links.some((l) => l.includes("grayson-ando")) && links.some((l) => l.includes("ezekiel-thun")) && links.some((l) => l.includes("hayden-haar")), links.join(","));
+  check("LinkedIn links open in a new tab safely", (await team.locator("a[target=_blank][rel*=noreferrer]").count()) === 3);
+  check("with no photo files yet, each leader shows initials", (await team.getByText("GA", { exact: true }).count()) === 1 && (await team.getByText("ET", { exact: true }).count()) === 1 && (await team.getByText("HH", { exact: true }).count()) === 1);
+  await page.goto(`${BASE}/`);
+  await page.getByRole("link", { name: "Our team" }).click();
+  await page.waitForURL("**/about#team");
+  check("the welcome page links to the team", true);
+  check("no console errors on the team section", errors.length === 0, errors.join(" | "));
+  await context.close();
+}
+
+// ======================= Live preview prompts: one person can follow both sides =======================
+{
+  const { context, page, errors } = await newPage();
+  await resetApp(page);
+  const prompt = page.getByRole("complementary", { name: /Live preview/ });
+
+  // From the owner's screen, act as the tenant and watch the inbox react.
+  await page.goto(`${BASE}/owner`);
+  await prompt.getByText(/A tenant can text GoHome any time/).waitFor(wait20);
+  check("an owner with nothing to do is offered a tenant to act as", (await prompt.getByRole("button", { name: /Act as the tenant: report a leaking water heater/ }).count()) === 1);
+  await prompt.getByRole("button", { name: /Act as the tenant: report a leaking water heater/ }).click();
+  await prompt.getByRole("button", { name: /Act as the tenant: No, nothing electrical/ }).waitFor(wait20);
+  check("the prompt shows what the tenant sees", (await prompt.getByText("The tenant sees").count()) === 1);
+  await prompt.getByRole("button", { name: /Act as the tenant: No, nothing electrical/ }).click();
+  await prompt.getByRole("button", { name: /Act as the tenant: Done/ }).waitFor(wait20);
+  await prompt.getByRole("button", { name: /Act as the tenant: Done/ }).click();
+  await page.getByRole("button", { name: "Approve", exact: true }).waitFor(wait20);
+  check("acting as the tenant brings the owner's approval card", true);
+
+  // Dismissing hides it, and the next step brings it back.
+  await prompt.getByRole("button", { name: "Hide this preview" }).click().catch(() => {});
+  await page.getByRole("button", { name: "Approve", exact: true }).click();
+  await prompt.getByRole("button", { name: /Act as the tenant: That works/ }).waitFor(wait20);
+  check("after approving, the owner is offered the tenant's confirmation", true);
+
+  // From the tenant's screen, act as the owner and the plumber.
+  await page.goto(`${BASE}/tenant`);
+  await prompt.getByRole("button", { name: /Confirm the time: That works/ }).waitFor(wait20);
+  await prompt.getByRole("button", { name: /Confirm the time: That works/ }).click();
+  await prompt.getByRole("button", { name: /Fast-forward: the plumber finishes/ }).waitFor(wait20);
+  await prompt.getByRole("button", { name: /Fast-forward: the plumber finishes/ }).click();
+  await page.getByText(/All fixed/).waitFor(wait20);
+  await prompt.getByRole("link", { name: "Pay this month's rent" }).waitFor(wait20);
+  check("when the job is done, the tenant is pointed to paying rent", true);
+
+  // A fresh case, answered from the tenant's screen as the owner.
+  await resetApp(page);
+  await page.goto(`${BASE}/tenant`);
+  await page.getByRole("button", { name: "My water heater is leaking" }).click();
+  await page.getByText(/near an outlet/).waitFor(wait20);
+  await page.getByRole("button", { name: /^2\s+No$/ }).click();
+  await page.getByRole("button", { name: "Done", exact: true }).waitFor(wait20);
+  await page.getByRole("button", { name: "Done", exact: true }).click();
+  await prompt.getByRole("button", { name: /Act as the owner: Approve/ }).waitFor(wait20);
+  check("the tenant sees that the owner has a plan, with a button to act as the owner", (await prompt.getByText("The owner sees").count()) === 1);
+  await prompt.getByRole("button", { name: /Act as the owner: Approve/ }).click();
+  await page.getByText(/Good news: Willow Glen/).waitFor(wait20);
+  check("acting as the owner books the plumber and texts the tenant", true);
+  check("the prompt is not on the Pay or Settings pages", await (async () => { await page.goto(`${BASE}/tenant/pay`); return (await page.getByRole("complementary", { name: /Live preview/ }).count()) === 0; })());
+  check("no console errors with prompts", errors.length === 0, errors.join(" | "));
   await context.close();
 }
 
@@ -373,7 +579,7 @@ const tabs = (page, name) => page.getByRole("tab", { name });
   await tabs(page, /What GoHome is doing/).click();
   await page.getByText(/Checked your problem against the emergency safety rules/).waitFor(wait20);
   check("the agent tab shows the steps GoHome took", true);
-  check("the tenant sees the bottom tab bar with two tabs", (await page.getByRole("navigation", { name: "Tenant tabs" }).getByRole("link").count()) === 2);
+  check("the tenant sees the bottom tab bar with three tabs", (await page.getByRole("navigation", { name: "Tenant tabs" }).getByRole("link").count()) === 3);
   check("no horizontal scroll on a phone", await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1));
   check("no console errors on the phone layout", errors.length === 0, errors.join(" | "));
   await context.close();

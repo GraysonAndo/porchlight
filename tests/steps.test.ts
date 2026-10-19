@@ -7,8 +7,8 @@ describe("navigation", () => {
     for (const item of [...OWNER_NAV, ...REPAIR_TABS]) expect(item.href.startsWith("/owner")).toBe(true);
   });
 
-  it("gives the tenant only things a tenant needs: help and their home", () => {
-    expect(TENANT_NAV.map((n) => n.label)).toEqual(["Help", "My home"]);
+  it("gives the tenant only things a tenant needs: help, their home, and paying", () => {
+    expect(TENANT_NAV.map((n) => n.label)).toEqual(["Help", "My home", "Pay"]);
   });
 
   it("does not show owner decisions to tenants", () => {

@@ -16,6 +16,7 @@ export interface NavItem {
 export const TENANT_NAV: NavItem[] = [
   { href: "/tenant", label: "Help" },
   { href: "/tenant/home", label: "My home", match: ["/tenant/guides"] },
+  { href: "/tenant/pay", label: "Pay" },
 ];
 
 export const OWNER_NAV: NavItem[] = [
@@ -37,6 +38,9 @@ export const PAGE_TITLES: Record<string, string> = {
   "/": "Welcome",
   "/tenant": "Help",
   "/tenant/home": "My home",
+  "/tenant/pay": "Pay rent and utilities",
+  "/tenant/settings": "Settings",
+  "/owner/settings": "Settings",
   "/owner": "Inbox",
   "/owner/request": "Repair request",
   "/owner/quote": "Quotes",

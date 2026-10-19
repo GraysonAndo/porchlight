@@ -32,6 +32,7 @@ const TENANT_TEXT: Record<string, (t: ToolCall) => string> = {
   answer_from_record: (t) => (/don't know/i.test(t.title) ? "Checked your home record and the lease. The answer is not there, so I did not guess." : "Looked that up in your home record"),
   ask_owner: () => "Passed your question to your landlord",
   record_rent_payment: () => "Recorded your rent payment",
+  record_utility_payment: () => "Recorded your water and trash payment",
 };
 
 export function activityFor(audience: "tenant" | "owner", entries: Entry[]): ActivityItem[] {

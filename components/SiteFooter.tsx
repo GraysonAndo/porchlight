@@ -22,6 +22,9 @@ export function SiteFooter() {
                 Pricing
               </Link>
             )}
+            <Link href="/about#team" className="inline-flex min-h-11 items-center underline underline-offset-4">
+              Our team
+            </Link>
             <Link href="/about#faq" className="inline-flex min-h-11 items-center underline underline-offset-4">
               Help and FAQ
             </Link>

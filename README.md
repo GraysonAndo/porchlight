@@ -56,6 +56,8 @@ The app is fully static and makes no network requests at runtime. The font (Plus
 | --- | --- |
 | `/tenant` | "How can we help?" A chat with GoHome on the left and **What GoHome is doing** on the right (tabs on a phone). Four tap-to-start examples or type anything. GoHome knows the exact heater already, asks the safety question, gives two safe steps with a **Show me how** picture guide, and texts who is coming and when. Questions about the home or lease ("How old is the water heater?", "Can I have a dog?") are answered from the record and lease only, or "I don't know" with an "Ask owner" relay. The agent panel shows only steps a tenant cares about, in plain words, and never prices. |
 | `/tenant/home` | "My home": every item in the house with brand, model, serial, and place, and a button for each how-to guide. Plus quick fixes for the whole home (overflowing toilet, tripped breaker), the lease basics, the rent payment, and the text-updates switch. |
+| `/tenant/pay` | **Pay rent and utilities.** The amount due, each bill (rent, and water and trash billed by the owner), your payment history, and an embedded checkout (a separate page, `/checkout`, shown in an iframe like a payment provider's form). Pick what to pay, choose card (2.9% + $0.30) or bank account (no fee), and the form checks the card number, expiry, CVC, ZIP, and routing number in plain words. You get a receipt with a confirmation number. Only the last four digits are kept, never the full number. Both people are texted, and the owner sees how it was paid. Gas and electric are noted as paid to the utility directly. |
+| `/tenant/settings` | Settings: account, notifications (text updates, email receipts), autopay (needs a saved payment first), and your data. |
 | `/tenant/guides/[id]` | A step-by-step picture guide: a drawing for each step that points at the part you need, a progress bar, "Play as a short video", and "Stop and get help if". Six guides for the water heater (two), furnace, dishwasher, toilet, and breaker. |
 
 **Owner side** (tabs: Inbox, Home record, Forecast, Rent)
@@ -64,11 +66,14 @@ The app is fully static and makes no network requests at runtime. The font (Plus
 | --- | --- |
 | `/owner` | The **approval inbox**. A "Today" banner says "All quiet", "1 thing needs your OK", or "All done". Each approval is a card with the answer first (pick, price, spending limit, saving, visit time), one big **Approve**, plus "Other quotes", "Call me", and "See the details, or change something". After booking, one **Mark done**. Beside it: **What GoHome is doing** (every check, with who did it) and **Texts from GoHome**, where the owner can also ask it to check lease dates or a contractor's quote. Also the rent status and the text-updates switch. |
 | `/owner/request`, `/owner/quote`, `/owner/decide`, `/owner/book` | The repair's details as tabs: the request and urgency, the quotes with the line-by-line check and a paste-a-quote tool, repair or replace with the rules shown, and the booking with an editable limit and messages. |
+| `/owner/settings` | Settings: account, notifications (text updates, emergency calls, weekly email), what GoHome may do without asking, and your data. |
 | `/owner/record` | The home record: every item with brand, model, serial, place, age, a life bar, and the replace cost range. New equipment is added automatically when an installer finishes a job. |
 | `/owner/forecast` | 5-year replacement forecast with a CSS bar chart and a set-aside per year and per month. |
 | `/owner/rent` | California AB 1482 rent increase check with a copyable notice draft. |
 
-**Also:** `/pricing`, `/about` (FAQ and how prices work), `/feedback` (interview notes). The footer has "Send feedback", "Reset sample data", and `?reset=1` works on any page. The old demo consoles (`/live`, `/sms`) and the old label and tenant step pages redirect.
+**Live preview.** One person can only look at one side at a time, so a banner at the top of the main screens says what the other person is seeing right now ("The owner sees ...") and offers one tap to act as them ("Act as the owner: Approve", "Act as the tenant: That works", "Fast-forward: the plumber finishes", "Act as a contractor: send a quote"). Follow the banner from either side to walk the whole repair. It is hidden on the Pay and Settings pages and can be hidden for a step (`lib/agents/prompts.ts`).
+
+**Also:** `/pricing`, `/about` (the leadership team, FAQ, and how prices work), `/feedback` (interview notes). The footer has "Send feedback", "Reset sample data", and `?reset=1` works on any page. The old demo consoles (`/live`, `/sms`) and the old label and tenant step pages redirect.
 
 The agents are one pure reducer, `(world, event) => world`, in `lib/agents/engine.ts`, so they are deterministic and unit tested (`tests/agents.test.ts`). The design and architecture are in [`docs/BLUEPRINT.md`](docs/BLUEPRINT.md). The screens replay the timeline with typing pauses so it feels live.
 
@@ -80,6 +85,10 @@ Who does what, shown with a small chip on every step in the owner's activity pan
 | Plain code | Decides prices, rules, thresholds, and the legal cap, from hand-checked tables. Screens say "Plain code, not AI." next to those numbers. |
 | GoHome acts | Sends, books, and notifies, inside limits the owner set. |
 | A person taps | Nothing is spent without this. |
+
+## The team
+
+The leadership section on `/about` is data in `lib/team.ts`: Grayson Ando (CEO), Ezekiel Thun (Chief Creative Officer), and Hayden Haar (CFO), each with a LinkedIn link. **Photos:** save a square image as `public/team/grayson-ando.jpg`, `ezekiel-thun.jpg`, and `hayden-haar.jpg` (png and webp also work). The site picks them up at build time, and shows initials until a file exists. **Bios:** the text describes each person's role at GoHome. It was written without access to their LinkedIn pages, so it says nothing about schooling or past jobs. Add a line about yourselves in the `about` field of each person.
 
 ## What is REAL vs FAKED
 

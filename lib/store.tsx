@@ -7,6 +7,7 @@
 import { createContext, useContext, useSyncExternalStore, type ReactNode } from "react";
 import { openOwnerMessage, send as agentStep, advanceTo, nextTimerAt } from "./agents/engine";
 import { stampReveal } from "./agents/pacing";
+import { money as moneyText } from "./payments";
 import { syncFromWorld } from "./agents/sync";
 import type { Ev } from "./agents/types";
 import { DEFAULT_RENT_FORM, INITIAL_STATE } from "./seed";
@@ -14,7 +15,9 @@ import type {
   Approval,
   DemoState,
   FeedbackNote,
+  Payment,
   Photo,
+  Prefs,
   QuoteCheckResult,
   RentFormState,
   RepairRequest,
@@ -53,6 +56,8 @@ function readStorage(): DemoState {
       ...parsed,
       rent: { ...DEFAULT_RENT_FORM, ...(parsed.rent ?? {}) },
       textUpdates: { ...INITIAL_STATE.textUpdates, ...(parsed.textUpdates ?? {}) },
+      prefs: { ...INITIAL_STATE.prefs, ...(parsed.prefs ?? {}) },
+      payments: Array.isArray(parsed.payments) ? parsed.payments : [],
       agent: parsed.agent && Array.isArray(parsed.agent.timeline) ? { ...INITIAL_STATE.agent, ...parsed.agent } : INITIAL_STATE.agent,
       feedback: Array.isArray(parsed.feedback) ? parsed.feedback : [],
     };
@@ -138,6 +143,9 @@ export interface DemoActions {
   completeJob(): void;
   /** Demo only: mark this month's rent paid or unpaid. Nothing is charged. */
   setRentPaid(paid: boolean): void;
+  /** The tenant paid rent and/or utilities through the checkout. Keeps only the last four digits. */
+  recordPayments(payments: Payment[]): void;
+  setPref<K extends keyof Prefs>(key: K, value: Prefs[K]): void;
   /** Send an event to GoHome's agent (a text, a photo, a tap). */
   agentSend(ev: Ev): void;
   /** Send several events at once, shown quickly (used by "Show me a sample repair"). */
@@ -202,6 +210,16 @@ export const actions: DemoActions = {
   completeJob: () => update((s) => ({ ...s, jobCompletedAt: new Date().toISOString() })),
   setRentPaid: (paid) =>
     update((s) => runAgent({ ...s, rentPaidAt: paid ? new Date().toISOString() : null }, { type: "rent.paid", paid })),
+  recordPayments: (payments) =>
+    update((s) => {
+      let next: DemoState = { ...s, payments: [...s.payments, ...payments] };
+      for (const p of payments) {
+        if (p.kind === "rent") next = runAgent({ ...next, rentPaidAt: p.paidAt }, { type: "rent.paid", paid: true, confirmation: p.confirmation });
+        else next = runAgent(next, { type: "utilities.paid", amount: moneyText(p.cents), confirmation: p.confirmation });
+      }
+      return next;
+    }),
+  setPref: (key, value) => update((s) => ({ ...s, prefs: { ...s.prefs, [key]: value } })),
   setPricingPick: (pricingPick) => update((s) => ({ ...s, pricingPick })),
   addFeedback: ({ screen, rating, note }) =>
     update((s) => {
