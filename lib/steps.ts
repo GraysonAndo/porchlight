@@ -1,91 +1,77 @@
-// The 9 screens of the demo, in order. Used by the stepper, demo guide,
-// Back and Next controls, and the feedback sheet.
+// The screens of GoHome, grouped by who is using them. A tenant only ever sees tenant screens, and an owner
+// only ever sees owner screens. If something is not relevant to a person, it is not on their side.
+//
+//  tenant : the person living in the home. Chat with GoHome, see what is in their home, follow how-to guides.
+//  owner  : the person who owns the home. Approves repairs and spending, and plans ahead.
 
-export interface Step {
-  n: number;
-  path: string;
-  short: string;
-  title: string;
-  /** One or two plain sentences, shown in "Why this screen exists" */
-  why: string;
+export type Role = "tenant" | "owner";
+
+export interface NavItem {
+  href: string;
+  label: string;
+  /** Pages under this path also count as "here" in the nav */
+  match?: string[];
 }
 
-export const STEPS: Step[] = [
-  {
-    n: 1,
-    path: "/tenant/request",
-    short: "Report",
-    title: "Report a repair",
-    why: "Tenants describe the problem in their own words and attach a photo. This replaces a long thread of texts and phone calls.",
-  },
-  {
-    n: 2,
-    path: "/triage",
-    short: "Triage",
-    title: "AI triage",
-    why: "Owners should not have to guess how serious a problem is. Triage sorts it by urgency and gives the tenant safe next steps right away.",
-  },
-  {
-    n: 3,
-    path: "/label",
-    short: "Label",
-    title: "Read the equipment label",
-    why: "Model, serial number, and age are the facts that decide repair or replace. Taking a photo of the label is faster than typing them in.",
-  },
-  {
-    n: 4,
-    path: "/record",
-    short: "Record",
-    title: "House record",
-    why: "One place for what is in the house and how old it is. Later answers, like the forecast, are built on this.",
-  },
-  {
-    n: 5,
-    path: "/quote",
-    short: "Quote",
-    title: "Quote check",
-    why: "Most small owners have no way to tell if a quote is fair. This compares it to a typical price range and lists what to ask the vendor.",
-  },
-  {
-    n: 6,
-    path: "/decide",
-    short: "Decide",
-    title: "Repair or replace",
-    why: "A clear recommendation, with the rule shown so the owner can see why. The tool recommends and the owner decides.",
-  },
-  {
-    n: 7,
-    path: "/forecast",
-    short: "Forecast",
-    title: "5-year forecast",
-    why: "Big repairs should not be a surprise. This shows what is likely to wear out soon and how much to set aside each year.",
-  },
-  {
-    n: 8,
-    path: "/rent",
-    short: "Rent",
-    title: "Rent increase",
-    why: "Rent rules in California are easy to get wrong. This checks the state cap and drafts the notice, so the owner starts from a safe place.",
-  },
-  {
-    n: 9,
-    path: "/approve",
-    short: "Book",
-    title: "Approve and book",
-    why: "The last step turns a decision into action: pick a vendor, set a spending limit, and notify the vendor and the tenant.",
-  },
+export const TENANT_NAV: NavItem[] = [
+  { href: "/tenant", label: "Help" },
+  { href: "/tenant/home", label: "My home", match: ["/tenant/guides"] },
 ];
 
-export function stepForPath(pathname: string): Step | undefined {
-  const clean = pathname.length > 1 ? pathname.replace(/\/+$/, "") : pathname;
-  return STEPS.find((s) => s.path === clean);
-}
+export const OWNER_NAV: NavItem[] = [
+  { href: "/owner", label: "Inbox", match: ["/owner/request", "/owner/quote", "/owner/decide", "/owner/book"] },
+  { href: "/owner/record", label: "Home record" },
+  { href: "/owner/forecast", label: "Forecast" },
+  { href: "/owner/rent", label: "Rent" },
+];
+
+/** The pages that make up one repair, shown as tabs on the repair detail screens (owner only). */
+export const REPAIR_TABS: NavItem[] = [
+  { href: "/owner/request", label: "Request" },
+  { href: "/owner/quote", label: "Quotes" },
+  { href: "/owner/decide", label: "Decision" },
+  { href: "/owner/book", label: "Booking" },
+];
+
+export const PAGE_TITLES: Record<string, string> = {
+  "/": "Welcome",
+  "/tenant": "Help",
+  "/tenant/home": "My home",
+  "/owner": "Inbox",
+  "/owner/request": "Repair request",
+  "/owner/quote": "Quotes",
+  "/owner/decide": "Repair or replace",
+  "/owner/book": "Booking",
+  "/owner/record": "Home record",
+  "/owner/forecast": "5-year forecast",
+  "/owner/rent": "Rent increase",
+  "/pricing": "Pricing",
+  "/about": "About and FAQ",
+  "/feedback": "Feedback notes",
+};
 
 /** A readable screen name for the feedback notes. */
 export function screenNameFor(pathname: string): string {
-  const step = stepForPath(pathname);
-  if (step) return `Screen ${step.n} of ${STEPS.length}: ${step.title}`;
-  if (pathname.startsWith("/feedback")) return "Feedback notes";
-  if (pathname === "/") return "Home";
-  return pathname;
+  const clean = pathname.length > 1 ? pathname.replace(/\/+$/, "") : pathname;
+  const title = PAGE_TITLES[clean];
+  if (title) {
+    const role = roleForPath(clean);
+    return role ? `${role === "owner" ? "Owner" : "Tenant"}: ${title}` : title;
+  }
+  if (clean.startsWith("/tenant/guides/")) return "Tenant: How-to guide";
+  // Any other path (a 404) is named the same on the server and the client, so the page hydrates cleanly.
+  return "Another page";
+}
+
+/** Which side a path belongs to, for the header. */
+export function roleForPath(pathname: string): Role | null {
+  if (pathname.startsWith("/tenant")) return "tenant";
+  if (pathname.startsWith("/owner")) return "owner";
+  return null;
+}
+
+export function isActive(pathname: string, item: NavItem): boolean {
+  const clean = pathname.length > 1 ? pathname.replace(/\/+$/, "") : pathname;
+  if (clean === item.href) return true;
+  return (item.match ?? []).some((m) => clean === m || clean.startsWith(`${m}/`));
 }

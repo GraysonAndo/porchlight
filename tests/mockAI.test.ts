@@ -6,8 +6,8 @@ import { BAYSIDE_QUOTE, WATER_HEATER_JOB } from "../lib/seed";
 const ai = createMockAI({ minDelayMs: 0, maxDelayMs: 0 });
 
 describe("mockAI", () => {
-  it("triage returns the seeded urgent plumbing scenario", async () => {
-    const r = await ai.triageRequest({ description: "anything", photos: [] });
+  it("triage returns the seeded urgent plumbing scenario for a water heater leak", async () => {
+    const r = await ai.triageRequest({ description: "The water heater is leaking from the bottom", photos: [] });
     expect(r.category).toBe("Plumbing");
     expect(r.urgency).toBe("urgent");
     expect(r.safetySteps).toHaveLength(4);

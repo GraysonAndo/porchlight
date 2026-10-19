@@ -1,15 +1,12 @@
 "use client";
 
 import { useId } from "react";
-import { SAMPLE_LABEL_PATH, SAMPLE_PHOTO_PATH } from "@/lib/seed";
+import { SAMPLE_PHOTO_PATH } from "@/lib/seed";
 import type { Photo } from "@/lib/types";
 
 export function altFor(photo: Photo): string {
   if (photo.src === SAMPLE_PHOTO_PATH) {
     return "Sample photo of a water heater leaking at the bottom, with water pooling on the garage floor";
-  }
-  if (photo.src === SAMPLE_LABEL_PATH) {
-    return "Sample photo of a water heater rating label showing the brand, model, serial number, and capacity";
   }
   return `Photo you added: ${photo.name}`;
 }

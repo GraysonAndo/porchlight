@@ -60,6 +60,12 @@ describe("buildForecast with the seed equipment", () => {
     expect(result.setAsideLowPerYear).toBe(2680);
     expect(result.setAsideHighPerYear).toBe(4240);
   });
+
+  it("computes the set aside per month over 60 months", () => {
+    // 13,400 / 60 = 223.3 and 21,200 / 60 = 353.3
+    expect(result.setAsideLowPerMonth).toBe(223);
+    expect(result.setAsideHighPerMonth).toBe(353);
+  });
 });
 
 describe("buildForecast edge cases", () => {

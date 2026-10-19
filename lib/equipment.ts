@@ -1,5 +1,5 @@
-import { EQUIPMENT } from "./seed";
-import type { EquipmentItem, WaterHeaterRecord } from "./types";
+import { EQUIPMENT, NEW_HEATER_RECORD } from "./seed";
+import type { DemoState, EquipmentItem, WaterHeaterRecord } from "./types";
 
 /** Year from an ISO "YYYY-MM" date, or null if it does not parse. */
 export function yearOf(isoMonth: string): number | null {
@@ -7,13 +7,43 @@ export function yearOf(isoMonth: string): number | null {
   return match ? Number(match[1]) : null;
 }
 
+/** The heater's record from the house record. It is filled in at move-in, so this is normally never null. */
+export function heaterBeforeRepair(state: Pick<DemoState, "houseRecord">): WaterHeaterRecord | null {
+  return state.houseRecord;
+}
+
 /**
- * The equipment list for the forecast and record screens. If the owner saved a
- * label read, the water heater uses that manufacture year instead of the seed.
+ * The heater in the home right now. After the plumber finishes the job (simulated),
+ * the installer registers the new heater and it is added to the record automatically.
+ */
+export function currentHeater(state: Pick<DemoState, "houseRecord" | "jobCompletedAt">): WaterHeaterRecord | null {
+  return state.jobCompletedAt ? NEW_HEATER_RECORD : heaterBeforeRepair(state);
+}
+
+/** True when the record has what GoHome needs, so nobody should be asked for a photo. */
+export function recordIsComplete(record: WaterHeaterRecord | null): boolean {
+  return record !== null && Boolean(record.manufacturer && record.model && record.serial);
+}
+
+/**
+ * The equipment list for the record and forecast screens. If the record is known,
+ * the water heater uses its manufacture year and source. Otherwise the home
+ * inspection estimate (about 2015) is used.
  */
 export function equipmentFor(record: WaterHeaterRecord | null): EquipmentItem[] {
-  const year = record ? yearOf(record.manufactureDate) : null;
+  if (!record) return EQUIPMENT;
+  const year = yearOf(record.manufactureDate);
   return EQUIPMENT.map((item) =>
-    item.id === "water-heater" && year !== null ? { ...item, installYear: year } : item,
+    item.id === "water-heater"
+      ? {
+          ...item,
+          installYear: year ?? item.installYear,
+          source: record.source,
+          brand: record.manufacturer,
+          model: record.model,
+          serial: record.serial,
+          summary: `${record.capacityGallons} gallon, ${record.fuelType.toLowerCase()}, tank type`,
+        }
+      : item,
   );
 }

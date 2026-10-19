@@ -16,10 +16,15 @@ export default function FeedbackPage() {
   const notes = state.feedback;
   const [copied, setCopied] = useState<"" | "yes" | "no">("");
   const [confirmClear, setConfirmClear] = useState(false);
+  const pick = state.pricingPick;
+  const pricingLine = pick
+    ? `Pricing test: ${pick === "none" ? "none of the tiers felt right" : `would pick ${pick === "starter" ? "Starter ($4)" : pick === "plus" ? "Plus ($6)" : "Pro ($8)"} per unit per month`}`
+    : null;
+  const withPricing = (text: string) => (pricingLine ? `${pricingLine}\n\n${text}` : text);
 
   async function copyAll() {
     try {
-      await navigator.clipboard.writeText(feedbackToText(notes));
+      await navigator.clipboard.writeText(withPricing(feedbackToText(notes)));
       setCopied("yes");
     } catch {
       setCopied("no");
@@ -31,9 +36,15 @@ export default function FeedbackPage() {
       <div>
         <h1 className="text-3xl font-extrabold sm:text-4xl">Feedback notes</h1>
         <p className="mt-2 text-ink-soft">
-          Notes saved with the &quot;Leave feedback&quot; button during interviews. They live in this browser only.
+          Notes saved with the &quot;Send feedback&quot; link at the bottom of any page. They live in this browser only.
         </p>
       </div>
+
+      {pricingLine && (
+        <p className="rounded-2xl bg-glow-tint px-4 py-3 font-bold" role="status">
+          {pricingLine}
+        </p>
+      )}
 
       <div className="flex flex-wrap items-center gap-3">
         <button type="button" className="btn btn-primary" onClick={copyAll} disabled={notes.length === 0}>
@@ -76,9 +87,9 @@ export default function FeedbackPage() {
         <Card>
           <p className="text-lg font-bold">No notes yet.</p>
           <p className="text-ink-soft">
-            Open any screen and tap &quot;Leave feedback&quot; to add one.{" "}
-            <Link href="/tenant/request" className="font-bold underline underline-offset-4">
-              Start the demo
+            Open any screen and tap &quot;Send feedback&quot; at the bottom of the page to add one.{" "}
+            <Link href="/tenant" className="font-bold underline underline-offset-4">
+              Back to GoHome
             </Link>
           </p>
         </Card>
@@ -107,7 +118,7 @@ export default function FeedbackPage() {
               tabIndex={0}
               aria-label="Feedback notes as plain text"
             >
-              {feedbackToText(notes)}
+              {withPricing(feedbackToText(notes))}
             </pre>
           </Card>
         </>

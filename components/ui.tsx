@@ -37,7 +37,7 @@ export function Badge({
 }) {
   return (
     <span
-      className={`inline-flex items-center gap-1.5 rounded-full border font-extrabold ${
+      className={`inline-flex max-w-full items-center gap-1.5 rounded-full border font-extrabold ${
         size === "lg" ? "px-4 py-1 text-lg" : "px-3 py-0.5 text-sm"
       } ${BADGE_STYLES[tone]}`}
     >
@@ -130,6 +130,8 @@ export function NumberField({
   prefix,
   suffix,
   hint,
+  invalid,
+  onEmptyChange,
 }: {
   id: string;
   label: ReactNode;
@@ -140,6 +142,9 @@ export function NumberField({
   prefix?: string;
   suffix?: string;
   hint?: ReactNode;
+  invalid?: boolean;
+  /** Called with true when the box is cleared, and false when it has a number again or loses focus */
+  onEmptyChange?: (empty: boolean) => void;
 }) {
   const [draft, setDraft] = useState<string | null>(null);
   const shown = draft ?? String(value);
@@ -160,12 +165,18 @@ export function NumberField({
           min={min}
           value={shown}
           aria-describedby={hint ? `${id}-hint` : undefined}
+          aria-invalid={invalid ? true : undefined}
           onChange={(e) => {
             setDraft(e.target.value);
             const parsed = Number(e.target.value);
-            if (e.target.value.trim() !== "" && Number.isFinite(parsed)) onChange(parsed);
+            const empty = e.target.value.trim() === "" || !Number.isFinite(parsed);
+            onEmptyChange?.(empty);
+            if (!empty) onChange(parsed);
           }}
-          onBlur={() => setDraft(null)}
+          onBlur={() => {
+            setDraft(null);
+            onEmptyChange?.(false);
+          }}
         />
         {suffix && <span className="text-lg font-bold">{suffix}</span>}
       </div>

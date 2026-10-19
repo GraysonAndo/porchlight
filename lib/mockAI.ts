@@ -6,7 +6,9 @@
 // mockAI for the real Claude API") and change the one import in lib/ai.ts.
 
 import { compareQuote } from "./quote";
+import { triageText } from "./triage";
 import { usd } from "./format";
+import { SAMPLE_LABEL_READING } from "./seed";
 import type {
   AIProvider,
   LabelInput,
@@ -36,46 +38,16 @@ export function createMockAI(options: MockAIOptions = {}): AIProvider {
 
   return {
     async triageRequest(input: TriageInput): Promise<TriageResult> {
-      void input; // Output is deterministic: the seeded water heater scenario.
       await think();
-      return {
-        category: "Plumbing",
-        urgency: "urgent",
-        summary:
-          "The water heater is leaking from the bottom and the garage floor is wet. This needs a plumber soon. It is not an emergency unless the leak is large or water is reaching living areas.",
-        likelyCause:
-          "Tank failure or a corroded tank bottom. A leak from the bottom of the tank usually means the tank has worn through, not that a fitting came loose.",
-        safetySteps: [
-          "Turn off the water supply valve to the heater.",
-          "Turn the gas valve to pilot or off.",
-          "Keep items off the garage floor.",
-          "Do not touch the heater if you are standing in water near anything electrical.",
-        ],
-        tenantQuestions: [
-          "How fast is the leak: a slow drip, a steady stream, or a gush?",
-          "Is any water reaching the living areas of the house?",
-          "Do you smell gas near the heater?",
-        ],
-        suggestedTrade: "Licensed plumber",
-        confidence: 0.82,
-      };
+      // Plain keyword rules (lib/triage.ts). Safety words always win.
+      return triageText(input.description);
     },
 
     async readLabel(input: LabelInput): Promise<LabelResult> {
       void input; // Any photo returns the same reading.
       await think();
-      return {
-        manufacturer: "Hearthline",
-        model: "HL-40G-NG",
-        serial: "15C0412-X",
-        capacityGallons: 40,
-        fuelType: "Natural gas",
-        manufactureDate: "2015-03",
-        ageYears: 11,
-        confidence: 0.86,
-        // The serial is the one low confidence field, so the human can fix it.
-        fieldsNeedingReview: ["serial"],
-      };
+      // The serial is the one low confidence field, so the human can fix it.
+      return { ...SAMPLE_LABEL_READING, fieldsNeedingReview: [...SAMPLE_LABEL_READING.fieldsNeedingReview] };
     },
 
     async checkQuote(input: QuoteCheckInput): Promise<QuoteCheckResult> {
@@ -149,7 +121,7 @@ export function createMockAI(options: MockAIOptions = {}): AIProvider {
         `This is ${input.ownerName}. I booked ${input.vendorName} to replace the water heater at ${input.address}.`,
         "",
         `Visit window: ${input.accessWindow}.`,
-        "Please make sure they can get to the garage. Keep the water and gas valves off until they arrive.",
+        "Please make sure they can get to the garage, and keep the water valve closed until they arrive. Do not touch the gas valve. If you ever smell gas, leave and call 911.",
         "",
         "Text me if the time does not work or if the leak gets worse.",
         "",

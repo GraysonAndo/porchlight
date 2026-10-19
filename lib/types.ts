@@ -1,4 +1,4 @@
-// Shared types for Porchlight. The AIProvider interface at the bottom is the
+// Shared types for GoHome. The AIProvider interface at the bottom is the
 // only thing the UI knows about "AI". Swap lib/mockAI.ts for a real Claude
 // implementation later and no screen needs to change.
 
@@ -18,6 +18,8 @@ export interface Photo {
   isSample: boolean;
 }
 
+import type { World } from "./agents/types";
+
 // ---------- AI inputs and outputs ----------
 
 export interface TriageInput {
@@ -35,6 +37,8 @@ export interface TriageResult {
   suggestedTrade: string;
   /** 0 to 1 */
   confidence: number;
+  /** True when the owner must be alerted right away, and fix steps are skipped or kept to safety only */
+  alertOwnerNow?: boolean;
 }
 
 export interface LabelInput {
@@ -124,6 +128,15 @@ export interface AIProvider {
 export interface EquipmentItem {
   id: string;
   name: string;
+  /** Where the record came from, for example an installer registration */
+  source: string;
+  brand: string;
+  model: string;
+  serial: string;
+  /** Where in the home it is, for guides ("Garage, against the north wall") */
+  location: string;
+  /** One plain line on what it is ("40 gallon, natural gas, tank type") */
+  summary: string;
   installYear: number;
   typicalLifeYears: number;
   replaceLow: number;
@@ -148,6 +161,10 @@ export interface WaterHeaterRecord {
   /** Field keys that were low confidence and the human has not confirmed yet */
   unconfirmed: string[];
   photo: Photo | null;
+  /** Where we got these details, shown on the house record */
+  source: string;
+  /** True once the owner checked the details against a label photo */
+  verified?: boolean;
 }
 
 export interface RentFormState {
@@ -181,9 +198,24 @@ export interface DemoState {
   role: Role | null;
   request: RepairRequest | null;
   triage: TriageResult | null;
+  /** The owner's label check of the heater, if they did one. Otherwise the seeded record is used. */
   houseRecord: WaterHeaterRecord | null;
   quoteCheck: QuoteCheckResult | null;
   rent: RentFormState;
   approval: Approval | null;
+  /** The tenant's answers to the follow-up questions, or null if not sent yet */
+  tenantAnswers: string[] | null;
+  /** Whether the tenant confirmed the visit window */
+  tenantAccess: "confirmed" | "needs-change" | null;
+  /** When the plumber finished the job (simulated), which adds the new heater to the record */
+  jobCompletedAt: string | null;
+  /** When rent for the current month was marked paid (demo only, nothing is charged), or null */
+  rentPaidAt: string | null;
+  /** GoHome's agent: every text, tool call, and record write, shared by the tenant and owner screens */
+  agent: World;
+  /** Whether each person gets GoHome's updates by text */
+  textUpdates: { tenant: boolean; owner: boolean };
+  /** Which pricing tier the visitor said they would pick, for the pricing test */
+  pricingPick: "starter" | "plus" | "pro" | "none" | null;
   feedback: FeedbackNote[];
 }
