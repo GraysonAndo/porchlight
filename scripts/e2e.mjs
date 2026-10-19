@@ -482,7 +482,7 @@ const tabs = (page, name) => page.getByRole("tab", { name });
       for (const el of Array.from(document.body.querySelectorAll("p, li, dd, dt, td, th, span, h1, h2, h3"))) {
         const t = (el.innerText || "").trim().replace(/\s*\n\s*/g, " | ");
         if (/[a-z]\.[A-Z][a-z]/.test(t) && !/\d\.\d/.test(t) && !/\.com|\.org|\.gov|\.example/.test(t)) hits.push(`${pagePath}: ${t.slice(0, 60)}`);
-        if (/—|–/.test(t)) hits.push(`${pagePath}: dash in "${t.slice(0, 40)}"`);
+        if (/\u2014|\u2013/.test(t)) hits.push(`${pagePath}: dash in "${t.slice(0, 40)}"`);
       }
       return hits.slice(0, 3);
     }, path);
