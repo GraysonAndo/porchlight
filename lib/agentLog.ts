@@ -33,7 +33,7 @@ interface TriageEventsInput {
   record: WaterHeaterRecord | null;
 }
 
-/** What Porchlight did the moment the tenant reported the problem. */
+/** What GoHome did the moment the tenant reported the problem. */
 export function triageEvents({ request, triage, record }: TriageEventsInput): AgentEvent[] {
   const events: AgentEvent[] = [];
   const heater = isHeaterRequest(request.description);

@@ -36,7 +36,7 @@ export default function FeedbackPage() {
       <div>
         <h1 className="text-3xl font-extrabold sm:text-4xl">Feedback notes</h1>
         <p className="mt-2 text-ink-soft">
-          Notes saved with the &quot;Leave feedback&quot; button during interviews. They live in this browser only.
+          Notes saved with the &quot;Send feedback&quot; link at the bottom of any page. They live in this browser only.
         </p>
       </div>
 
@@ -87,9 +87,9 @@ export default function FeedbackPage() {
         <Card>
           <p className="text-lg font-bold">No notes yet.</p>
           <p className="text-ink-soft">
-            Open any screen and tap &quot;Leave feedback&quot; to add one.{" "}
+            Open any screen and tap &quot;Send feedback&quot; at the bottom of the page to add one.{" "}
             <Link href="/tenant" className="font-bold underline underline-offset-4">
-              Start the demo
+              Back to GoHome
             </Link>
           </p>
         </Card>

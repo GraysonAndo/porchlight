@@ -11,7 +11,7 @@ export function createWorld(): World {
     seq: 0,
     timeline: [],
     pending: [],
-    triage: { stage: "idle", photoTries: 0, labelSkipped: false, ownerAcked: false, tenantConfirmed: false },
+    triage: { stage: "idle", ownerAcked: false, tenantConfirmed: false },
     quote: { stage: "idle", total: 0, draft: "", counters: 0, counterTotal: 0 },
     sentinel: { stage: "idle", proposed: 0 },
     stats: { ownerTaps: 0, saved: 0 },

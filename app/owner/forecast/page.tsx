@@ -153,7 +153,7 @@ export default function ForecastPage() {
 
       <Callout tone="neutral" title="About these numbers">
         <p>
-          Costs and lifespans are rough placeholders for a class demo. Real homes vary a lot. A real version
+          Costs and lifespans are rough placeholders. Real homes vary a lot. A real version
           would use local prices and the condition of each item.
         </p>
         <p className="mt-1">

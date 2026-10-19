@@ -1,6 +1,6 @@
 "use client";
 
-// The agent log: what Porchlight did, in order, and WHO did each piece of work.
+// The agent log: what GoHome did, in order, and WHO did each piece of work.
 // This is the core of the pitch. The AI only reads photos and writes text. Plain
 // code decides prices, rules, and the legal cap. A person approves every dollar.
 
@@ -27,7 +27,7 @@ export const ENGINE_META: Record<
     Icon: CalculatorIcon,
   },
   action: {
-    label: "Porchlight acts",
+    label: "GoHome acts",
     hint: "Inside limits the owner set",
     chip: "bg-white text-ink border-ink",
     dot: "bg-white text-ink ring-2 ring-ink",
@@ -80,7 +80,7 @@ export function AgentFeed({ events, live = false, className = "" }: AgentFeedPro
     return <p className={`text-ink-soft ${className}`}>Waiting for something to happen...</p>;
   }
   return (
-    <ol className={className} aria-live={live ? "polite" : undefined} aria-label="Porchlight agent log">
+    <ol className={className} aria-live={live ? "polite" : undefined} aria-label="GoHome agent log">
       {events.map((event, i) => {
         const meta = ENGINE_META[event.engine];
         const last = i === events.length - 1;
@@ -125,7 +125,7 @@ export function PlainCodeNote({ children }: { children?: React.ReactNode }) {
 /** The agent log, folded away by default. Used on screens where it is not the main thing. */
 export function AgentLogDetails({
   events,
-  summary = "See what Porchlight did",
+  summary = "See what GoHome did",
   open = false,
 }: {
   events: AgentEvent[];

@@ -17,7 +17,7 @@ export function TextUpdatesToggle({ party }: { party: "tenant" | "owner" }) {
       </span>
       <p className="min-w-0 flex-1 text-sm">
         <strong>{on ? "Text updates are on" : "Text updates are off"}</strong>
-        <span className="block text-ink-soft">{on ? `Porchlight texts ${phone} each time something changes. (Demo, nothing is sent.)` : "Updates only show here."}</span>
+        <span className="block text-ink-soft">{on ? `GoHome texts ${phone} each time something changes.` : "Updates only show here."}</span>
       </p>
       <button
         type="button"

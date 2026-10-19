@@ -14,7 +14,7 @@ const TIERS: { id: Pick; name: string; price: number; line: string; features: st
     price: 4,
     line: "Know your home, and handle problems the same night.",
     features: [
-      "House record built from label photos",
+      "A home record with the model of everything, kept up to date",
       "Tenant repair reports with photos",
       "Triage with emergency rules and safe steps",
       "Tenant questions answered from the record and lease",
@@ -37,7 +37,7 @@ const TIERS: { id: Pick; name: string; price: number; line: string; features: st
     id: "pro",
     name: "Pro",
     price: 8,
-    line: "Porchlight watches the details for you.",
+    line: "GoHome watches the details for you.",
     features: [
       "Everything in Plus",
       "Rent increase checks and notice drafts (California AB 1482)",
@@ -54,11 +54,11 @@ export default function PricingPage() {
   return (
     <div className="mx-auto max-w-5xl space-y-6">
       <div>
-        <p className="eyebrow mb-2">Pricing test</p>
+        <p className="eyebrow mb-2">Pricing</p>
         <h1 className="font-display text-4xl font-extrabold leading-tight sm:text-5xl">Simple pricing, per unit</h1>
         <p className="mt-3 max-w-2xl text-lg text-ink-soft">
-          Pay per unit, per month. Month to month, cancel any time. California only, for now. Nothing is charged in this
-          prototype, and we are testing which tier makes sense. Tell us which you would pick.
+          Pay per unit, per month. Month to month, cancel any time. California only, for now. Nothing is charged right now,
+          and we are testing which tier makes sense. Tell us which you would pick.
         </p>
         <p className="mt-2">
           <PlaceholderNote /> <span className="text-sm text-ink-soft">(prices and what is in each tier, for a pricing test)</span>
@@ -125,7 +125,7 @@ export default function PricingPage() {
           <Link href="/feedback" className="font-bold underline underline-offset-4">
             feedback notes
           </Link>{" "}
-          page. Use the &quot;Leave feedback&quot; button to say why.
+          page. Use the &quot;Send feedback&quot; link at the bottom of the page to say why.
         </p>
       </div>
     </div>

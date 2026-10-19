@@ -27,7 +27,6 @@ import {
   PROPERTY,
   RENT_MONTH,
   REPAIR_ESTIMATE,
-  SAMPLE_LABEL_READING,
   VENDORS,
   WATER_HEATER_JOB,
 } from "../seed";
@@ -50,6 +49,7 @@ import type {
   World,
 } from "./types";
 
+import { guideForText } from "../homeGuides";
 import { START_CLOCK, createWorld } from "./world";
 
 export { START_CLOCK, createWorld };
@@ -57,17 +57,17 @@ export { START_CLOCK, createWorld };
 const MINUTES_PER_DAY = 1440;
 const MAX_TIMELINE = 400;
 
-/** What the house record starts with: the home inspection and the lease, nothing from a label yet. */
+/** What the house record starts with: everything recorded at move-in from the data plates and the home inspection. */
 export const INITIAL_RECORD: Record<string, string> = {
-  "heater.brand": "Not on file",
-  "heater.model": "Not on file",
-  "heater.serial": "Not on file",
-  "heater.size": "Not on file",
-  "heater.fuel": "Not on file",
-  "heater.made": "About 2015 (estimate)",
-  "heater.age": "About 11 years (estimate)",
-  "heater.warranty": "Unknown",
-  "heater.source": "Home inspection report",
+  "heater.brand": "Hearthline",
+  "heater.model": "HL-40G-NG",
+  "heater.serial": "15C0412-X",
+  "heater.size": "40 gallons",
+  "heater.fuel": "Natural gas",
+  "heater.made": "March 2015",
+  "heater.age": "11 years",
+  "heater.warranty": "Expired in 2021 (6 year tank warranty*)",
+  "heater.source": "Recorded at move-in from the data plate and the home inspection (sample)",
   "lease.rent": `${usd(PROPERTY.rent)} per month`,
   "lease.anniversary": "December 14, 2026",
   "lease.last": "14 months ago",
@@ -144,6 +144,8 @@ interface SayOptions {
   attachment?: Attachment;
   photo?: PhotoKind;
   card?: MsgCard;
+  /** Id of a step-by-step picture guide (lib/homeGuides.ts) shown under the message */
+  guide?: string;
 }
 
 function say(w: World, party: Party, text: string, opts: SayOptions = {}): Msg {
@@ -160,6 +162,7 @@ function say(w: World, party: Party, text: string, opts: SayOptions = {}): Msg {
     attachment: opts.attachment,
     photo: opts.photo,
     card: opts.card,
+    guide: opts.guide,
   };
   push(w, msg);
   return msg;
@@ -315,14 +318,14 @@ function onTimer(w: World, id: TimerId): void {
   }
 }
 
-/** Rent marked paid (demo): both people get a text. Marking it unpaid again sends nothing. */
+/** Rent marked paid: both people get a text. Marking it unpaid again sends nothing. */
 function onRentPaid(w: World, paid: boolean): void {
   if (w.rentPaid === paid) return;
   w.rentPaid = paid;
   if (!paid) return;
-  tool(w, "chat", "record_rent_payment", "action", "Rent marked paid (demo)", `${RENT_MONTH}: ${usd(PROPERTY.rent)}. Nothing was charged.`);
-  say(w, "tenant", `Thanks! Your ${RENT_MONTH} rent of ${usd(PROPERTY.rent)} is marked paid. This is a demo, so nothing was charged.`);
-  say(w, "owner", `${PROPERTY.tenant} paid ${RENT_MONTH} rent: ${usd(PROPERTY.rent)} (demo, nothing was charged).`, { silent: true });
+  tool(w, "chat", "record_rent_payment", "action", "Rent marked paid", `${RENT_MONTH}: ${usd(PROPERTY.rent)}. Nothing was charged.`);
+  say(w, "tenant", `Thanks! Your ${RENT_MONTH} rent of ${usd(PROPERTY.rent)} is marked paid.`);
+  say(w, "owner", `${PROPERTY.tenant} paid ${RENT_MONTH} rent: ${usd(PROPERTY.rent)}.`, { silent: true });
 }
 
 /** The owner taps "Mark done": the booked job finishes now instead of at its scheduled time. */
@@ -371,6 +374,8 @@ function onOwnerText(w: World, text: string): void {
     redraft(w, t);
     return;
   }
+  if (/\b(lease|rent notice|rent increase|check (my )?rent)\b/i.test(t)) return onLeaseCheck(w);
+  if (/\bcontractor\b.*\bquote\b|\bquote\b.*\bcontractor\b/i.test(t)) return onContractorQuote(w);
   say(w, "owner", open ? "I didn't catch that. Reply 1, 2, or 3, or tap a button above." : "Noted. Nothing is waiting on you right now.");
 }
 
@@ -423,7 +428,7 @@ function emergencyPath(w: World, category: string, steps: string[], why: string)
     "Called the owner",
     "A voice call plus a text, so it rings through Do Not Disturb. Nothing is quoted or booked until the home is cleared.",
   );
-  say(w, "owner", `Porchlight is calling about an emergency at ${PROPERTY.address}.`, { channel: "call" });
+  say(w, "owner", `GoHome is calling about an emergency at ${PROPERTY.address}.`, { channel: "call" });
   say(
     w,
     "owner",
@@ -432,7 +437,7 @@ function emergencyPath(w: World, category: string, steps: string[], why: string)
       card: {
         kind: "emergency",
         title: `Emergency: ${category}`,
-        summary: "Porchlight told your tenant to get safe and call for help, and called you. Nothing is quoted or booked until the home is clear.",
+        summary: "GoHome told your tenant to get safe and call for help, and called you. Nothing is quoted or booked until the home is clear.",
         facts: [{ label: "Tenant was told", value: "Get out and call 911", tone: "urgent" }],
       },
       actions: [{ id: "ack", label: "I'm on it" }],
@@ -475,10 +480,6 @@ function onTenantText(w: World, raw: string): void {
       return answerElectrical(w, text);
     case "steps_given":
       return afterSteps(w, text);
-    case "asked_photo":
-      return duringPhotoAsk(w, text);
-    case "confirm_serial":
-      return confirmSerial(w, text);
     case "booked":
       return confirmTime(w, text);
     case "emergency":
@@ -508,7 +509,7 @@ function answerQuestion(w: World, text: string): void {
     reply.known ? "Answered from the house record" : "Said I don't know",
     reply.known
       ? `Source: ${reply.source ?? "house record"}. Only data on file is used, so nothing is made up.`
-      : "The answer is not in the house record or lease, so Porchlight did not guess.",
+      : "The answer is not in the house record or lease, so GoHome did not guess.",
   );
   say(w, "tenant", reply.answer, {
     actions: reply.known ? undefined : [{ id: "askowner", label: `Ask ${PROPERTY.owner}`, text: `Please ask ${PROPERTY.owner}` }],
@@ -542,8 +543,6 @@ function startCase(w: World, text: string): void {
 
   if (isHeaterJob(text, triage)) {
     w.triage.stage = "asked_electrical";
-    w.triage.photoTries = 0;
-    w.triage.labelSkipped = false;
     w.triage.ownerAcked = false;
     w.triage.tenantConfirmed = false;
     tool(
@@ -552,12 +551,12 @@ function startCase(w: World, text: string): void {
       "lookup_house_record",
       "code",
       "Looked up the house record",
-      'Water heater on file as "about 2015" from the home inspection. Brand, model, and serial are missing.',
+      "Found the water heater in the home record: Hearthline HL-40G-NG, 40 gallon gas, made March 2015. Everything about it is already on file.",
     );
     say(
       w,
       "tenant",
-      `Hi, this is Porchlight for ${PROPERTY.address}. I'm on it. Safety first: is the water near an outlet, or is anything electrical in the puddle?\nReply 1 = yes, 2 = no`,
+      `Hi, this is GoHome for ${PROPERTY.address}. I'm on it, and I already have your water heater on file (Hearthline HL-40G-NG). Safety first: is the water near an outlet, or is anything electrical in the puddle?\nReply 1 = yes, 2 = no`,
       {
         actions: [
           { id: "1", label: "1  Yes", text: "1" },
@@ -580,10 +579,11 @@ function startCase(w: World, text: string): void {
     w,
     "tenant",
     `Thanks. I logged this as ${triage.category} (${urgencyWord(triage.urgency)}). ${triage.summary}${steps.length > 0 ? `\n${numbered(steps)}` : ""}\nYour landlord has been told. I'll update you here.`,
+    { guide: guideForText(text) ?? undefined },
   );
   if (triage.alertOwnerNow) {
     tool(w, "triage", "call_owner", "action", "Called the owner", "No-heat problems ring through Do Not Disturb. There are no fix steps for the tenant.");
-    say(w, "owner", `Porchlight is calling about ${triage.category.toLowerCase()} at ${PROPERTY.address}.`, { channel: "call" });
+    say(w, "owner", `GoHome is calling about ${triage.category.toLowerCase()} at ${PROPERTY.address}.`, { channel: "call" });
     say(w, "owner", `Urgent: ${triage.category} at ${PROPERTY.address}. The tenant has no fix steps. I called you. ${triage.summary}`);
   } else {
     tool(w, "triage", "notify_owner", "action", "Sent a silent heads-up to the owner", `Urgency is ${urgencyWord(triage.urgency)}, not an emergency, so there is no phone call. The owner can keep sleeping.`);
@@ -624,9 +624,9 @@ function answerElectrical(w: World, text: string): void {
   say(
     w,
     "tenant",
-    `Good. Two quick steps:\n${numbered(steps)}\nNot sure how? Reply HELP for a step-by-step guide. Don't touch the heater if you're standing in water, and never touch the gas valve. If you smell gas, leave and call 911. Reply DONE when you're finished.`,
+    `Good. Two quick steps for your Hearthline HL-40G-NG:\n${numbered(steps)}\nNot sure how? Tap Show me how for a picture guide made for your exact heater, or reply HELP. Don't touch the heater if you're standing in water, and never touch the gas valve. If you smell gas, leave and call 911. Reply DONE when you're finished.`,
     {
-      attachment: valveGuideAttachment(),
+      guide: "heater-water-off",
       actions: [
         { id: "done", label: "Done", text: "done" },
         { id: "help", label: "HELP", text: "help" },
@@ -642,161 +642,37 @@ function answerElectrical(w: World, text: string): void {
   );
 }
 
-/** The hand-written "how to close the valve" guide, folded under the message. */
-function valveGuideAttachment(): Attachment | undefined {
-  const guide = guideForStep("Turn off the water supply valve to the heater.", {});
-  if (!guide) return undefined;
-  return {
-    title: "How to close the water valve (tap to open)",
-    body: `${numbered(guide.steps)}\nStop and get help if: ${guide.stopIf.join(" ")}`,
-  };
-}
-
 function afterSteps(w: World, text: string): void {
   if (/\bhelp\b/i.test(text)) {
     const guide = guideForStep("Turn off the water supply valve to the heater.", {});
     const body = guide
       ? `${guide.title} (${guide.time}):\n${numbered(guide.steps.slice(0, 4))}\nStop and get help if: ${guide.stopIf[0] ?? "anything looks unsafe"}`
       : "Find the shut-off valve on the cold water pipe above the heater and turn the handle crosswise to the pipe.";
-    tool(w, "triage", "send_guide", "code", "Sent a how-to guide", "Hand-written guide from the library. General safety information, not professional advice.");
+    tool(w, "triage", "send_guide", "code", "Sent the guide for this exact heater", "Hand-written guide for the Hearthline HL-40G-NG from the home record. General safety information, not professional advice.");
     say(w, "tenant", body, {
+      guide: "heater-water-off",
       actions: [{ id: "done", label: "Done", text: "done" }],
     });
     return;
   }
 
-  w.triage.stage = "asked_photo";
-  tool(
-    w,
-    "triage",
-    "request_label_photo",
-    "ai",
-    "Asked the tenant for a photo of the label",
-    "Only asked because the record has no model or serial. Once it is on file, nobody is asked again.",
-  );
-  say(
-    w,
-    "tenant",
-    "Thanks. Can you send one photo of the silver sticker on the side of the tank? Blurry is fine, I'll tell you if I can't read it.",
-    { actions: [{ id: "skip", label: "I can't reach it", text: "skip" }] },
-  );
-}
-
-function duringPhotoAsk(w: World, text: string): void {
-  if (/\bskip\b|can'?t reach|cannot reach|\bno\b/i.test(text)) {
-    w.triage.labelSkipped = true;
-    tool(
-      w,
-      "triage",
-      "ask_owner_for_details",
-      "action",
-      "Passed the label to the owner",
-      "The tenant could not reach it, so the owner can add the details later. Age is an estimate for now.",
-    );
-    say(w, "tenant", "No problem. I'll work from the inspection report and ask your landlord for the details later.");
-    say(
-      w,
-      "owner",
-      "Your tenant couldn't reach the water heater label, so its age is an estimate (about 2015). You can add the details later by photo or by typing them in.",
-      { silent: true },
-    );
-    dispatch(w);
-    return;
-  }
-  say(w, "tenant", "No rush. Tap the camera to send a photo of the sticker, or reply SKIP if you can't reach it.", {
-    actions: [{ id: "skip", label: "I can't reach it", text: "skip" }],
-  });
+  dispatch(w);
 }
 
 function onTenantPhoto(w: World, photo: PhotoKind): void {
   hear(w, "tenant", "", { photo });
   w.clock += 1;
-
-  if (w.triage.stage !== "asked_photo") {
-    say(w, "tenant", "Thanks, I saved that photo to your case.");
-    return;
-  }
-
-  if (photo === "leak") {
-    say(w, "tenant", "Thanks, that helps. I still need the silver sticker on the side of the tank. That's the one that tells me the brand and age.");
-    return;
-  }
-
-  if (photo === "blurry") {
-    w.triage.photoTries += 1;
-    tool(w, "triage", "read_label", "ai", "Tried to read the label", "Confidence 31%. Too blurry to read the brand or the serial, so nothing was written to the record.");
-    say(
-      w,
-      "tenant",
-      w.triage.photoTries >= 2
-        ? "Still too blurry for me. If the label is hard to reach, reply SKIP and I'll ask your landlord to add it instead."
-        : "That one's too blurry for me to read. Can you try again with no flash and hold still?",
-      { actions: w.triage.photoTries >= 2 ? [{ id: "skip", label: "I can't reach it", text: "skip" }] : undefined },
-    );
-    return;
-  }
-
-  const r = SAMPLE_LABEL_READING;
-  w.triage.stage = "confirm_serial";
-  tool(
-    w,
-    "triage",
-    "read_label",
-    "ai",
-    "Read the label",
-    `${r.manufacturer} ${r.model}, ${r.capacityGallons} gallon, ${r.fuelType.toLowerCase()}, made March 2015. Confidence ${Math.round(r.confidence * 100)}%. The serial was read with low confidence, so a person confirms it.`,
-  );
-  record(
-    w,
-    {
-      "heater.brand": r.manufacturer,
-      "heater.model": r.model,
-      "heater.serial": `${r.serial} (please confirm)`,
-      "heater.size": `${r.capacityGallons} gallons`,
-      "heater.fuel": r.fuelType,
-      "heater.made": "March 2015",
-      "heater.age": `${ageOf({ installYear: 2015 })} years`,
-      "heater.source": "Read from a label photo sent by the tenant",
-    },
-    "Water heater details read from the tenant's label photo",
-  );
-  say(
-    w,
-    "tenant",
-    `Got it: ${r.manufacturer} ${r.model}, made March 2015. The serial was hard to read. Is it ${r.serial}?\nReply Y, or type the right one.`,
-    { actions: [{ id: "y", label: "Y", text: "Y" }] },
-  );
+  tool(w, "triage", "save_photo", "action", "Saved the tenant's photo to the case", "The owner can see it with the repair details.");
+  say(w, "tenant", photo === "leak" && w.triage.stage !== "idle" ? "Thanks, that helps. I added the photo to your case." : "Thanks, I saved that photo to your case.");
 }
 
-function confirmSerial(w: World, text: string): void {
-  let serial = SAMPLE_LABEL_READING.serial;
-  if (!YES.test(text)) {
-    const typed = /^[A-Za-z0-9][A-Za-z0-9-]{4,}$/.exec(text.trim());
-    if (!typed) {
-      say(w, "tenant", `Is the serial ${SAMPLE_LABEL_READING.serial}? Reply Y if it matches the sticker, or type the right one.`, {
-        actions: [{ id: "y", label: "Y", text: "Y" }],
-      });
-      return;
-    }
-    serial = typed[0].toUpperCase();
-  }
-  tool(w, "triage", "update_house_record", "code", "Confirmed the serial number", `Serial ${serial} confirmed by the tenant and saved to the house record.`);
-  record(w, { "heater.serial": serial }, `Serial number confirmed: ${serial}`);
-  dispatch(w);
-}
-
-/** After the record is as complete as it will get: work out the facts, check vendors, ask for quotes. */
+/** Work out the facts from the home record, check vendors, and ask for quotes. */
 function dispatch(w: World): void {
   const heater = EQUIPMENT[0];
   const age = ageOf({ installYear: 2015 });
   const pct = Math.round((age / heater.typicalLifeYears) * 100);
 
-  if (w.triage.labelSkipped) {
-    tool(w, "triage", "compute_age_warranty", "code", "Worked out age and warranty", `Age is an estimate: about ${age} years from the inspection report, ${pct}% of a typical life of ${heater.typicalLifeYears}. Warranty unknown.`);
-  } else {
-    tool(w, "triage", "compute_age_warranty", "code", "Worked out age and warranty", `Made 2015, so ${age} years old, ${pct}% of a typical life of ${heater.typicalLifeYears}*. Tank warranty (6 years*) expired in 2021. *Placeholder numbers.`);
-    record(w, { "heater.warranty": "Expired in 2021 (6 year tank warranty*)" });
-  }
+  tool(w, "triage", "compute_age_warranty", "code", "Worked out age and warranty", `Made 2015, so ${age} years old, ${pct}% of a typical life of ${heater.typicalLifeYears}*. Tank warranty (6 years*) expired in 2021. *Placeholder numbers.`);
   tool(
     w,
     "triage",
@@ -811,16 +687,14 @@ function dispatch(w: World): void {
     "request_quotes",
     "action",
     "Asked 3 vendors for itemized quotes",
-    "Standing permission: Porchlight may request quotes. It may not book, negotiate, or spend without a tap. Sent the address, photos, and the house record.",
+    "Standing permission: GoHome may request quotes. It may not book, negotiate, or spend without a tap. Sent the address, photos, and the house record.",
   );
 
   say(w, "tenant", "All set. Your landlord is being told. You don't need to call anyone. I'll text you the plumber's name and time. Go back to sleep, I'm watching this.");
   say(
     w,
     "owner",
-    w.triage.labelSkipped
-      ? "Water heater is about 11 years old (estimate from the inspection, typical life 10*). I asked 3 vendors for quotes and I'll send you one decision when they're in.\n*Illustrative placeholder, not market data"
-      : `Added to your house record: Hearthline HL-40G-NG, 40 gal gas, made March 2015, ${age} years old (typical life ${heater.typicalLifeYears}*). Warranty expired*. I asked 3 vendors for quotes and I'll send you one decision when they're in.\n*Illustrative placeholder, not market data`,
+    `From your house record: Hearthline HL-40G-NG, 40 gal gas, made March 2015, ${age} years old (typical life ${heater.typicalLifeYears}*). Warranty expired*. I asked 3 vendors for quotes and I'll send you one decision when they're in.\n*Illustrative placeholder, not market data`,
     { silent: true },
   );
   w.triage.stage = "quotes_pending";
@@ -865,7 +739,7 @@ function quotesArrive(w: World): void {
       card: {
         kind: "decision",
         title: `Replace the water heater with ${shortName(PLAN.vendorName)}`,
-        summary: `The heater is ${age} years old and the tank is leaking, so it cannot be repaired. Porchlight checked 3 quotes and picked the best one for you.`,
+        summary: `The heater is ${age} years old and the tank is leaking, so it cannot be repaired. GoHome checked 3 quotes and picked the best one for you.`,
         facts: [
           { label: "Price", value: `${usd(PLAN.total)}, a fair price`, tone: "good" },
           { label: "Spending limit", value: usd(PLAN.notToExceed) },
@@ -887,14 +761,14 @@ function quotesArrive(w: World): void {
 
 function ownerNudge(w: World): void {
   if (w.triage.stage !== "decision_sent") return;
-  tool(w, "triage", "nudge_owner", "action", "No reply in 45 minutes, so Porchlight followed up", "A reminder text, then a call. The tenant's leak is contained, so this is a nudge and not an emergency.");
+  tool(w, "triage", "nudge_owner", "action", "No reply in 45 minutes, so GoHome followed up", "A reminder text, then a call. The tenant's leak is contained, so this is a nudge and not an emergency.");
   say(w, "owner", "Reminder: the water heater decision is still waiting. The leak is contained, the tenant is safe, and the quotes are held for 24 hours.", {
     actions: [
       { id: "approve", label: "Approve" },
       { id: "call", label: "Call me" },
     ],
   });
-  say(w, "owner", "Porchlight is calling about the water heater decision.", { channel: "call" });
+  say(w, "owner", "GoHome is calling about the water heater decision.", { channel: "call" });
 }
 
 function triageOwnerAction(w: World, action: string): void {
@@ -927,11 +801,11 @@ function triageOwnerAction(w: World, action: string): void {
 
   if (action === "call") {
     tool(w, "triage", "place_call", "action", "Called the owner", "A voice call to talk it through. Still nothing is booked.");
-    say(w, "owner", "Porchlight is calling you about the water heater decision.", { channel: "call" });
+    say(w, "owner", "GoHome is calling you about the water heater decision.", { channel: "call" });
     return;
   }
 
-  // approve: the owner's own pick if they chose one by hand, otherwise Porchlight's plan
+  // approve: the owner's own pick if they chose one by hand, otherwise GoHome's plan
   const pick = w.choice ?? { vendorId: PLAN.vendorId, notToExceed: PLAN.notToExceed, accessWindow: ACCESS_WINDOWS[0] };
   const vendor = VENDORS.find((v) => v.id === pick.vendorId) ?? VENDORS[0];
   const highest = Math.max(...VENDORS.map((v) => v.total));
@@ -996,7 +870,7 @@ function jobDone(w: World): void {
   if (w.triage.stage !== "booked") return;
   w.triage.stage = "done";
   const n = NEW_HEATER_RECORD;
-  tool(w, "triage", "installer_registration", "action", "Installer registered the new heater", `${n.manufacturer} ${n.model}, serial ${n.serial}. Nobody typed or photographed anything.`);
+  tool(w, "triage", "installer_registration", "action", "Installer registered the new heater", `${n.manufacturer} ${n.model}, serial ${n.serial}. Nobody had to type anything.`);
   record(
     w,
     {
@@ -1086,7 +960,7 @@ function auditMessage(w: World, quote: VendorQuote, draft: string, intro: string
         summary:
           cmp.total.verdict === "fair"
             ? "The price is inside the typical range. A reply is drafted if you want to confirm the details."
-            : "Porchlight wrote a polite reply asking for a better price. It is ready to send.",
+            : "GoHome wrote a polite reply asking for a better price. It is ready to send.",
         facts: [
           { label: "Their price", value: usd(quote.total), tone: cmp.total.verdict === "fair" ? "good" : "caution" },
           { label: "Typical range", value: usdRange(cmp.total.range.low, cmp.total.range.high) },
@@ -1265,7 +1139,7 @@ function onLeaseCheck(w: World): void {
       card: {
         kind: "lease",
         title: "You can raise rent on Unit A",
-        summary: "The lease anniversary is coming up. Porchlight worked out the legal maximum and drafted the notice.",
+        summary: "The lease anniversary is coming up. GoHome worked out the legal maximum and drafted the notice.",
         facts: [
           { label: "Legal maximum", value: `${result.capPercent.toFixed(1)}% (${usdCents(result.maxNewRent)})` },
           { label: "Suggested", value: `5% (${usd(3360)})`, tone: "good" },
@@ -1287,7 +1161,7 @@ function sentinelOwnerAction(w: World, action: string): void {
   if (w.sentinel.stage !== "awaiting_owner") return;
   if (action === "renthold") {
     w.sentinel.stage = "held";
-    tool(w, "sentinel", "hold", "action", "Held the notice", "Nothing was sent. Porchlight will ask again in 14 days.");
+    tool(w, "sentinel", "hold", "action", "Held the notice", "Nothing was sent. GoHome will ask again in 14 days.");
     say(w, "owner", "Okay, holding. I'll remind you in 14 days, before the lease anniversary gets close.");
     return;
   }

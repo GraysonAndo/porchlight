@@ -1,226 +1,77 @@
-// The screens of the demo, grouped by who is using them.
+// The screens of GoHome, grouped by who is using them. A tenant only ever sees tenant screens, and an owner
+// only ever sees owner screens. If something is not relevant to a person, it is not on their side.
 //
-//  tenant   : the person living in the home. One screen: text Porchlight and get updates.
-//  owner    : the person who owns the home. Decides and approves spending.
-//  tools    : owner "plan ahead" tools that are not part of one repair.
-//  optional : owner side tool for older equipment, not part of the main flow.
-//
-// Porchlight itself plays the AI property manager in between.
+//  tenant : the person living in the home. Chat with GoHome, see what is in their home, follow how-to guides.
+//  owner  : the person who owns the home. Approves repairs and spending, and plans ahead.
 
-export type FlowId = "live" | "tenant" | "owner" | "tools" | "optional";
+export type Role = "tenant" | "owner";
 
-export interface Step {
-  id: string;
-  flow: FlowId;
-  path: string;
-  short: string;
-  title: string;
-  /** One or two plain sentences, shown in "Why this screen exists" */
-  why: string;
-}
-
-export interface FlowInfo {
-  id: FlowId;
+export interface NavItem {
+  href: string;
   label: string;
-  blurb: string;
-  /** Numbered flows show "Step 2 of 5" and a progress bar */
-  numbered: boolean;
-  /** Where Back goes from the first screen, and Next goes from the last */
-  home: string;
-  homeLabel: string;
+  /** Pages under this path also count as "here" in the nav */
+  match?: string[];
 }
 
-export const FLOWS: Record<FlowId, FlowInfo> = {
-  live: {
-    id: "live",
-    label: "Watch it work",
-    blurb: "The agents running over text messages, side by side",
-    numbered: false,
-    home: "/",
-    homeLabel: "Back to home",
-  },
-  tenant: {
-    id: "tenant",
-    label: "Tenant",
-    blurb: "One screen: text Porchlight, get updates",
-    numbered: false,
-    home: "/",
-    homeLabel: "Back to home",
-  },
-  owner: {
-    id: "owner",
-    label: "Owner",
-    blurb: "Reviews the request, decides, and books",
-    numbered: true,
-    home: "/owner",
-    homeLabel: "Back to owner home",
-  },
-  tools: {
-    id: "tools",
-    label: "Plan ahead",
-    blurb: "Owner tools that are not part of one repair",
-    numbered: false,
-    home: "/owner",
-    homeLabel: "Back to owner home",
-  },
-  optional: {
-    id: "optional",
-    label: "Optional",
-    blurb: "For older equipment the record does not have",
-    numbered: false,
-    home: "/owner/record",
-    homeLabel: "Back to the house record",
-  },
-};
-
-export const STEPS: Step[] = [
-  // ---- Live ----
-  {
-    id: "live-watch",
-    flow: "live",
-    path: "/live",
-    short: "Live",
-    title: "Watch Porchlight work",
-    why: "This shows the whole idea in two minutes. A tenant texts at 4 AM, and Porchlight handles it while the owner sleeps. The owner only wakes up to one decision. The two phones show what each person sees at the same moment, and the log shows which parts the AI did and which parts plain code did.",
-  },
-  {
-    id: "live-sms",
-    flow: "live",
-    path: "/sms",
-    short: "SMS",
-    title: "Live agent console",
-    why: "Porchlight lives in text messages, so nobody has to log in. Type as the tenant, tap as the owner, or press Play and watch all three agents run: the 4 AM triage, the quote audit, and the rent compliance check. The log shows which parts the AI did, which parts plain code did, and where Porchlight waits for a tap.",
-  },
-  // ---- Tenant ----
-  {
-    id: "tenant-home",
-    flow: "tenant",
-    path: "/tenant",
-    short: "Home",
-    title: "How can we help?",
-    why: "A tenant should not have to learn an app. They text Porchlight about a problem or a question, and it handles the rest: safety first, one photo if needed, and a text each time something changes. The tenant never sees prices, quotes, or the owner's decisions.",
-  },
-  // ---- Owner repair flow ----
-  {
-    id: "owner-request",
-    flow: "owner",
-    path: "/owner/request",
-    short: "Request",
-    title: "Review the request",
-    why: "Porchlight has already read the tenant's report and photo, sorted the urgency, and told the tenant what to do. The owner sees a clear summary and decides what happens next.",
-  },
-  {
-    id: "owner-record",
-    flow: "owner",
-    path: "/owner/record",
-    short: "Record",
-    title: "House record",
-    why: "Everything about the home in one place. The first label photo (from the tenant, or the owner) starts the record. After that, new equipment is recorded automatically by the installer, so nobody types serial numbers or hunts for paperwork.",
-  },
-  {
-    id: "owner-quote",
-    flow: "owner",
-    path: "/owner/quote",
-    short: "Quote",
-    title: "Quote check",
-    why: "Most small owners have no way to tell if a quote is fair. Porchlight collects quotes and checks each one against a typical price range with plain code. The owner can also paste a quote they got themselves.",
-  },
-  {
-    id: "owner-decide",
-    flow: "owner",
-    path: "/owner/decide",
-    short: "Decide",
-    title: "Repair or replace",
-    why: "A clear recommendation, with the rule shown so the owner can see why. The tool recommends and the owner decides.",
-  },
-  {
-    id: "owner-book",
-    flow: "owner",
-    path: "/owner/book",
-    short: "Book",
-    title: "Approve and book",
-    why: "The last step turns a decision into action. Porchlight already picked the best quote and set a spending limit. The owner taps once to approve, or picks a different vendor. When the job is done, the new equipment goes into the house record on its own.",
-  },
-  // ---- Plan ahead tools ----
-  {
-    id: "tools-forecast",
-    flow: "tools",
-    path: "/owner/forecast",
-    short: "Forecast",
-    title: "5-year forecast",
-    why: "Big repairs should not be a surprise. This shows what is likely to wear out soon and how much to set aside each year.",
-  },
-  {
-    id: "tools-rent",
-    flow: "tools",
-    path: "/owner/rent",
-    short: "Rent",
-    title: "Rent increase",
-    why: "Rent rules in California are easy to get wrong. This checks the state cap and drafts the notice, so the owner starts from a safe place.",
-  },
-  // ---- Optional ----
-  {
-    id: "optional-label",
-    flow: "optional",
-    path: "/owner/label",
-    short: "Label",
-    title: "Add equipment details",
-    why: "Most equipment is recorded automatically at install, or from a tenant's label photo. This is for adding an older item yourself, by photo or by typing, or for double checking a record that looks wrong.",
-  },
+export const TENANT_NAV: NavItem[] = [
+  { href: "/tenant", label: "Help" },
+  { href: "/tenant/home", label: "My home", match: ["/tenant/guides"] },
 ];
 
-export function stepById(id: string): Step {
-  const step = STEPS.find((s) => s.id === id);
-  if (!step) throw new Error(`Unknown step: ${id}`);
-  return step;
-}
+export const OWNER_NAV: NavItem[] = [
+  { href: "/owner", label: "Inbox", match: ["/owner/request", "/owner/quote", "/owner/decide", "/owner/book"] },
+  { href: "/owner/record", label: "Home record" },
+  { href: "/owner/forecast", label: "Forecast" },
+  { href: "/owner/rent", label: "Rent" },
+];
 
-export function stepForPath(pathname: string): Step | undefined {
-  const clean = pathname.length > 1 ? pathname.replace(/\/+$/, "") : pathname;
-  return STEPS.find((s) => s.path === clean);
-}
+/** The pages that make up one repair, shown as tabs on the repair detail screens (owner only). */
+export const REPAIR_TABS: NavItem[] = [
+  { href: "/owner/request", label: "Request" },
+  { href: "/owner/quote", label: "Quotes" },
+  { href: "/owner/decide", label: "Decision" },
+  { href: "/owner/book", label: "Booking" },
+];
 
-export function flowSteps(flow: FlowId): Step[] {
-  return STEPS.filter((s) => s.flow === flow);
-}
-
-/** Position inside the flow, starting at 1. */
-export function positionOf(step: Step): { index: number; total: number } {
-  const steps = flowSteps(step.flow);
-  return { index: steps.findIndex((s) => s.id === step.id) + 1, total: steps.length };
-}
-
-/** The screen before and after this one, within its flow only. */
-export function neighbors(step: Step): { prev?: Step; next?: Step } {
-  const steps = flowSteps(step.flow);
-  const i = steps.findIndex((s) => s.id === step.id);
-  return { prev: steps[i - 1], next: steps[i + 1] };
-}
+export const PAGE_TITLES: Record<string, string> = {
+  "/": "Welcome",
+  "/tenant": "Help",
+  "/tenant/home": "My home",
+  "/owner": "Inbox",
+  "/owner/request": "Repair request",
+  "/owner/quote": "Quotes",
+  "/owner/decide": "Repair or replace",
+  "/owner/book": "Booking",
+  "/owner/record": "Home record",
+  "/owner/forecast": "5-year forecast",
+  "/owner/rent": "Rent increase",
+  "/pricing": "Pricing",
+  "/about": "About and FAQ",
+  "/feedback": "Feedback notes",
+};
 
 /** A readable screen name for the feedback notes. */
 export function screenNameFor(pathname: string): string {
-  const step = stepForPath(pathname);
-  if (step) {
-    const flow = FLOWS[step.flow];
-    if (flow.numbered) {
-      const { index, total } = positionOf(step);
-      return `${flow.label}, screen ${index} of ${total}: ${step.title}`;
-    }
-    return `${flow.label}: ${step.title}`;
+  const clean = pathname.length > 1 ? pathname.replace(/\/+$/, "") : pathname;
+  const title = PAGE_TITLES[clean];
+  if (title) {
+    const role = roleForPath(clean);
+    return role ? `${role === "owner" ? "Owner" : "Tenant"}: ${title}` : title;
   }
-  if (pathname.startsWith("/feedback")) return "Feedback notes";
-  if (pathname === "/owner") return "Owner home";
-  if (pathname === "/") return "Home";
-  if (pathname === "/pricing") return "Pricing";
-  if (pathname === "/about") return "About and FAQ";
-  if (pathname === "/sms" || pathname === "/live") return "Watch it work";
+  if (clean.startsWith("/tenant/guides/")) return "Tenant: How-to guide";
   // Any other path (a 404) is named the same on the server and the client, so the page hydrates cleanly.
   return "Another page";
 }
 
-/** Which side of the demo a path belongs to, for the header. */
-export function roleForPath(pathname: string): "tenant" | "owner" | null {
+/** Which side a path belongs to, for the header. */
+export function roleForPath(pathname: string): Role | null {
   if (pathname.startsWith("/tenant")) return "tenant";
   if (pathname.startsWith("/owner")) return "owner";
   return null;
+}
+
+export function isActive(pathname: string, item: NavItem): boolean {
+  const clean = pathname.length > 1 ? pathname.replace(/\/+$/, "") : pathname;
+  if (clean === item.href) return true;
+  return (item.match ?? []).some((m) => clean === m || clean.startsWith(`${m}/`));
 }

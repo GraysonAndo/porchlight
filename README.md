@@ -1,8 +1,18 @@
-# Porchlight
+# GoHome
 
-## What Porchlight is
+## What GoHome is
 
-Porchlight is an AI property manager for owners with 1 to 10 rental units, the small landlords who do not want to pay a full property management company. It is built to look and feel agentic: a tenant texts a problem on one simple screen, and Porchlight does the legwork (reads the photo, checks the emergency rules, builds the house record from a label photo, collects and checks quotes, picks one, and drafts the messages). The owner opens an approval inbox where everything is already done and only taps **Approve** (they can edit anything if they want). Porchlight texts both people every update, and either can turn text updates off. Every step shows who did the work: the AI, plain code, Porchlight acting inside the owner's limits, or a person. This repo is a clickable, low-fidelity prototype built for TMP 122 customer feedback interviews. Everything is fictional and nothing real happens behind the screens.
+**GoHome: your home, made easy.** GoHome is an AI property manager for owners with 1 to 10 rental units, the small landlords who do not want to pay a full property management company, and for the tenants who live in those homes.
+
+It keeps a record of everything in the house, with the brand, model, serial number, and place of each item. That record is what makes it useful:
+
+- **Tenants** tell GoHome what is wrong in a simple chat. Because GoHome already knows the exact heater, furnace, or dishwasher, it gives step-by-step help made for that model, with a picture on every step (and a short animated "video" of the steps), without sending the tenant anywhere else. Nobody is ever asked to photograph a label.
+- **Owners** open an approval inbox where the work is already done: the plumber is picked, the price is checked, the spending limit is set. They tap **Approve**. They can change anything first if they want.
+- **GoHome itself is the centre of both screens.** A "What GoHome is doing" panel sits beside the chat (and beside the owner's inbox), showing the agent's work step by step. It texts both people each update, and either person can turn text updates off.
+
+Nothing on a side that is not relevant to that person: tenants never see quotes, prices, forecasts, rent increases, or owner decisions, and owners do not see tenant how-to guides.
+
+This repo is a clickable, low-fidelity build of the idea for UCSB TMP 122 customer feedback interviews. Everything is fictional sample data and nothing real is sent, charged, or stored outside the browser.
 
 ## How to run
 
@@ -18,10 +28,10 @@ Other commands:
 | Command | What it does |
 | --- | --- |
 | `npm run lint` | ESLint |
-| `npm test` | Vitest unit tests for the decision, forecast, rent, quote, quote paste parser, recommendation, scenario, agent log, SMS agents, and mock AI logic |
+| `npm test` | Vitest unit tests for the decision, forecast, rent, quote, quote paste parser, recommendation, scenario, agent log, agents, guides, and mock AI logic |
 | `npm run build` | Production build |
 | `node scripts/walkthrough.mjs` | Walks every screen at 390x844 and 1280x800, saves screenshots, checks layout (needs the app running) |
-| `node scripts/e2e.mjs` | Behavior checks: happy path, reload, Reset demo, `?reset=1`, blocked localStorage, feedback notes (needs the app running) |
+| `node scripts/e2e.mjs` | Behavior checks: the landing page, both sides and what each can see, the guides, reload, Reset, `?reset=1`, blocked localStorage, feedback notes, old links (needs the app running) |
 
 The two scripts use Playwright with the preinstalled Chromium (never run `playwright install`). Set `BASE_URL` if the app is not on port 3000.
 
@@ -34,66 +44,42 @@ Screenshots from the last run are in [`docs/screenshots`](docs/screenshots), two
 3. Leave every setting on its default. Do not add environment variables.
 4. Deploy.
 
-The app is fully static and makes no network requests at runtime. The font (Nunito Sans) is downloaded once at build time by `next/font` and then served from your own domain.
+The app is fully static and makes no network requests at runtime. The font (Plus Jakarta Sans) is downloaded once at build time by `next/font` and then served from your own domain.
 
-## The SMS console (`/sms`)
+## The screens
 
-The most agentic screen. Porchlight lives in text messages, so there are no dashboards to open. The page shows the tenant's phone, the owner's phone, the agent's tool log, the house record (which flashes when an agent writes to it), and the contractor's inbox. It runs three agents over text:
+**`/` The welcome page.** The name, "Your home, made easy.", and two choices: Tenant or Owner. Choosing one opens that side.
 
-1. **4 AM triage and dispatch.** The tenant texts a problem. Porchlight runs the emergency rules, asks a safety question, gives safe steps, asks for a label photo (and asks again if it is blurry), reads the label into the house record, checks vendors, asks for quotes, and sends the owner one decision card with a one-tap approve.
-2. **Quote audit and counter-negotiation.** A contractor emails a quote. Porchlight reads it, checks every line against the price table with plain code, flags the labor rate, drafts a pushback, and waits for a thumbs-up before sending it. A counter is re-checked.
-3. **Compliance sentinel.** On a Monday morning it finds a lease coming up, calculates the exact legal maximum rent increase, drafts the notice, and waits for a tap. The tap mails the notice (with proof of service), because a text is not valid service.
-
-Try it three ways: press **Play the full demo** (the autopilot), type as the tenant and tap or type as the owner, or use **Make something happen** (a blurry photo, a sleepy owner, a contractor counter, the lease check). **Skip ahead** moves the clock to the next scheduled event. A gas smell, water near an outlet, or no heat calls the owner and skips fix steps.
-
-The design and the architecture are in [`docs/BLUEPRINT.md`](docs/BLUEPRINT.md). The agents are one pure reducer, `(world, event) => world`, in `lib/agents/engine.ts`, so they are deterministic and unit tested (`tests/agents.test.ts`). The screen replays the timeline with typing indicators so it looks live.
-
-## The demo flow
-
-**Start with `/sms` (the SMS console) or `/live` ("Watch Porchlight work").** `/live` is a guided story. It plays a 4 AM story with a tenant phone, the agent log, and an owner phone side by side. Two stories: a water heater leak (soon, quiet heads-up, one owner tap, $400 saved) and a gas smell (emergency, no fix steps, the owner's phone rings through Do Not Disturb, nothing is booked). The numbers in the story come from the same logic the other screens use.
-
-There are two sides to the real flow, and each side only sees what it needs. **Porchlight** is the AI property manager in the middle.
-
-- The **tenant** lives in the home. They text Porchlight about a problem or a question on one screen, stay safe, send one label photo if asked, and get a text for every update. They never see prices, quotes, or owner decisions, and they do **not** choose or pay for the repair.
-- The **owner** owns the home. They review what Porchlight already did, check the house record, look at the quotes Porchlight collected, and tap to approve.
-
-Who does what, shown with a chip on every agent step:
-
-| Chip | Meaning |
-| --- | --- |
-| AI | Reads photos and writes text. It never sets a price, a rule, or the legal cap. |
-| Plain code | Decides prices, rules, thresholds, and the legal cap, from hand-checked tables. Screens say "Plain code, not AI." next to those numbers. |
-| Porchlight acts | Sends, books, and notifies, inside limits the owner set. |
-| A person taps | Nothing is spent without this. |
-
-The **Demo guide** at the top of any screen jumps to any screen, grouped by side. Every screen has a collapsible "Why this screen exists" line for interviews. The header always says "Tenant view" or "Owner view", with a "Switch role" link.
-
-**Tenant side (one screen)**
+**Tenant side** (tabs: Help, My home)
 
 | Screen | What it shows |
 | --- | --- |
-| `/tenant` | "How can we help?" A single chat with Porchlight. Four tap-to-start examples (water heater leak, gas smell, overflowing toilet, rent question) or type anything. Porchlight asks the safety question, gives two safe steps (with a text-me-HELP guide), asks for one label photo (or "I can't reach it"), then texts the tenant who is coming and when ("Reply 1 if that works"), and "All fixed" at the end. Questions about the home or lease ("How much is my rent?", "Can I have a dog?") are answered only from the house record and lease, or "I don't know" with an "Ask owner" relay. Below the chat: a text-updates switch and a demo rent payment card. No steps, no prices, no quotes, no owner decisions. |
+| `/tenant` | "How can we help?" A chat with GoHome on the left and **What GoHome is doing** on the right (tabs on a phone). Four tap-to-start examples or type anything. GoHome knows the exact heater already, asks the safety question, gives two safe steps with a **Show me how** picture guide, and texts who is coming and when. Questions about the home or lease ("How old is the water heater?", "Can I have a dog?") are answered from the record and lease only, or "I don't know" with an "Ask owner" relay. The agent panel shows only steps a tenant cares about, in plain words, and never prices. |
+| `/tenant/home` | "My home": every item in the house with brand, model, serial, and place, and a button for each how-to guide. Plus quick fixes for the whole home (overflowing toilet, tripped breaker), the lease basics, the rent payment, and the text-updates switch. |
+| `/tenant/guides/[id]` | A step-by-step picture guide: a drawing for each step that points at the part you need, a progress bar, "Play as a short video", and "Stop and get help if". Six guides for the water heater (two), furnace, dishwasher, toilet, and breaker. |
 
-The old tenant pages (`/tenant/request`, `/tenant/safety`, `/tenant/label`, `/tenant/status`) now redirect to `/tenant`.
+**Owner side** (tabs: Inbox, Home record, Forecast, Rent)
 
-**Owner side: an approval inbox, then detail pages and planning tools**
+| Screen | What it shows |
+| --- | --- |
+| `/owner` | The **approval inbox**. A "Today" banner says "All quiet", "1 thing needs your OK", or "All done". Each approval is a card with the answer first (pick, price, spending limit, saving, visit time), one big **Approve**, plus "Other quotes", "Call me", and "See the details, or change something". After booking, one **Mark done**. Beside it: **What GoHome is doing** (every check, with who did it) and **Texts from GoHome**, where the owner can also ask it to check lease dates or a contractor's quote. Also the rent status and the text-updates switch. |
+| `/owner/request`, `/owner/quote`, `/owner/decide`, `/owner/book` | The repair's details as tabs: the request and urgency, the quotes with the line-by-line check and a paste-a-quote tool, repair or replace with the rules shown, and the booking with an editable limit and messages. |
+| `/owner/record` | The home record: every item with brand, model, serial, place, age, a life bar, and the replace cost range. New equipment is added automatically when an installer finishes a job. |
+| `/owner/forecast` | 5-year replacement forecast with a CSS bar chart and a set-aside per year and per month. |
+| `/owner/rent` | California AB 1482 rent increase check with a copyable notice draft. |
 
-| Step | Screen | What it shows |
-| --- | --- | --- |
-| 0 | `/owner` | The **approval inbox**. A "Today" banner says "All quiet", "1 thing needs your OK", or "All done". Each approval is a card with the answer first (pick, price, spending limit, saving, visit time), one big **Approve**, plus "Other quotes", "Call me", and "See the details, or change something" for anyone who wants to edit. After booking, one **Mark done**. Also: the texts Porchlight sent the owner, a text-updates switch, the rent status (demo "Mark as paid"), "See what Porchlight did for you (N steps)", shortcuts, and an empty-state **Show me a sample repair** button. |
-| 1 | `/owner/request` | The tenant's report and photo, urgency, the full agent log, what Porchlight found, the equipment involved, what the tenant was told, and the tenant's answers. |
-| 2 | `/owner/record` | The house record. The heater starts as "about 2015, details missing". The tenant's label photo fills in brand, model, and serial, with the source shown. If the tenant could not reach it, the owner is asked. |
-| 3 | `/owner/quote` | Porchlight collected 3 itemized quotes and checked each one with plain code. Best pick (cheapest fair quote from a vendor that shows a license), skipped vendors with the reason, a line-by-line table, and a **paste a quote** tool (plain code reads the lines, flags totals that do not add up). |
-| 4 | `/owner/decide` | Repair vs replace with the rules and real numbers shown ("How we decided"), using the best quote. |
-| 5 | `/owner/book` | **One tap**: "Approve Porchlight's plan" (Willow Glen, $2,450, limit $2,695, saves $400). Or pick a different vendor and limit yourself. The drafted messages can be edited in place, and nothing has to be typed or fixed to approve. After approving, the agent log shows what happened, and **Mark job done** adds the new heater to the house record automatically. |
-| Tool | `/owner/forecast` | 5-year replacement forecast, CSS bar chart, and a set-aside figure per year and per month. |
-| Tool | `/owner/rent` | California AB 1482 rent increase screen with a copyable notice draft. |
-| Optional | `/owner/label` | Add equipment by photo **or by typing**, and compare with the record. |
-| Extra | `/feedback` | Saved interview notes, "Copy all as text", "Clear all". |
+**Also:** `/pricing`, `/about` (FAQ and how prices work), `/feedback` (interview notes). The footer has "Send feedback", "Reset sample data", and `?reset=1` works on any page. The old demo consoles (`/live`, `/sms`) and the old label and tenant step pages redirect.
 
-Old links from earlier versions (`/triage`, `/label`, `/record`, `/quote`, `/decide`, `/approve`, `/forecast`, `/rent`) redirect to the new pages.
+The agents are one pure reducer, `(world, event) => world`, in `lib/agents/engine.ts`, so they are deterministic and unit tested (`tests/agents.test.ts`). The design and architecture are in [`docs/BLUEPRINT.md`](docs/BLUEPRINT.md). The screens replay the timeline with typing pauses so it feels live.
 
-Every page also has a floating **Leave feedback** button (1 to 5 clarity rating plus a note), a **Reset demo** button in the footer, and supports `?reset=1` on any URL.
+Who does what, shown with a small chip on every step in the owner's activity panel:
+
+| Chip | Meaning |
+| --- | --- |
+| AI | Reads photos and writes text. |
+| Plain code | Decides prices, rules, thresholds, and the legal cap, from hand-checked tables. Screens say "Plain code, not AI." next to those numbers. |
+| GoHome acts | Sends, books, and notifies, inside limits the owner set. |
+| A person taps | Nothing is spent without this. |
 
 ## What is REAL vs FAKED
 
@@ -103,8 +89,8 @@ Every page also has a floating **Leave feedback** button (1 to 5 clarity rating 
 | Forecast math, yearly and monthly set-aside (`lib/forecast.ts`) | Photo reading. Any photo gives the same sample result. |
 | AB 1482 math, notice period, notice text (`lib/rent.ts`) | Vendor data, vendor names, licenses, and quotes |
 | Quote comparison and verdict thresholds (`lib/quote.ts`), vendor recommendation and spending limit (`lib/recommend.ts`), quote text parser (`lib/quoteParse.ts`) | Every price, market range, typical lifespan, and the CPI figure |
-| Emergency and no-heat keyword rules (`lib/triage.ts`) | The agent log and the `/live` story are scripted from the real rules and numbers (`lib/scenario.ts`, `lib/agentLog.ts`) |
-| Saving to localStorage, Reset demo, feedback notes | Sending messages. "Approve and send" sends nothing. |
+| Emergency and no-heat keyword rules (`lib/triage.ts`) | The agent log is scripted from the real rules and numbers (`lib/scenario.ts`, `lib/agentLog.ts`) |
+| Saving to localStorage, Reset sample data, feedback notes | Sending messages. "Approve and send" sends nothing. |
 | | "Owner notified", the confirmation timeline times, and the installer's automatic record (the integration is simulated) |
 
 ## Assumptions
@@ -115,40 +101,41 @@ I made these calls without asking. Please check the ones that matter to you.
 - **Branch name.** Work was done on the branch the build environment assigned (`claude/porchlight-tmp-122-prototype-0ig6fp`) instead of a branch named `prototype-v1`. The PR goes from that branch into `main`. Nothing was pushed to `main`.
 - **Next.js version.** The latest stable (16.4) was used. The generated config turned on two experimental options (`cacheComponents`, `partialPrefetching`). I removed them to keep classic App Router behavior. I also set `agentRules: false` so `next dev` does not write an `AGENTS.md` file into the repo.
 - **Dev dependency.** `@types/node` is pinned to 22 to match the Node version and satisfy Vitest.
-- **Icons and fonts.** Icons are [Phosphor Icons](https://github.com/phosphor-icons/react) (MIT license), in the duotone style. Headlines use Fraunces and body text uses Nunito Sans, both from Google Fonts through `next/font` (open font license).
+- **Icons and design.** Icons are [Phosphor Icons](https://github.com/phosphor-icons/react) (MIT license). The look (flat design, blue and orange, Plus Jakarta Sans from Google Fonts through `next/font`, 44px tap targets, visible focus, reduced motion respected) follows the recommendations of the [UI UX Pro Max](https://github.com/nextlevelbuilder/ui-ux-pro-max-skill) design skill, run for a trustworthy home-services app.
 - **Security scan.** An automated DAST scan hook was suggested, but it needs an API key that is not set in this environment, so no scan was run. The app has no backend, so there is little to scan.
 
 **Product**
-- Screens opened directly (for example by the Demo guide) fall back to the seed scenario, so any screen works on its own. The owner side always has a sample request from the sample tenant waiting.
-- **One agent, two people.** The agent's whole world (messages, tool log, house record, pending timers) is saved in the demo state, so the tenant screen, the owner inbox, and the detail pages are three views of the same conversation. Replies appear with a short typing pause. Vendor quotes arrive on their own a few seconds after the tenant confirms the label (`components/AgentDriver.tsx`). The older detail pages (record, quote, decide, book, forecast) are kept in step by `lib/agents/sync.ts`. The `/sms` console runs its own separate agent world.
-- **Roles.** The tenant side is one chat screen. Quote check, repair or replace, the forecast, and rent increases are owner decisions and are not shown to tenants. Forecast and rent are planning tools, not part of one repair, so they sit outside the numbered owner flow.
-- **The house record is built from a label photo, then keeps itself up to date.** The home inspection only says "water heater, about 2015", so the brand, model, and serial are unknown at the start. The first label photo (from the tenant, or typed or photographed by the owner) fills them in. After that, new equipment is added automatically when an installer finishes a job (simulated by the **Mark done** button). An earlier version assumed the heater was already on file. The venture docs say the label photo is how the record starts, so this version follows them.
-- **Emergencies skip fix steps.** Gas smell and similar emergencies tell the tenant to get safe and call for help, and ring the owner right now. No label photo is asked for and nothing is quoted. No-heat problems also alert the owner with no fix steps. Ordinary "soon" problems (the heater leak) give the owner a silent heads-up, not a call. **Urgency uses the three buckets from the product spec: EMERGENCY, SOON, ROUTINE.** Whether the demo's water heater leak should be an emergency is a team call that is still open. It is "soon" here because the tenant is only asked to close the water valve and stay away from electricity.
+- Screens opened directly fall back to the sample scenario, so any screen works on its own.
+- **One agent, two people.** The agent's whole world (messages, tool log, house record, pending timers) is saved in the app state, so the tenant screen, the owner inbox, and the detail pages are three views of the same conversation. Replies appear with a short typing pause. Vendor quotes arrive on their own a few seconds after the tenant finishes the safe steps (`components/AgentDriver.tsx`). The older detail pages (record, quote, decide, book, forecast) are kept in step by `lib/agents/sync.ts`.
+- **Roles.** If something is not relevant to a person, it is not on their side. The tenant side is a chat, "My home", and the guides. Quotes, repair or replace, the forecast, rent increases, and prices are owner decisions and never appear for tenants (a test checks the tenant pages and links for them). The agent panel is filtered the same way: `lib/agents/views.ts` maps each step to plain tenant wording, and any step it does not know is hidden from tenants by default.
+- **The house record is already complete.** Brand, model, serial, size, fuel type, where the item is, and the warranty were recorded at move-in from each data plate and the home inspection (sample data). So nobody is ever asked to photograph a label, and the old label screens are gone. Because the model is known, GoHome can say "the blue-ringed valve on your Hearthline HL-40G-NG" in a guide. When an installer finishes a job, the new equipment is added automatically (simulated by the **Mark done** button). Earlier versions started the record from a label photo; the product direction changed.
+- **Guides are pictures, not video.** Where words are hard, each step has an original SVG drawing that outlines the part (`components/GuideScene.tsx`), and "Play as a short video" steps through them on a timer. There is no real video, so nothing is downloaded. A real version could add recorded clips per model.
+- **Emergencies skip fix steps.** Gas smell and similar emergencies tell the tenant to get safe and call for help, and ring the owner right now. No guide is offered and nothing is quoted. No-heat problems also alert the owner with no fix steps. Ordinary "soon" problems (the heater leak) give the owner a silent heads-up, not a call. **Urgency uses the three buckets from the product spec: EMERGENCY, SOON, ROUTINE.** Whether the sample water heater leak should be an emergency is a team call that is still open. It is "soon" here because the tenant is only asked to close the water valve and stay away from electricity.
 - **Plain code decides, AI only reads and writes.** Quote verdicts, the recommended vendor, the spending limit (quote plus 10%), repair or replace, the forecast, and the rent cap are plain code. The recommended vendor is the cheapest quote that is a fair price from a vendor that shows a license. A missing permit line is flagged, not hidden.
-- **The `/live` story and the agent logs are scripted** from the real rules and numbers. Times (4:07 AM and so on) are sample times.
+- **The agent logs are scripted** from the real rules and numbers. Times (4:07 AM and so on) are sample times.
 - The quote screens and booking are written for the water heater scenario. Other kinds of requests get triage and safety steps, but the quote, decide, and book screens still show the water heater job.
 - The tenant's answers to the follow-up questions are saved and shown to the owner. The tenant's "That time works" is shown on the owner home.
-- The demo "plumber finishes the job" button is not a real feature. It exists to show the record updating by itself.
-- The label reading is the same for any photo. Triage uses plain keyword rules (`lib/triage.ts`): gas, carbon monoxide, smoke or sparks, and flooding always give an EMERGENCY result with safety steps (for a gas smell: leave the home, no sparks, call 911 or the gas company). A water heater problem gives the seeded scenario. Other problems get a short generic result for their category (plumbing, HVAC, electrical, appliance, and so on). It is a keyword match, not real understanding.
-- Water heater age is `2026 minus the manufacture year` (March 2015 gives 11 years). If the owner corrects the date in the label tool, the forecast, record, and decision all update. After the replacement, the forecast uses the new heater (installed 2026, due 2036).
-- The repair estimate is $450, and the "replace" cost is the best quote Porchlight picked (Willow Glen, $2,450). A leaking tank cannot really be repaired, so the repair number is for comparison only.
+- The "Mark done" button stands in for the plumber reporting that the job is finished. It exists to show the record updating by itself.
+- Triage uses plain keyword rules (`lib/triage.ts`): gas, carbon monoxide, smoke or sparks, and flooding always give an EMERGENCY result with safety steps (for a gas smell: leave the home, no sparks, call 911 or the gas company). A water heater problem gives the seeded scenario. Other problems get a short generic result for their category (plumbing, HVAC, electrical, appliance, and so on). It is a keyword match, not real understanding.
+- Water heater age is `2026 minus the manufacture year` (March 2015 gives 11 years). After the replacement, the forecast uses the new heater (installed 2026, due 2036).
+- The repair estimate is $450, and the "replace" cost is the best quote GoHome picked (Willow Glen, $2,450). A leaking tank cannot really be repaired, so the repair number is for comparison only.
 - Per-line market ranges for the quote (unit, permit, and so on) were invented so each line can be compared. Only labor is flagged "high" for the seed quote. The expansion tank is flagged "ask" by the mock AI, not by the math.
 - Possible savings on a single quote are shown only when it is above the top of the range. Low is the amount over the top, high is double that. Separately, the plan shows how much the picked quote saves compared with the highest quote ($400).
 - The not-to-exceed amount starts at the quote plus 10%, rounded to the dollar, and resets when the vendor changes.
 - Photos are not uploaded anywhere. Large photos are shown but not kept after a reload (localStorage is small).
 - The sample contact uses a reserved fictional phone range (555 01xx) and `example.com`.
 
-**SMS console and agents**
-- **Standing permission.** Porchlight may ask vendors for quotes without a tap, because that commits nothing. It may not book, negotiate, or spend without a tap. Every third-party message the owner approves is sent word for word.
+**The agents**
+- **Standing permission.** GoHome may ask vendors for quotes without a tap, because that commits nothing. It may not book, negotiate, or spend without a tap. Every third-party message the owner approves is sent word for word.
 - **Rent notices are mailed, not texted.** A statutory notice has to be properly served. The sentinel's tap simulates certified mail with tracking and proof of service. A real version should also respect what the lease allows (for example email service).
 - **Emergencies** (gas smell, smoke or sparks, flooding, water near electricity, no heat) call the owner by voice and text, skip fix steps, and start no quotes. A new emergency interrupts any case in progress.
-- **The owner gets a silent heads-up** for a "soon" problem that is not an emergency, and one decision card when the quotes are in. If the owner does not answer in 45 minutes, Porchlight sends a reminder and calls.
+- **The owner gets a silent heads-up** for a "soon" problem that is not an emergency, and one decision card when the quotes are in. If the owner does not answer in 45 minutes, GoHome sends a reminder and calls.
 - **The agent wording is deterministic sample text** in the same spirit as `lib/mockAI.ts`. Typed tenant and owner replies use simple keyword matching, with a polite fallback.
 - **Times** are simulated. The story starts at 4:07 AM, the lease check runs on a later Monday at 9:00 AM, and the sample notice date is October 19, 2026.
-- **The label photo, serial, and quotes are the same samples** for any photo. The blurry photo button sends an unreadable one on purpose.
+- **Quotes and photos are samples.** Any quote photo gives the same sample reading, and the tenant's photo of the problem is the same sample picture.
 
 **Safety guides**
-- Each safety step on the tenant's safety screen has a "How to do this" guide (`lib/safetyGuides.ts`): time needed, what you need, why, numbered steps, a "Stop and get help if" list, and a valve diagram where it helps.
+- Each safety step has a hand-written "How to do this" guide (`lib/safetyGuides.ts`) and the tenant also gets picture guides tied to the exact equipment (`lib/homeGuides.ts`): time needed, what you need, numbered steps with a drawing each, and a "Stop and get help if" list.
 - The guides are **written by hand, not generated by the AI**, because safety advice should be reviewed. The AI only chooses which safety steps apply.
 - **A tenant is never told to touch a gas valve, light, or relight anything.** For a gas smell (or dizziness near a gas appliance, which can mean carbon monoxide) the steps are get out and call for help. For the heater leak the steps are: close the water valve, keep items off the floor, stay away from electricity if standing in water, and "if you smell gas at any time, leave and call 911. Do not touch the gas valve." Shutting off the gas is left to the plumber.
 - Every other common problem (clogs, an overflowing toilet, appliances, electrical, pests, roof) gets 2 to 4 safe steps that match it, and the plumbing ones have hand-written guides too.
@@ -175,10 +162,8 @@ I made these calls without asking. Please check the ones that matter to you.
 **Pricing, FAQ, and trust**
 - `/pricing` shows $4, $6, and $8 per unit per month, month to month, with what each tier includes. The tier contents are **my draft for the team to change**, and the page is labeled as a placeholder pricing test. Visitors can say which tier they would pick, and the pick shows on `/feedback` and in "Copy all as text".
 - `/about` has "How our price ranges work", an FAQ (emergencies, what the tenant sees, what the AI does and does not decide, data, legal advice, states), and a contact section. The contact email is a placeholder (`example.com`).
-- The home page says "California only, for now", walks through the whole chain in six steps, and has one sentence on why Porchlight is not a bigger property tool. **That sentence about MagicDoor and Hemlane comes from the team's competitive analysis. Please check it before showing it to an instructor.**
-- Routes people expect now work: `/login`, `/tenant/requests/new`, `/requests/new`, and the old multi-step tenant pages redirect to the real page, and an unknown page shows a friendly "not part of the demo" page.
-- If the tenant taps "I can't reach it", Porchlight works from the inspection report and tells the owner it could not read the label.
-- The label year is marked "Inferred from the serial" and "This year is a guess", and stays editable.
+- The welcome page is deliberately just the name, the line, and two choices. The earlier marketing home page (the who-is-who section, how it works, and the one sentence comparing GoHome with MagicDoor and Hemlane) was removed, so that claim no longer appears anywhere. **If it comes back, check it against the team's competitive analysis first.**
+- Routes people expect now work: `/login`, `/tenant/requests/new`, `/requests/new`, and the old multi-step tenant pages redirect to the real page, and an unknown page shows a friendly "We could not find that page" page.
 
 ## Placeholder numbers list
 
@@ -191,11 +176,11 @@ Everything below is "Illustrative placeholder, not market data" and is labeled t
 | Vendor quotes: Bayside $2,850 (7 lines), Willow Glen $2,450 (7 lines), A1 Rapid $2,100 (no permit line, no license shown), and the pasted sample quote (Harbor View, $3,170) | Owner quote check, repair or replace, approve and book |
 | Possible savings (computed from the quote) and $400 saved vs the highest quote | Owner quote check, owner home, book |
 | Repair estimate $450 | Owner repair or replace |
-| Typical life and replace cost: water heater 10 yrs, $1,600 to $2,600; furnace 18 yrs, $4,500 to $7,000; air conditioner 15 yrs, $5,500 to $8,500; dishwasher 10 yrs, $700 to $1,200; refrigerator 14 yrs, $1,100 to $1,900; roof 25 yrs, $9,000 to $15,000 | Owner house record, repair or replace (water heater), forecast |
+| Typical life and replace cost: water heater 10 yrs, $1,600 to $2,600; furnace 18 yrs, $4,500 to $7,000; air conditioner 15 yrs, $5,500 to $8,500; dishwasher 10 yrs, $700 to $1,200; refrigerator 14 yrs, $1,100 to $1,900; roof 25 yrs, $9,000 to $15,000 | Owner home record, repair or replace (water heater), forecast |
 | Forecast totals and "set aside per year" (computed from the row above) | Owner forecast |
 | Local CPI change 3.0% | Owner rent increase |
-| AI confidence 82% (triage) and 86% (label) | Owner request (1), Label tool |
-| Sample times in the confirmation timeline and the 4 AM story | Approve and book, tenant status, Watch it work |
+| AI confidence 82% (triage) | Owner request |
+| Sample times in the confirmation timeline and the agent activity | Booking, agent panels |
 
 Not placeholders but fictional sample data: rent $3,200 per month, proposed rent default $3,360, tenant since 2023, the address, and all names.
 
@@ -213,8 +198,8 @@ The UI only talks to the `AIProvider` interface in `lib/types.ts`, through one i
 
 ## Known limitations
 
-- It is a prototype: no accounts, no database, no real sending, one seeded scenario, one property.
-- Mock triage is keyword based and will misread unusual wording. The label reading and quote commentary are fixed samples.
+- It is a sample build: no accounts, no database, no real sending, one seeded scenario, one property.
+- Mock triage is keyword based and will misread unusual wording. Quote commentary is fixed sample text. The guides cover six situations only.
 - Dates and "today" depend on the browser. The forecast is pinned to 2026.
 - The rent screen does not track the full 12 month rent history, only the number of increases.
 - Data is stored per browser in localStorage. Feedback notes do not sync between devices, so export them after each interview with "Copy all as text".
@@ -226,7 +211,7 @@ The UI only talks to the `AIProvider` interface in `lib/types.ts`, through one i
 ## Next steps
 
 - Run the customer interviews and read the notes on `/feedback`.
-- Replace `mockAI` with a real provider (see above) and test it on real equipment labels.
+- Replace `mockAI` with a real provider (see above). Fill the home record from real inspection reports and installer registrations, and record real how-to clips per model.
 - Replace placeholder prices with real local data, and ask owners which numbers they trust.
 - Have an attorney review the AB 1482 logic, the notice wording, and the local rules (for example San Jose) before anyone relies on it.
 - Add multi-property support and real accounts only if interviews show owners want them.

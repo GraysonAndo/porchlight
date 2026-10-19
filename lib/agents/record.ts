@@ -30,6 +30,6 @@ export function recordFromValues(values: Record<string, string>): WaterHeaterRec
     ageYears: /new/i.test(age) ? 0 : Number(/\d+/.exec(age)?.[0] ?? 0),
     unconfirmed,
     photo: null,
-    source: values["heater.source"] ?? "Porchlight",
+    source: values["heater.source"] ?? "GoHome",
   };
 }

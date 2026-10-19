@@ -1,5 +1,5 @@
 // The scripted "Watch it work" story. It shows what the tenant sees, what the
-// owner sees, and what Porchlight's agent does in between, at the same moment.
+// owner sees, and what GoHome's agent does in between, at the same moment.
 //
 // Every number and verdict here comes from the same plain code the rest of the
 // app uses (triage rules, quote check, repair or replace, recommendation), so
@@ -31,7 +31,7 @@ import type { Urgency } from "./types";
  * Who did the work:
  *  ai     : the model read a photo or wrote text
  *  code   : plain code and a hand-checked table decided
- *  action : Porchlight did something, inside limits the owner set
+ *  action : GoHome did something, inside limits the owner set
  *  human  : a person had to tap
  */
 export type Engine = "ai" | "code" | "action" | "human";
@@ -170,7 +170,7 @@ function buildLeakScenario(): Scenario {
         { id: "t2", clock: clockOf(at(4, 7)), from: "tenant", kind: "photo", photo: "leak", text: "Photo of the water heater" },
       ],
     }),
-    step("triage", at(4, 7), "Porchlight reads the photo and checks the emergency rules.", true, {
+    step("triage", at(4, 7), "GoHome reads the photo and checks the emergency rules.", true, {
       agent: [
         {
           id: "a-read-photo",
@@ -198,7 +198,7 @@ function buildLeakScenario(): Scenario {
         },
       ],
     }),
-    step("steps", at(4, 8), "Porchlight gives the tenant safe steps. No one had to wake up.", true, {
+    step("steps", at(4, 8), "GoHome gives the tenant safe steps. No one had to wake up.", true, {
       tenant: [
         {
           id: "t3",
@@ -243,7 +243,7 @@ function buildLeakScenario(): Scenario {
         },
       ],
     }),
-    step("ask-label", at(4, 9), "Porchlight notices the record is missing and asks for one photo.", true, {
+    step("ask-label", at(4, 9), "GoHome notices the record is missing and asks for one photo.", true, {
       tenant: [
         {
           id: "t4",
@@ -267,7 +267,7 @@ function buildLeakScenario(): Scenario {
     step("label-photo", at(4, 10), "The tenant sends the label photo.", true, {
       tenant: [{ id: "t5", clock: clockOf(at(4, 10)), from: "tenant", kind: "photo", photo: "label", text: "Photo of the label" }],
     }),
-    step("read-label", at(4, 10), "Porchlight reads the label and builds the house record.", true, {
+    step("read-label", at(4, 10), "GoHome reads the label and builds the house record.", true, {
       tenant: [
         {
           id: "t6",
@@ -329,7 +329,7 @@ function buildLeakScenario(): Scenario {
         },
       ],
     }),
-    step("request-quotes", at(4, 13), "Porchlight asks 3 vendors for quotes. The job arrives pre-diagnosed.", true, {
+    step("request-quotes", at(4, 13), "GoHome asks 3 vendors for quotes. The job arrives pre-diagnosed.", true, {
       agent: [
         {
           id: "a-request-quotes",
@@ -341,7 +341,7 @@ function buildLeakScenario(): Scenario {
         },
       ],
     }),
-    step("quotes-arrive", at(5, 40), "The quotes arrive. Porchlight reads them.", true, {
+    step("quotes-arrive", at(5, 40), "The quotes arrive. GoHome reads them.", true, {
       agent: [
         {
           id: "a-parse",
@@ -409,7 +409,7 @@ function buildLeakScenario(): Scenario {
         },
       ],
     }),
-    step("approve", at(6, 46), "One tap from the owner. Only now does Porchlight spend or book.", false, {
+    step("approve", at(6, 46), "One tap from the owner. Only now does GoHome spend or book.", false, {
       owner: [{ id: "o3", clock: clockOf(at(6, 46)), kind: "tap", title: "You approved", text: `${rec.vendorName}, ${usd(rec.total)}, limit ${usd(rec.notToExceed)}.` }],
       tenant: [
         {
@@ -525,7 +525,7 @@ function buildGasScenario(): Scenario {
     mk("report", at(4, 7), "The tenant texts at 4:07 AM about a gas smell.", {
       tenant: [{ id: "g1", clock: clockOf(at(4, 7)), from: "tenant", kind: "text", text }],
     }),
-    mk("rules", at(4, 7), "The emergency rule fires. Porchlight skips the fix steps.", {
+    mk("rules", at(4, 7), "The emergency rule fires. GoHome skips the fix steps.", {
       agent: [
         {
           id: "ga-rules",
@@ -558,7 +558,7 @@ function buildGasScenario(): Scenario {
           kind: "call",
           urgency: "emergency",
           title: "Emergency call: gas smell",
-          text: "Porchlight is calling you. Your tenant reports a gas smell at 1200 Example Court and was told to leave and call 911.",
+          text: "GoHome is calling you. Your tenant reports a gas smell at 1200 Example Court and was told to leave and call 911.",
         },
       ],
       agent: [
@@ -572,7 +572,7 @@ function buildGasScenario(): Scenario {
         },
       ],
     }),
-    mk("incident", at(4, 8), "Porchlight writes down exactly what happened, with times.", {
+    mk("incident", at(4, 8), "GoHome writes down exactly what happened, with times.", {
       agent: [
         {
           id: "ga-log",
@@ -588,7 +588,7 @@ function buildGasScenario(): Scenario {
       owner: [],
       tenant: [{ id: "g3", clock: clockOf(at(4, 15)), from: "tenant", kind: "tap", text: "We are outside. I called 911." }],
     }),
-    mk("hold", at(4, 16), "Porchlight holds off booking anyone until it is safe.", {
+    mk("hold", at(4, 16), "GoHome holds off booking anyone until it is safe.", {
       owner: [
         {
           id: "go2",
@@ -647,7 +647,7 @@ export function agentEventsFor(scenario: Scenario, stepIds: string[]): AgentEven
 }
 
 export interface ScenarioStats {
-  /** Minutes from the tenant's first message to Porchlight's first reply with steps */
+  /** Minutes from the tenant's first message to GoHome's first reply with steps */
   tenantWaitMinutes: number;
   /** How many times the owner had to tap */
   ownerTaps: number;

@@ -1,6 +1,6 @@
 "use client";
 
-// A pretend rent payment. Clearly a demo: nothing is charged or processed.
+// A sample rent payment: nothing is charged or processed.
 
 import { CheckIcon } from "./icons";
 import { Badge, Card } from "./ui";
@@ -18,7 +18,7 @@ export function RentCard({ audience }: { audience: "tenant" | "owner" }) {
       title={
         <span className="flex flex-wrap items-center gap-2">
           {RENT_MONTH} rent
-          {paid ? <Badge tone="good">Paid (demo)</Badge> : <Badge tone="caution">Not marked paid</Badge>}
+          {paid ? <Badge tone="good">Paid</Badge> : <Badge tone="caution">Not marked paid</Badge>}
         </span>
       }
     >
@@ -28,22 +28,22 @@ export function RentCard({ audience }: { audience: "tenant" | "owner" }) {
       {paid ? (
         <p className="mt-1 flex items-start gap-2 font-bold text-good-ink" role="status">
           <CheckIcon size={22} />
-          <span>Marked paid on {when}. This is a demo, so nothing was charged.</span>
+          <span>Marked paid on {when}. No real money moved (sample data).</span>
         </p>
       ) : (
         <p className="mt-1 text-ink-soft">
-          {audience === "tenant" ? "Tap the button to pretend to pay. " : `${PROPERTY.tenant} has not paid yet. If they paid you another way, mark it here. `}
-          Demo only: no real payment is processed.
+          {audience === "tenant" ? "Pay securely from your phone. " : `${PROPERTY.tenant} has not paid yet. If they paid you another way, mark it here. `}
+          Sample payment: nothing is actually charged.
         </p>
       )}
       <div className="mt-3">
         {paid ? (
           <button type="button" className="btn btn-ghost" onClick={() => actions.setRentPaid(false)}>
-            Undo (demo)
+            Undo
           </button>
         ) : (
           <button type="button" className="btn btn-primary" onClick={() => actions.setRentPaid(true)}>
-            {audience === "tenant" ? `Pay ${usd(PROPERTY.rent)} (demo)` : "Mark as paid (demo)"}
+            {audience === "tenant" ? `Pay ${usd(PROPERTY.rent)}` : "Mark as paid"}
           </button>
         )}
       </div>

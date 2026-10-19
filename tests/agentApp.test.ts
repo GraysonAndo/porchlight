@@ -111,19 +111,19 @@ describe("text updates to both people", () => {
     expect(card.facts.map((f) => f.value).join(" ")).toMatch(/\$2,450.*\$2,695.*\$400/);
   });
 
-  it("folds the how-to guide under the first safety message", () => {
+  it("offers the picture guide for the exact heater under the first safety message", () => {
     const w = run(createWorld(), [
       { type: "tenant.text", text: "water heater is leaking" },
       { type: "tenant.text", text: "2" },
     ]);
     const steps = msgs(w, "tenant").at(-1)!;
-    expect(steps.attachment?.title).toMatch(/water valve/);
+    expect(steps.guide).toBe("heater-water-off");
     expect(steps.text).toMatch(/never touch the gas valve/);
   });
 });
 
 describe("keeping the detail screens in step with the agent", () => {
-  it("copies the label reading, then the booking, then the finish into the app state", () => {
+  it("copies the home record, then the booking, then the finish into the app state", () => {
     let state = INITIAL_STATE;
     let world = state.agent;
     for (const ev of sampleRepairEvents()) {

@@ -23,7 +23,7 @@ import type {
   WaterHeaterRecord,
 } from "./types";
 
-const STORAGE_KEY = "porchlight-demo-v1";
+const STORAGE_KEY = "gohome-v1";
 /** Photos bigger than this (as a data URL) are not kept across reloads. */
 const MAX_STORED_PHOTO_CHARS = 120_000;
 
@@ -136,10 +136,9 @@ export interface DemoActions {
   setTenantAnswers(answers: string[]): void;
   confirmAccess(value: "confirmed" | "needs-change"): void;
   completeJob(): void;
-  skipTenantLabel(): void;
   /** Demo only: mark this month's rent paid or unpaid. Nothing is charged. */
   setRentPaid(paid: boolean): void;
-  /** Send an event to Porchlight's agent (a text, a photo, a tap). */
+  /** Send an event to GoHome's agent (a text, a photo, a tap). */
   agentSend(ev: Ev): void;
   /** Send several events at once, shown quickly (used by "Show me a sample repair"). */
   agentSendMany(evs: Ev[]): void;
@@ -167,7 +166,6 @@ export const actions: DemoActions = {
         tenantAnswers: null,
         tenantAccess: null,
         jobCompletedAt: null,
-        tenantSkippedLabel: false,
       };
     }),
   setTriage: (triage) => update((s) => ({ ...s, triage })),
@@ -202,7 +200,6 @@ export const actions: DemoActions = {
   setTenantAnswers: (tenantAnswers) => update((s) => ({ ...s, tenantAnswers })),
   confirmAccess: (tenantAccess) => update((s) => ({ ...s, tenantAccess })),
   completeJob: () => update((s) => ({ ...s, jobCompletedAt: new Date().toISOString() })),
-  skipTenantLabel: () => update((s) => ({ ...s, tenantSkippedLabel: true })),
   setRentPaid: (paid) =>
     update((s) => runAgent({ ...s, rentPaidAt: paid ? new Date().toISOString() : null }, { type: "rent.paid", paid })),
   setPricingPick: (pricingPick) => update((s) => ({ ...s, pricingPick })),

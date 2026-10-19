@@ -1,6 +1,6 @@
-# Porchlight blueprint: an SMS-first autonomous property manager
+# GoHome blueprint: an SMS-first autonomous property manager
 
-Porchlight lives in text messages. Nobody logs in. The web app is the stage for the demo and the owner's mission control. The live version of this blueprint is the **Live agent console** at `/sms`.
+GoHome lives in text messages. Nobody logs in. The web app shows the same conversation two ways: a simple chat with a "What GoHome is doing" panel for the tenant, and an approval inbox with the same panel for the owner. (An earlier build had a separate console at `/sms`. It was removed, and the main screens replaced it.)
 
 ## Rules that never change
 
@@ -52,14 +52,14 @@ Porchlight lives in text messages. Nobody logs in. The web app is the stage for 
 | The three agents as one pure event reducer, timers, house record | `lib/agents/engine.ts` |
 | Demo autopilot (reads agent state, picks the next human action) | `lib/agents/autopilot.ts` |
 | Plain-code tools the agents call | `lib/triage.ts`, `lib/decision.ts`, `lib/quote.ts`, `lib/quoteParse.ts`, `lib/recommend.ts`, `lib/rent.ts`, `lib/forecast.ts`, `lib/safetyGuides.ts` |
-| Console UI | `app/sms/page.tsx`, `components/Sms.tsx` |
+| Screens | `app/tenant/page.tsx`, `app/owner/page.tsx`, `components/AgentPanel.tsx`, `components/Sms.tsx` |
 | Tests | `tests/agents.test.ts` and the tests for each tool |
 
 Every agent is `(world, event) => world`. That makes it deterministic, replayable, and easy to unit test. The screen replays the timeline at a human pace (typing indicators, delays), so it looks live while the logic stays plain.
 
 ## The three loops
 
-**1. The 4 AM triage and dispatch agent.** Text in, emergency rules first, a safety question, steps from the hand-written guide library, a label photo request, label reading, tenant confirms the serial, age and warranty from the record, vendor availability, quote requests, quotes checked, a decision card to the owner, one tap books.
+**1. The 4 AM triage and dispatch agent.** Text in, emergency rules first, a safety question, steps from the hand-written guide library, the exact heater, age, and warranty read from the home record (everything is recorded at move-in, so there is no label photo step), a picture guide made for that model, vendor availability, quote requests, quotes checked, a decision card to the owner, one tap books.
 
 **2. The quote audit and counter-negotiation agent.** A contractor emails a quote, the AI reads the line items, plain code checks each line against the price table, flags the labor rate and the markup, and drafts a pushback. The owner gets one message and a thumbs-up, edit, or skip. A counter is re-audited before the owner is asked again.
 

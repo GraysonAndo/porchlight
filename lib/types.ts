@@ -1,4 +1,4 @@
-// Shared types for Porchlight. The AIProvider interface at the bottom is the
+// Shared types for GoHome. The AIProvider interface at the bottom is the
 // only thing the UI knows about "AI". Swap lib/mockAI.ts for a real Claude
 // implementation later and no screen needs to change.
 
@@ -130,6 +130,13 @@ export interface EquipmentItem {
   name: string;
   /** Where the record came from, for example an installer registration */
   source: string;
+  brand: string;
+  model: string;
+  serial: string;
+  /** Where in the home it is, for guides ("Garage, against the north wall") */
+  location: string;
+  /** One plain line on what it is ("40 gallon, natural gas, tank type") */
+  summary: string;
   installYear: number;
   typicalLifeYears: number;
   replaceLow: number;
@@ -202,13 +209,11 @@ export interface DemoState {
   tenantAccess: "confirmed" | "needs-change" | null;
   /** When the plumber finished the job (simulated), which adds the new heater to the record */
   jobCompletedAt: string | null;
-  /** True if the tenant could not photograph the label, so the owner is asked to add it */
-  tenantSkippedLabel: boolean;
   /** When rent for the current month was marked paid (demo only, nothing is charged), or null */
   rentPaidAt: string | null;
-  /** Porchlight's agent: every text, tool call, and record write, shared by the tenant and owner screens */
+  /** GoHome's agent: every text, tool call, and record write, shared by the tenant and owner screens */
   agent: World;
-  /** Whether each person gets Porchlight's updates by text */
+  /** Whether each person gets GoHome's updates by text */
   textUpdates: { tenant: boolean; owner: boolean };
   /** Which pricing tier the visitor said they would pick, for the pricing test */
   pricingPick: "starter" | "plus" | "pro" | "none" | null;

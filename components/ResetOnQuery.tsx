@@ -3,7 +3,7 @@
 import { useEffect } from "react";
 import { actions } from "@/lib/store";
 
-/** Supports ?reset=1 on any page: clears the demo, then removes the flag from the URL. */
+/** Supports ?reset=1 on any page: clears the sample data, then removes the flag from the URL. */
 export function ResetOnQuery() {
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);

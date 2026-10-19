@@ -6,7 +6,7 @@ import { recordAt } from "./engine";
 import type { Entry, Msg, Party, ToolCall } from "./types";
 
 /**
- * Porchlight's agent as the screens see it: only the entries whose time has come, so new texts
+ * GoHome's agent as the screens see it: only the entries whose time has come, so new texts
  * arrive one by one with a typing pause. Entries from before this page opened are simply there.
  */
 export function useAgent() {
@@ -36,6 +36,10 @@ export function useAgent() {
 
   return {
     world,
+    /** True while GoHome still has steps or messages that have not appeared yet (it is "working") */
+    pending: firstHidden !== null,
+    /** True while GoHome is waiting on someone else, such as plumbers sending quotes */
+    waiting: world.pending.some((p) => p.id === "quotes_in"),
     visible,
     msgsFor: (party: Party) => msgs.filter((m) => m.party === party),
     typingFor: (party: Party) => typingParty === party,
@@ -53,7 +57,5 @@ export function sampleRepairEvents(): import("./types").Ev[] {
     { type: "tenant.text", text: "water heater is leaking all over the garage" },
     { type: "tenant.text", text: "2" },
     { type: "tenant.text", text: "done" },
-    { type: "tenant.photo", photo: "label" },
-    { type: "tenant.text", text: "Y" },
   ];
 }

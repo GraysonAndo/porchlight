@@ -134,7 +134,7 @@ const OTHER_JOBS: [RegExp, string][] = [
 ];
 
 /**
- * Which job a pasted quote is for. Porchlight only has typical prices for a
+ * Which job a pasted quote is for. GoHome only has typical prices for a
  * water heater swap, so anything else is reported as not in the table and gets
  * no verdict. It never invents a range.
  */

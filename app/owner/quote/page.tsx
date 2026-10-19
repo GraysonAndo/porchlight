@@ -38,7 +38,7 @@ function PasteQuote() {
         }
       >
         <p className="mb-3 text-ink-soft">
-          Copy the text of an email or estimate and paste it in. Porchlight reads the line items and checks them against
+          Copy the text of an email or estimate and paste it in. GoHome reads the line items and checks them against
           typical prices, so you can tell if it is fair before you reply.
         </p>
         <label htmlFor="paste-quote" className="label">
@@ -83,7 +83,7 @@ function PasteQuote() {
             </button>
           )}
         </div>
-        <p className="hint">Prototype note: the sample quote is fictional. Reading the text is plain code, not AI.</p>
+        <p className="hint">The sample quote is fictional. Reading the text is plain code, not AI.</p>
 
         <div className="mt-4 border-t border-line pt-4">
           <label htmlFor="quote-photo" className="label">
@@ -102,7 +102,7 @@ function PasteQuote() {
               setFromPhoto(file.name);
             }}
           />
-          <p className="hint">Prototype note: any photo gives the same sample reading (the Harbor View quote). A real version would read your photo.</p>
+          <p className="hint">Sample data: any photo gives the same reading (the Harbor View quote). A full version would read your own photo.</p>
           {fromPhoto && parsed && (
             <p className="mt-1 text-sm font-bold" role="status">
               Read from {fromPhoto} (sample result). Check the lines below against your photo.
@@ -118,13 +118,13 @@ function PasteQuote() {
       )}
 
       {parsed && parsed.lines.length > 0 && job.kind === "unknown" && (
-        <Callout tone="caution" title="This job is not in Porchlight's price table yet" role="status">
+        <Callout tone="caution" title="This job is not in GoHome's price table yet" role="status">
           <p>
-            Porchlight only has typical prices for a water heater replacement right now. This looks like{" "}
+            GoHome only has typical prices for a water heater replacement right now. This looks like{" "}
             {job.guess ?? "a different kind of job"}, so it will not give a fair, high, or low verdict. It would only be a
             guess.
           </p>
-          <p className="mt-2 font-bold">What Porchlight read ({usd(parsed.total)} total):</p>
+          <p className="mt-2 font-bold">What GoHome read ({usd(parsed.total)} total):</p>
           <ul className="mt-1 list-disc space-y-0.5 pl-5">
             {parsed.lines.map((l) => (
               <li key={l.id + l.label}>
@@ -167,7 +167,7 @@ export default function QuotePage() {
   return (
     <StepShell stepId="owner-quote">
       <div className="hero-ink">
-        <p className="eyebrow !text-cream/70">Porchlight collected {COLLECTED.length} quotes and checked each one</p>
+        <p className="eyebrow !text-cream/70">GoHome collected {COLLECTED.length} quotes and checked each one</p>
         <p className="mt-2 text-3xl font-extrabold leading-tight sm:text-5xl">
           Best pick: <span className="text-glow">{PLAN.vendorName}</span>, {usd(PLAN.total)}
         </p>
@@ -225,7 +225,7 @@ export default function QuotePage() {
                 />
                 <span className="flex flex-wrap items-center gap-2">
                   <span className="text-lg font-extrabold leading-snug">{c.vendorName}</span>
-                  {pick && <Badge tone="good">Porchlight&apos;s pick</Badge>}
+                  {pick && <Badge tone="good">GoHome&apos;s pick</Badge>}
                 </span>
                 <span className="text-3xl font-extrabold">{usd(c.quote.total)}</span>
                 <span>

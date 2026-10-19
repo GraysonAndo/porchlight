@@ -9,7 +9,7 @@ import { EQUIPMENT, PROPERTY, RENT_MONTH } from "./seed";
 import type { WaterHeaterRecord } from "./types";
 
 export interface HouseFacts {
-  /** The water heater's record, or null if Porchlight has not read its label yet */
+  /** The water heater's record, or null if GoHome has not read its label yet */
   heater: WaterHeaterRecord | null;
   /** When this month's rent was marked paid (demo), or null */
   rentPaidAt: string | null;
@@ -69,9 +69,9 @@ export function answerHouseQuestion(question: string, facts: HouseFacts): QaAnsw
       return {
         known: true,
         answer: facts.rentPaidAt
-          ? `Your ${RENT_MONTH} rent is marked paid (demo, nothing was actually charged).`
-          : `Your ${RENT_MONTH} rent of ${usd(PROPERTY.rent)} is not marked paid yet. You can mark it paid in the Rent card below (demo only).`,
-        source: "Rent status in this demo",
+          ? `Your ${RENT_MONTH} rent is marked paid.`
+          : `Your ${RENT_MONTH} rent of ${usd(PROPERTY.rent)} is not marked paid yet. You can pay it from the My home page.`,
+        source: "Rent status",
       };
     }
     if (has(q, /when|due|date|day/)) return dontKnow("what day rent is due");

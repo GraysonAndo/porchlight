@@ -69,7 +69,7 @@ describe("the full story with the autopilot", () => {
     expect(rec.values["heater.serial"]).toBe("26J0007-A");
     expect(rec.values["heater.age"]).toBe("Brand new");
     expect(rec.values["heater.source"]).toMatch(/installer/i);
-    expect(rec.history.length).toBeGreaterThanOrEqual(4);
+    expect(rec.history.length).toBeGreaterThanOrEqual(2);
   });
 
   it("uses all four kinds of work, and mostly plain code for decisions", () => {
@@ -139,33 +139,34 @@ describe("loop 1: the 4 AM triage and dispatch", () => {
     expect(textFor(w, "tenant")).toMatch(/on it/i);
   });
 
-  it("asks for a clearer photo when the first one is blurry, then offers to skip", () => {
-    const base = run(createWorld(), [LEAK, { type: "tenant.text", text: "2" }, { type: "tenant.text", text: "done" }]);
-    expect(base.triage.stage).toBe("asked_photo");
-    const one = send(base, { type: "tenant.photo", photo: "blurry" });
-    expect(textFor(one, "tenant")).toMatch(/too blurry/);
-    expect(one.triage.stage).toBe("asked_photo");
-    expect(recordAt(one.timeline, one.timeline.length).values["heater.brand"]).toBe("Not on file");
-    const two = send(one, { type: "tenant.photo", photo: "blurry" });
-    expect(two.timeline.at(-1)).toMatchObject({ kind: "msg", actions: [{ id: "skip" }] });
+  it("never asks for a label photo: the heater is already in the house record", () => {
+    const w = run(createWorld(), [LEAK, { type: "tenant.text", text: "2" }, { type: "tenant.text", text: "done" }]);
+    expect(w.triage.stage).toBe("quotes_pending");
+    expect(textFor(w, "tenant")).not.toMatch(/sticker|label|photo/i);
+    expect(toolNames(w)).not.toContain("request_label_photo");
+    expect(recordAt(w.timeline, w.timeline.length).values["heater.model"]).toBe("HL-40G-NG");
   });
 
-  it("carries on without the label when the tenant cannot reach it, and says the age is an estimate", () => {
-    const base = run(createWorld(), [LEAK, { type: "tenant.text", text: "2" }, { type: "tenant.text", text: "done" }, { type: "tenant.text", text: "skip" }]);
-    expect(base.triage.labelSkipped).toBe(true);
-    expect(base.triage.stage).toBe("quotes_pending");
-    expect(textFor(base, "owner")).toMatch(/estimate/);
-    expect(recordAt(base.timeline, base.timeline.length).values["heater.brand"]).toBe("Not on file");
+  it("starts with the whole heater on file: brand, model, serial, size, fuel, and warranty", () => {
+    const rec = recordAt(createWorld().timeline, 0);
+    expect(rec.values["heater.brand"]).toBe("Hearthline");
+    expect(rec.values["heater.serial"]).toBe("15C0412-X");
+    expect(rec.values["heater.size"]).toBe("40 gallons");
+    expect(rec.values["heater.warranty"]).toMatch(/Expired/);
   });
 
-  it("asks the tenant to confirm the serial it read with low confidence", () => {
-    const w = run(createWorld(), [LEAK, { type: "tenant.text", text: "2" }, { type: "tenant.text", text: "done" }, { type: "tenant.photo", photo: "label" }]);
-    expect(w.triage.stage).toBe("confirm_serial");
-    const rec = recordAt(w.timeline, w.timeline.length);
-    expect(rec.values["heater.model"]).toBe("HL-40G-NG");
-    expect(rec.values["heater.serial"]).toMatch(/please confirm/);
-    const typed = send(w, { type: "tenant.text", text: "15c0412-z" });
-    expect(recordAt(typed.timeline, typed.timeline.length).values["heater.serial"]).toBe("15C0412-Z");
+  it("names the tenant's exact heater and offers the picture guide for it", () => {
+    const first = send(createWorld(), LEAK);
+    expect(textFor(first, "tenant")).toMatch(/Hearthline HL-40G-NG/);
+    const steps = run(createWorld(), [LEAK, { type: "tenant.text", text: "2" }]);
+    const last = msgs(steps).filter((m) => m.party === "tenant" && m.dir === "out").at(-1)!;
+    expect(last.guide).toBe("heater-water-off");
+    expect(last.text).toMatch(/HL-40G-NG/);
+  });
+
+  it("saves a photo of the problem to the case without asking for anything else", () => {
+    const w = run(createWorld(), [LEAK, { type: "tenant.photo", photo: "leak" }]);
+    expect(toolNames(w)).toContain("save_photo");
   });
 
   it("answers HELP with a hand-written guide", () => {
@@ -191,7 +192,7 @@ describe("loop 1: the 4 AM triage and dispatch", () => {
 describe("the decision card and the approval gate", () => {
   const ready = () => {
     let w = createWorld();
-    w = run(w, [LEAK, { type: "tenant.text", text: "2" }, { type: "tenant.text", text: "done" }, { type: "tenant.photo", photo: "label" }, { type: "tenant.text", text: "Y" }]);
+    w = run(w, [LEAK, { type: "tenant.text", text: "2" }, { type: "tenant.text", text: "done" }]);
     return advanceTo(w, nextTimerAt(w)!);
   };
 
@@ -379,7 +380,7 @@ describe("loop 3: the compliance sentinel", () => {
 
   it("fires earlier timers on the way to the Monday check", () => {
     let w = createWorld();
-    w = run(w, [LEAK, { type: "tenant.text", text: "2" }, { type: "tenant.text", text: "done" }, { type: "tenant.photo", photo: "label" }, { type: "tenant.text", text: "Y" }]);
+    w = run(w, [LEAK, { type: "tenant.text", text: "2" }, { type: "tenant.text", text: "done" }]);
     w = send(w, { type: "cron.lease" });
     // the vendor quotes and the nudge came due before the lease check
     expect(toolNames(w)).toContain("read_quotes");
@@ -402,13 +403,13 @@ describe("clock helpers", () => {
 });
 
 describe("the house record", () => {
-  it("starts with the inspection and the lease only, and tracks which fields just changed", () => {
+  it("starts complete, and records only what changes: the new heater after the job", () => {
     const w0 = createWorld();
-    expect(recordAt(w0.timeline, 0).values["heater.brand"]).toBe("Not on file");
-    const w = run(w0, [LEAK, { type: "tenant.text", text: "2" }, { type: "tenant.text", text: "done" }, { type: "tenant.photo", photo: "label" }]);
+    expect(recordAt(w0.timeline, 0).values["heater.brand"]).toBe("Hearthline");
+    expect(recordAt(w0.timeline, 0).values["heater.serial"]).toBe("15C0412-X");
+    const w = autoplay();
     const rec = recordAt(w.timeline, w.timeline.length);
-    expect(rec.values["heater.brand"]).toBe("Hearthline");
-    expect(rec.changed).toContain("heater.model");
-    expect(recordAt(w.timeline, 3).values["heater.brand"]).toBe("Not on file");
+    expect(rec.values["heater.serial"]).toBe("26J0007-A");
+    expect(recordAt(w.timeline, 3).values["heater.serial"]).toBe("15C0412-X");
   });
 });

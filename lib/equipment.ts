@@ -7,11 +7,7 @@ export function yearOf(isoMonth: string): number | null {
   return match ? Number(match[1]) : null;
 }
 
-/**
- * The leaking heater's record, or null if Porchlight does not know its brand,
- * model, and serial yet. The home inspection only says "water heater, about
- * 2015". The label photo (from the tenant, or typed in by the owner) fills it in.
- */
+/** The heater's record from the house record. It is filled in at move-in, so this is normally never null. */
 export function heaterBeforeRepair(state: Pick<DemoState, "houseRecord">): WaterHeaterRecord | null {
   return state.houseRecord;
 }
@@ -24,7 +20,7 @@ export function currentHeater(state: Pick<DemoState, "houseRecord" | "jobComplet
   return state.jobCompletedAt ? NEW_HEATER_RECORD : heaterBeforeRepair(state);
 }
 
-/** True when the record has what Porchlight needs, so nobody should be asked for a photo. */
+/** True when the record has what GoHome needs, so nobody should be asked for a photo. */
 export function recordIsComplete(record: WaterHeaterRecord | null): boolean {
   return record !== null && Boolean(record.manufacturer && record.model && record.serial);
 }
@@ -39,7 +35,15 @@ export function equipmentFor(record: WaterHeaterRecord | null): EquipmentItem[] 
   const year = yearOf(record.manufactureDate);
   return EQUIPMENT.map((item) =>
     item.id === "water-heater"
-      ? { ...item, installYear: year ?? item.installYear, source: record.source }
+      ? {
+          ...item,
+          installYear: year ?? item.installYear,
+          source: record.source,
+          brand: record.manufacturer,
+          model: record.model,
+          serial: record.serial,
+          summary: `${record.capacityGallons} gallon, ${record.fuelType.toLowerCase()}, tank type`,
+        }
       : item,
   );
 }

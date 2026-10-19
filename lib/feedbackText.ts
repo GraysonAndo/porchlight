@@ -8,9 +8,9 @@ function whenText(timestamp: string): string {
 
 /** Clean, readable text for pasting into notes or a doc after an interview. */
 export function feedbackToText(notes: FeedbackNote[]): string {
-  if (notes.length === 0) return "Porchlight prototype feedback\nNo notes saved yet.";
+  if (notes.length === 0) return "GoHome feedback\nNo notes saved yet.";
   const lines: string[] = [
-    "Porchlight prototype feedback",
+    "GoHome feedback",
     `${notes.length} ${notes.length === 1 ? "note" : "notes"}`,
     "",
   ];

@@ -1,84 +1,51 @@
 "use client";
 
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import type { ReactNode } from "react";
-import { FLOWS, neighbors, stepById } from "@/lib/steps";
-import { Stepper } from "./Stepper";
+import { PAGE_TITLES, REPAIR_TABS } from "@/lib/steps";
 
-interface StepShellProps {
-  /** Which screen this is, from lib/steps.ts */
-  stepId: string;
-  children: ReactNode;
-  /** Label for the Next button. Defaults to the next screen's name. */
-  nextLabel?: string;
-  /** Go to a page. Use onNext instead if something must happen first. */
-  nextHref?: string;
-  onNext?: () => void;
-  nextDisabled?: boolean;
-  backHref?: string;
-  /** An optional quiet third action, such as "Skip" */
-  skipLabel?: string;
-  skipHref?: string;
-  /** Narrower reading width for simple screens */
-  narrow?: boolean;
-}
+const STEP_PATHS: Record<string, string> = {
+  "owner-request": "/owner/request",
+  "owner-record": "/owner/record",
+  "owner-quote": "/owner/quote",
+  "owner-decide": "/owner/decide",
+  "owner-book": "/owner/book",
+  "tools-forecast": "/owner/forecast",
+  "tools-rent": "/owner/rent",
+};
 
-export function StepShell({
-  stepId,
-  children,
-  nextLabel,
-  nextHref,
-  onNext,
-  nextDisabled,
-  backHref,
-  skipLabel,
-  skipHref,
-  narrow,
-}: StepShellProps) {
-  const info = stepById(stepId);
-  const flow = FLOWS[info.flow];
-  const { prev, next } = neighbors(info);
-  const back = backHref ?? prev?.path ?? flow.home;
-  const forwardHref = nextHref ?? next?.path ?? flow.home;
-  const forwardLabel = nextLabel ?? (next ? `Next: ${next.title}` : flow.homeLabel);
+/** The frame for an owner detail page: a title, and tabs when the page is part of one repair. */
+export function StepShell({ stepId, children }: { stepId: string; children: ReactNode; [key: string]: unknown }) {
+  const pathname = usePathname();
+  const path = STEP_PATHS[stepId] ?? "/owner";
+  const isRepair = REPAIR_TABS.some((t) => t.href === path);
 
   return (
-    <div className={narrow ? "mx-auto max-w-2xl" : ""}>
-      <Stepper step={info} />
-      <h1 className="font-display text-3xl font-extrabold leading-tight sm:text-5xl">{info.title}</h1>
-
-      <details className="mt-3 rounded-2xl border border-glow/30 bg-glow-tint/70 px-4">
-        <summary className="flex min-h-11 cursor-pointer items-center font-bold">Why this screen exists</summary>
-        <p className="pb-3 text-ink">{info.why}</p>
-      </details>
-
-      <div className="reveal mt-5 space-y-5">{children}</div>
-
-      <div className="mt-8 flex flex-col-reverse gap-3 border-t border-line pt-5 sm:flex-row sm:items-center sm:justify-between">
-        <Link href={back} className="btn btn-secondary sm:min-w-32">
-          Back
-        </Link>
-        <div className="flex flex-col-reverse items-stretch gap-3 sm:flex-row sm:items-center">
-          {skipLabel && skipHref && (
-            <Link href={skipHref} className="btn btn-ghost">
-              {skipLabel}
-            </Link>
-          )}
-          {onNext ? (
-            <button type="button" className="btn btn-primary" onClick={onNext} disabled={nextDisabled}>
-              {forwardLabel}
-            </button>
-          ) : (
-            <Link
-              href={forwardHref}
-              className={`btn btn-primary ${nextDisabled ? "pointer-events-none opacity-50" : ""}`}
-              aria-disabled={nextDisabled || undefined}
-            >
-              {forwardLabel}
-            </Link>
-          )}
+    <div className="mx-auto max-w-4xl">
+      {isRepair && (
+        <div className="mb-3">
+          <Link href="/owner" className="inline-flex min-h-11 items-center font-bold text-brand underline underline-offset-4">
+            &larr; Inbox
+          </Link>
+          <nav aria-label="Repair details" className="mt-1 flex gap-1 overflow-x-auto rounded-xl bg-cream-deep p-1">
+            {REPAIR_TABS.map((t) => (
+              <Link
+                key={t.href}
+                href={t.href}
+                aria-current={pathname === t.href ? "page" : undefined}
+                className={`inline-flex min-h-11 flex-1 items-center justify-center whitespace-nowrap rounded-lg px-3 text-sm font-bold ${
+                  pathname === t.href ? "bg-white text-ink shadow-sm" : "text-ink-soft hover:text-ink"
+                }`}
+              >
+                {t.label}
+              </Link>
+            ))}
+          </nav>
         </div>
-      </div>
+      )}
+      <h1 className="text-3xl font-extrabold leading-tight sm:text-4xl">{PAGE_TITLES[path] ?? "GoHome"}</h1>
+      <div className="reveal mt-5 space-y-5">{children}</div>
     </div>
   );
 }

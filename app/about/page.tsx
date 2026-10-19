@@ -4,11 +4,11 @@ import { PlaceholderNote } from "@/components/ui";
 const FAQ: { q: string; a: string }[] = [
   {
     q: "What counts as an emergency?",
-    a: "A gas smell, smoke or sparks, flooding, water near electricity, or no heat. For these, Porchlight gives your tenant no fix steps. It tells them to get safe and call 911 or the gas company, and it alerts you right away, by call if needed.",
+    a: "A gas smell, smoke or sparks, flooding, water near electricity, or no heat. For these, GoHome gives your tenant no fix steps. It tells them to get safe and call 911 or the gas company, and it alerts you right away, by call if needed.",
   },
   {
     q: "What does my tenant see?",
-    a: "A simple page, or text messages. They text a problem (or a question) on one screen, get safe steps, send one photo of an equipment label if asked, and get a text for every update. Answers come only from the house record and the lease on file, and if it is not there, Porchlight says it does not know. They never see prices, quotes, or your decisions.",
+    a: "A simple page, or text messages. They text a problem (or a question) on one screen, get safe steps, send one photo of an equipment label if asked, and get a text for every update. Answers come only from the house record and the lease on file, and if it is not there, GoHome says it does not know. They never see prices, quotes, or your decisions.",
   },
   {
     q: "Does the AI set prices or the rent cap?",
@@ -16,7 +16,7 @@ const FAQ: { q: string; a: string }[] = [
   },
   {
     q: "What happens to my data?",
-    a: "In this prototype, nothing leaves your browser. A real version would store the house record, photos, and messages securely, never sell them, and let you delete them. A real privacy policy is needed before anyone relies on it.",
+    a: "Right now, everything stays in your browser. A full version would store the house record, photos, and messages securely, never sell them, and let you delete them. A real privacy policy is needed before anyone relies on it.",
   },
   {
     q: "Is this legal advice?",
@@ -32,10 +32,10 @@ export default function AboutPage() {
   return (
     <div className="mx-auto max-w-3xl space-y-8">
       <div>
-        <p className="eyebrow mb-2">About Porchlight</p>
+        <p className="eyebrow mb-2">About GoHome</p>
         <h1 className="font-display text-4xl font-extrabold leading-tight sm:text-5xl">How it works, and why you can trust it</h1>
         <p className="mt-3 text-lg text-ink-soft">
-          Porchlight is a class prototype for owners with 1 to 10 rental units in California. Here is how the prices work,
+          GoHome is built for owners with 1 to 10 rental units in California, and the tenants who live in them. Here is how the prices work,
           the questions people ask, and how to reach us.
         </p>
       </div>
@@ -51,10 +51,10 @@ export default function AboutPage() {
         <ul className="list-disc space-y-1 pl-6">
           <li>A quote inside the range is fair. Up to 15% above the top is slightly high. More than that is high. Below the range may mean something is left out.</li>
           <li>The total range is the sum of the item ranges, so the total never disagrees with its parts.</li>
-          <li>If a job is not in the table, Porchlight says so. It never invents a range.</li>
+          <li>If a job is not in the table, GoHome says so. It never invents a range.</li>
         </ul>
         <p>
-          <PlaceholderNote /> <span className="text-sm text-ink-soft">In this prototype the ranges are placeholders. A real version would build them from local quotes and invoices.</span>
+          <PlaceholderNote /> <span className="text-sm text-ink-soft">For now the ranges are placeholders. A full version would build them from local quotes and invoices.</span>
         </p>
       </section>
 
@@ -77,9 +77,9 @@ export default function AboutPage() {
           Contact
         </h2>
         <p>
-          Porchlight is built by a student team for UCSB TMP 122. The easiest way to reach us is the &quot;Leave
+          GoHome is built by a student team for UCSB TMP 122. The easiest way to reach us is the &quot;Leave
           feedback&quot; button on any page. You can also email{" "}
-          <span className="font-bold">porchlight-team@example.com</span> (a placeholder address for the demo).
+          <span className="font-bold">hello@gohome.example</span> (a placeholder address).
         </p>
         <p>
           <Link href="/pricing" className="font-bold underline underline-offset-4">

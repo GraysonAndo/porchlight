@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { COLLECTED, PLAN, collectedFor } from "../lib/plan";
 
-describe("Porchlight's plan for the demo job", () => {
+describe("GoHome's plan for the demo job", () => {
   it("collects three quotes with a verdict each", () => {
     expect(COLLECTED.map((c) => [c.vendorId, c.verdict])).toEqual([
       ["bayside", "slightly high"],

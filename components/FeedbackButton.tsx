@@ -8,8 +8,8 @@ import { useDemo } from "@/lib/store";
 
 const RATING_WORDS = ["Very unclear", "Unclear", "Okay", "Clear", "Very clear"];
 
-/** Floating "Leave feedback" button and the sheet it opens. */
-export function FeedbackButton() {
+/** A "Send feedback" link for the footer, and the sheet it opens. */
+export function FeedbackLink() {
   const { actions } = useDemo();
   const pathname = usePathname();
   const dialogRef = useRef<HTMLDialogElement>(null);
@@ -44,13 +44,9 @@ export function FeedbackButton() {
 
   return (
     <>
-      <button
-        type="button"
-        onClick={open}
-        className="btn btn-primary fixed bottom-4 right-4 z-30 shadow-lg ring-2 ring-white"
-      >
-        <ChatIcon size={20} />
-        Leave feedback
+      <button type="button" onClick={open} className="inline-flex min-h-11 items-center gap-1.5 font-bold underline underline-offset-4">
+        <ChatIcon size={18} />
+        Send feedback
       </button>
 
       <dialog
@@ -60,7 +56,7 @@ export function FeedbackButton() {
       >
         <div className="p-5">
           <h2 id="feedback-title" className="text-xl font-extrabold">
-            Leave feedback
+            Send feedback
           </h2>
           <p className="mt-1 text-sm text-ink-soft">
             Screen: <strong className="text-ink">{screen}</strong>
@@ -69,7 +65,7 @@ export function FeedbackButton() {
           {saved ? (
             <div className="mt-4" role="status">
               <p className="rounded-xl bg-good-tint p-3 font-bold text-good-ink">
-                Saved. Thank you! You can read all notes on the Feedback notes page.
+                Saved. Thank you!
               </p>
               <div className="mt-4 flex justify-end">
                 <button type="button" className="btn btn-primary" onClick={close}>

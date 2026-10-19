@@ -3,7 +3,7 @@
 //
 //   new -> quoted -> approved -> booked -> done
 //
-// "quoted" means Porchlight has collected and checked the quotes and is waiting
+// "quoted" means GoHome has collected and checked the quotes and is waiting
 // for the owner's OK. "approved" turns into "booked" a moment later, when the
 // vendor's confirmation comes back (simulated). "done" is one tap from the owner.
 

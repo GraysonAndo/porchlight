@@ -2,40 +2,81 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { roleForPath } from "@/lib/steps";
-import { Badge } from "./ui";
 import { Logo } from "./Logo";
+import { OWNER_NAV, TENANT_NAV, isActive, roleForPath } from "@/lib/steps";
+import { PROPERTY } from "@/lib/seed";
 
 export function SiteHeader() {
   const pathname = usePathname();
   const role = roleForPath(pathname);
+  const nav = role === "owner" ? OWNER_NAV : role === "tenant" ? TENANT_NAV : [];
+  const name = role === "owner" ? PROPERTY.owner : PROPERTY.tenant;
 
-  // Phone: logo and Notes on the first row, the role chip on its own row. Wider screens: one row.
   return (
-    <header className="border-b border-line/70 bg-cream/80 backdrop-blur">
-      <div className="mx-auto flex w-full max-w-5xl flex-wrap items-center gap-x-2 px-4 py-1 sm:px-6 sm:py-2">
-        <Link href="/" className="order-1 mr-auto inline-flex min-h-11 items-center rounded-lg" aria-label="Porchlight home">
+    <header className="sticky top-0 z-30 border-b border-line bg-white/95 backdrop-blur">
+      <div className="mx-auto flex w-full max-w-6xl items-center gap-4 px-4 py-2 sm:px-6">
+        <Link href={role ? (role === "owner" ? "/owner" : "/tenant") : "/"} className="inline-flex min-h-11 items-center rounded-lg" aria-label="GoHome">
           <Logo />
         </Link>
-        <Link
-          href="/feedback"
-          className="btn btn-ghost order-2 !px-2 text-sm whitespace-nowrap sm:order-3"
-          aria-label="Feedback notes"
-        >
-          <span className="sm:hidden">Notes</span>
-          <span className="hidden sm:inline">Feedback notes</span>
-        </Link>
+        {nav.length > 0 && (
+          <nav aria-label={`${role === "owner" ? "Owner" : "Tenant"} navigation`} className="ml-4 hidden items-center gap-1 md:flex">
+            {nav.map((item) => (
+              <Link
+                key={item.href}
+                href={item.href}
+                aria-current={isActive(pathname, item) ? "page" : undefined}
+                className={`inline-flex min-h-11 items-center rounded-lg px-3 text-base font-bold transition-colors ${
+                  isActive(pathname, item) ? "bg-brand-tint text-brand" : "text-ink-soft hover:bg-cream-deep hover:text-ink"
+                }`}
+              >
+                {item.label}
+              </Link>
+            ))}
+          </nav>
+        )}
         {role && (
-          <div className="order-3 flex w-full items-center gap-2 pb-1 sm:order-2 sm:w-auto sm:pb-0">
-            <Badge tone="info" icon={false}>
-              {role === "owner" ? "Owner view" : "Tenant view"}
-            </Badge>
-            <Link href="/" className="btn btn-ghost !px-2 text-sm whitespace-nowrap">
-              Switch role
+          <div className="ml-auto flex items-center gap-2">
+            <span className="hidden text-right text-sm leading-tight sm:block">
+              <span className="block font-bold">{name}</span>
+              <span className="block text-ink-soft">{role === "owner" ? "Owner" : "Tenant"}</span>
+            </span>
+            <Link href="/" className="btn btn-secondary !min-h-10 !px-3 text-sm">
+              Switch
             </Link>
           </div>
         )}
       </div>
     </header>
+  );
+}
+
+/** Bottom tab bar on phones, so the main places are one thumb tap away. */
+export function MobileTabs() {
+  const pathname = usePathname();
+  const role = roleForPath(pathname);
+  const nav = role === "owner" ? OWNER_NAV : role === "tenant" ? TENANT_NAV : [];
+  if (nav.length === 0) return null;
+  return (
+    <nav
+      aria-label={`${role === "owner" ? "Owner" : "Tenant"} tabs`}
+      className="fixed inset-x-0 bottom-0 z-30 border-t border-line bg-white md:hidden"
+    >
+      <ul className={`mx-auto grid max-w-md ${nav.length === 2 ? "grid-cols-2" : "grid-cols-4"}`}>
+        {nav.map((item) => {
+          const active = isActive(pathname, item);
+          return (
+            <li key={item.href}>
+              <Link
+                href={item.href}
+                aria-current={active ? "page" : undefined}
+                className={`flex min-h-14 items-center justify-center px-2 text-sm font-bold ${active ? "text-brand" : "text-ink-soft"}`}
+              >
+                <span className={`rounded-full px-3 py-1 ${active ? "bg-brand-tint" : ""}`}>{item.label}</span>
+              </Link>
+            </li>
+          );
+        })}
+      </ul>
+    </nav>
   );
 }

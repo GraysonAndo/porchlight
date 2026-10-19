@@ -32,9 +32,7 @@ export function syncFromWorld(state: DemoState, before: World, after: World, ev:
     patch.jobCompletedAt = null;
   }
 
-  patch.tenantSkippedLabel = after.triage.labelSkipped;
-
-  // The house record, as read from the tenant's label photo. After the job, the old record stays as history.
+  // The house record, as it stands now. After the job, the old record stays as history.
   if (after.triage.stage !== "done") {
     const rec = recordFromValues(recordAt(after.timeline, after.timeline.length).values);
     if (rec) patch.houseRecord = rec;

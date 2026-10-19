@@ -1,4 +1,4 @@
-// All demo data lives here. Everything is fictional.
+// All sample data lives here. Everything is fictional.
 // Numbers marked "placeholder" are NOT market data. See README, "Placeholder numbers".
 
 import { createWorld } from "./agents/world";
@@ -28,32 +28,44 @@ export const PROPERTY = {
   tenantSince: 2023,
 };
 
-/** The month the demo rent payment is for. */
+/** The month the sample rent payment is for. */
 export const RENT_MONTH = "October 2026";
 
 export const SEED_REQUEST_TEXT =
   "The water heater is leaking from the bottom and the floor in the garage is wet.";
 
 export const SAMPLE_PHOTO_PATH = "/sample/leaking-heater.svg";
-export const SAMPLE_LABEL_PATH = "/sample/equipment-label.svg";
 
 export const SAMPLE_PHOTO: Photo = { name: "leaking-heater.svg", src: SAMPLE_PHOTO_PATH, isSample: true };
-export const SAMPLE_LABEL_PHOTO: Photo = { name: "equipment-label.svg", src: SAMPLE_LABEL_PATH, isSample: true };
 
 /** Used by screens that are opened directly, before anyone submitted a request. */
 export const SEED_REQUEST = { description: SEED_REQUEST_TEXT, photos: [SAMPLE_PHOTO] };
 
 /** Equipment for the forecast. Typical life and replace cost are placeholders. */
 export const EQUIPMENT: EquipmentItem[] = [
-  { id: "water-heater", name: "Water heater", source: "Home inspection report (brand, model, and serial were not recorded)", installYear: 2015, typicalLifeYears: 10, replaceLow: 1600, replaceHigh: 2600 },
-  { id: "furnace", source: "Home inspection report", name: "Furnace", installYear: 2012, typicalLifeYears: 18, replaceLow: 4500, replaceHigh: 7000 },
-  { id: "air-conditioner", source: "Home inspection report", name: "Air conditioner", installYear: 2012, typicalLifeYears: 15, replaceLow: 5500, replaceHigh: 8500 },
-  { id: "dishwasher", source: "Installer warranty registration", name: "Dishwasher", installYear: 2018, typicalLifeYears: 10, replaceLow: 700, replaceHigh: 1200 },
-  { id: "refrigerator", source: "Added by owner", name: "Refrigerator", installYear: 2016, typicalLifeYears: 14, replaceLow: 1100, replaceHigh: 1900 },
-  { id: "roof", source: "Home inspection report", name: "Roof", installYear: 2009, typicalLifeYears: 25, replaceLow: 9000, replaceHigh: 15000 },
+  { id: "water-heater", name: "Water heater", source: "Recorded at move-in from the data plate and the home inspection (sample)", brand: "Hearthline", model: "HL-40G-NG", serial: "15C0412-X", location: "Garage, against the north wall", summary: "40 gallon, natural gas, tank type", installYear: 2015, typicalLifeYears: 10, replaceLow: 1600, replaceHigh: 2600 },
+  { id: "furnace", source: "Recorded at move-in from the data plate (sample)", name: "Furnace", brand: "Cedarline", model: "CF-80-100", serial: "12F3391-B", location: "Hall closet", summary: "Gas forced air, 100,000 BTU", installYear: 2012, typicalLifeYears: 18, replaceLow: 4500, replaceHigh: 7000 },
+  { id: "air-conditioner", source: "Recorded at move-in from the data plate (sample)", name: "Air conditioner", brand: "Cedarline", model: "CA-3T-14", serial: "12A7710-C", location: "Side yard, next to the gate", summary: "3 ton, 14 SEER, outdoor unit", installYear: 2012, typicalLifeYears: 15, replaceLow: 5500, replaceHigh: 8500 },
+  { id: "dishwasher", source: "Installer warranty registration (sample)", name: "Dishwasher", brand: "Brightwell", model: "BW-DW24", serial: "18D2204-F", location: "Kitchen, left of the sink", summary: "24 inch built-in", installYear: 2018, typicalLifeYears: 10, replaceLow: 700, replaceHigh: 1200 },
+  { id: "refrigerator", source: "Added by the owner (sample)", name: "Refrigerator", brand: "Frostmere", model: "FM-21T", serial: "16R0953-K", location: "Kitchen", summary: "21 cubic feet, top freezer", installYear: 2016, typicalLifeYears: 14, replaceLow: 1100, replaceHigh: 1900 },
+  { id: "roof", source: "Home inspection report (sample)", name: "Roof", brand: "Ridgecrest", model: "RC-30 Architectural", serial: "Lot 09-2231", location: "Whole house", summary: "Asphalt shingle, 30 year rating", installYear: 2009, typicalLifeYears: 25, replaceLow: 9000, replaceHigh: 15000 },
 ];
 
 export const WATER_HEATER = EQUIPMENT[0];
+
+/** The heater in the home at the start: recorded at move-in, so nothing has to be looked up or photographed. */
+export const OLD_HEATER_RECORD: WaterHeaterRecord = {
+  manufacturer: "Hearthline",
+  model: "HL-40G-NG",
+  serial: "15C0412-X",
+  capacityGallons: 40,
+  fuelType: "Natural gas",
+  manufactureDate: "2015-03",
+  ageYears: 11,
+  unconfirmed: [],
+  photo: null,
+  source: "Recorded at move-in from the data plate and the home inspection (sample)",
+};
 
 /** The replacement heater, added to the record automatically when the plumber finishes. */
 export const NEW_HEATER_RECORD: WaterHeaterRecord = {
@@ -130,7 +142,7 @@ export const A1_QUOTE: VendorQuote = {
   ],
 };
 
-/** The three quotes Porchlight collected from vendors. */
+/** The three quotes GoHome collected from vendors. */
 export const QUOTES: VendorQuote[] = [BAYSIDE_QUOTE, WILLOW_QUOTE, A1_QUOTE];
 
 export interface Vendor {
@@ -209,14 +221,13 @@ export const INITIAL_STATE: DemoState = {
   role: null,
   request: null,
   triage: null,
-  houseRecord: null,
+  houseRecord: OLD_HEATER_RECORD,
   quoteCheck: null,
   rent: DEFAULT_RENT_FORM,
   approval: null,
   tenantAnswers: null,
   tenantAccess: null,
   jobCompletedAt: null,
-  tenantSkippedLabel: false,
   rentPaidAt: null,
   agent: createWorld(),
   textUpdates: { tenant: true, owner: true },

@@ -27,12 +27,12 @@ function noteFor(triage: TriageResult, audience: "tenant" | "owner"): string {
   if (triage.alertOwnerNow && triage.safetySteps.length === 0) {
     return audience === "tenant"
       ? "This needs a professional soon. Your owner is being called right now. There is nothing for you to fix."
-      : "Porchlight called you because this cannot wait. The tenant was given no fix steps.";
+      : "GoHome called you because this cannot wait. The tenant was given no fix steps.";
   }
   if (triage.alertOwnerNow && triage.urgency !== "emergency") {
     return audience === "tenant"
       ? "This needs fast attention. Your owner is being called right now."
-      : "Porchlight alerted you right away because this cannot wait.";
+      : "GoHome alerted you right away because this cannot wait.";
   }
   return NOTE[audience][triage.urgency];
 }
@@ -91,7 +91,7 @@ export function SafetyChecklist({ steps, context, interactive }: SafetyChecklist
         <p className="text-lg font-bold">
           {interactive
             ? "There is nothing for you to fix. Please do not try to repair this yourself."
-            : "No fix steps were given. Porchlight does not ask tenants to repair this kind of problem."}
+            : "No fix steps were given. GoHome does not ask tenants to repair this kind of problem."}
         </p>
         <p className="mt-1 text-ink-soft">
           {interactive

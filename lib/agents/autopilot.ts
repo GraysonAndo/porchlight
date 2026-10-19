@@ -26,10 +26,6 @@ export function autopilotNext(w: World): AutoStep {
       return { ev: { type: "tenant.text", text: "2" } };
     case "steps_given":
       return { ev: { type: "tenant.text", text: "done" } };
-    case "asked_photo":
-      return { ev: { type: "tenant.photo", photo: "label" } };
-    case "confirm_serial":
-      return { ev: { type: "tenant.text", text: "Y" } };
     case "quotes_pending":
       return hasTimer ? { jump: true } : null;
     case "decision_sent":

@@ -1,66 +1,53 @@
 import { describe, expect, it } from "vitest";
-import { FLOWS, STEPS, flowSteps, neighbors, positionOf, roleForPath, screenNameFor, stepById, stepForPath } from "../lib/steps";
+import { OWNER_NAV, REPAIR_TABS, TENANT_NAV, isActive, roleForPath, screenNameFor } from "../lib/steps";
 
-describe("steps", () => {
-  it("has unique ids and paths", () => {
-    expect(new Set(STEPS.map((s) => s.id)).size).toBe(STEPS.length);
-    expect(new Set(STEPS.map((s) => s.path)).size).toBe(STEPS.length);
-  });
-
+describe("navigation", () => {
   it("keeps tenants and owners on their own sides", () => {
-    for (const s of flowSteps("tenant")) expect(s.path.startsWith("/tenant")).toBe(true);
-    for (const flow of ["owner", "tools", "optional"] as const) {
-      for (const s of flowSteps(flow)) expect(s.path.startsWith("/owner")).toBe(true);
-    }
+    for (const item of TENANT_NAV) expect(item.href.startsWith("/tenant")).toBe(true);
+    for (const item of [...OWNER_NAV, ...REPAIR_TABS]) expect(item.href.startsWith("/owner")).toBe(true);
   });
 
-  it("gives the tenant one screen and the owner repair details 5", () => {
-    expect(flowSteps("tenant").map((s) => s.short)).toEqual(["Home"]);
-    expect(FLOWS.tenant.numbered).toBe(false);
-    expect(flowSteps("owner").map((s) => s.short)).toEqual(["Request", "Record", "Quote", "Decide", "Book"]);
+  it("gives the tenant only things a tenant needs: help and their home", () => {
+    expect(TENANT_NAV.map((n) => n.label)).toEqual(["Help", "My home"]);
   });
 
   it("does not show owner decisions to tenants", () => {
-    const tenantTitles = flowSteps("tenant").map((s) => s.title.toLowerCase()).join(" ");
-    for (const word of ["quote", "forecast", "rent increase", "repair or replace", "label", "house record"]) {
-      expect(tenantTitles).not.toContain(word);
+    const tenant = TENANT_NAV.map((n) => `${n.label} ${n.href}`.toLowerCase()).join(" ");
+    for (const word of ["quote", "forecast", "rent increase", "decide", "decision", "book", "record", "label"]) {
+      expect(tenant).not.toContain(word);
     }
   });
 
-  it("puts forecast and rent outside the numbered repair flow", () => {
-    expect(FLOWS.tools.numbered).toBe(false);
-    expect(FLOWS.optional.numbered).toBe(false);
-    expect(flowSteps("owner").some((s) => s.id === "tools-forecast" || s.id === "tools-rent")).toBe(false);
+  it("puts the forecast and the rent increase tool on the owner side only", () => {
+    const owner = OWNER_NAV.map((n) => n.href);
+    expect(owner).toContain("/owner/forecast");
+    expect(owner).toContain("/owner/rent");
+    expect(TENANT_NAV.some((n) => /forecast|rent/.test(n.href))).toBe(false);
   });
 
-  it("finds a step by path, with or without a trailing slash", () => {
-    expect(stepForPath("/owner/quote")?.id).toBe("owner-quote");
-    expect(stepForPath("/owner/quote/")?.id).toBe("owner-quote");
-    expect(stepForPath("/nope")).toBeUndefined();
+  it("marks the repair detail pages as part of the owner inbox", () => {
+    const inbox = OWNER_NAV[0];
+    for (const tab of REPAIR_TABS) expect(isActive(tab.href, inbox)).toBe(true);
+    expect(isActive("/owner/forecast", inbox)).toBe(false);
   });
 
-  it("computes position and neighbors inside a flow only", () => {
-    const quote = stepById("owner-quote");
-    expect(positionOf(quote)).toEqual({ index: 3, total: 5 });
-    expect(neighbors(quote).prev?.id).toBe("owner-record");
-    expect(neighbors(quote).next?.id).toBe("owner-decide");
-    expect(neighbors(stepById("owner-request")).prev).toBeUndefined();
-    expect(neighbors(stepById("owner-book")).next).toBeUndefined();
-    expect(neighbors(stepById("tenant-home")).next).toBeUndefined();
+  it("marks the guides as part of the tenant's home", () => {
+    expect(isActive("/tenant/guides/heater-water-off", TENANT_NAV[1])).toBe(true);
+    expect(isActive("/tenant", TENANT_NAV[1])).toBe(false);
   });
 
-  it("names screens for the feedback notes", () => {
-    expect(screenNameFor("/tenant")).toBe("Tenant: How can we help?");
-    expect(screenNameFor("/owner/decide")).toBe("Owner, screen 4 of 5: Repair or replace");
-    expect(screenNameFor("/owner/forecast")).toBe("Plan ahead: 5-year forecast");
-    expect(screenNameFor("/owner")).toBe("Owner home");
-    expect(screenNameFor("/")).toBe("Home");
-  });
-
-  it("knows which side a path belongs to", () => {
-    expect(roleForPath("/tenant")).toBe("tenant");
-    expect(roleForPath("/owner/record")).toBe("owner");
+  it("names each side from the path", () => {
+    expect(roleForPath("/tenant/home")).toBe("tenant");
+    expect(roleForPath("/owner/quote")).toBe("owner");
     expect(roleForPath("/")).toBeNull();
-    expect(roleForPath("/feedback")).toBeNull();
+    expect(roleForPath("/pricing")).toBeNull();
+  });
+
+  it("gives readable screen names for feedback, and one name for unknown pages", () => {
+    expect(screenNameFor("/owner/quote")).toBe("Owner: Quotes");
+    expect(screenNameFor("/tenant")).toBe("Tenant: Help");
+    expect(screenNameFor("/tenant/guides/toilet-overflow")).toBe("Tenant: How-to guide");
+    expect(screenNameFor("/")).toBe("Welcome");
+    expect(screenNameFor("/nope")).toBe("Another page");
   });
 });

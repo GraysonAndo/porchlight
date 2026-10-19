@@ -237,7 +237,7 @@ export default function RentPage() {
 
             {missing.length > 0 ? (
               <Callout tone="caution" title="Fill in the numbers to see the result" role="status">
-                <p>Porchlight needs {missing.join(" and ")}. It will not guess or use an old number.</p>
+                <p>GoHome needs {missing.join(" and ")}. It will not guess or use an old number.</p>
               </Callout>
             ) : result.mayBeExempt ? (
               <div className="mt-3 space-y-3">
@@ -278,7 +278,7 @@ export default function RentPage() {
                   " The cap is measured over any 12 months, so the earlier increase counts toward it."}
               </p>
               <p className="text-sm text-ink-soft">
-                The state cap applies no matter how long the tenant has lived there, so Porchlight does not ask. Other
+                The state cap applies no matter how long the tenant has lived there, so GoHome does not ask. Other
                 protections, like just cause rules, start after 12 months. Confirm with an attorney.
               </p>
               <Callout tone="caution" title="Check local rules first">

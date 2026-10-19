@@ -57,12 +57,6 @@ export default function DecidePage() {
         <div className="mb-3">
           <PlainCodeNote>This is arithmetic on the numbers below. The AI did not make this call.</PlainCodeNote>
         </div>
-        {!record && (
-          <p className="mb-3 rounded-xl bg-caution-tint/70 p-3 font-bold text-caution-ink">
-            The heater&apos;s age is an estimate (about {heater.installYear}, from the home inspection) until a label photo
-            confirms it.
-          </p>
-        )}
         <ol className="space-y-3">
           {result.checks.map((check, i) => (
             <li key={check.id} className="flex gap-3 rounded-xl bg-cream p-3">
@@ -128,7 +122,7 @@ export default function DecidePage() {
       </Card>
 
       <Callout tone="info" title="You decide">
-        <p>Porchlight recommends. The owner decides. You can still ask for a second opinion or a second quote.</p>
+        <p>GoHome recommends. The owner decides. You can still ask for a second opinion or a second quote.</p>
       </Callout>
     </StepShell>
   );

@@ -28,7 +28,7 @@ export default function OwnerRequestPage() {
   const aboutHeater = isHeaterJob(request.description, triage);
 
   return (
-    <StepShell stepId="owner-request" nextDisabled={!triage}>
+    <StepShell stepId="owner-request">
       <Card
         title={
           <span className="flex flex-wrap items-center gap-2">
@@ -60,18 +60,18 @@ export default function OwnerRequestPage() {
           <Card
             title={
               <span className="flex flex-wrap items-center gap-2">
-                <RobotIcon /> What Porchlight already did
+                <RobotIcon /> What GoHome already did
               </span>
             }
           >
             <p className="mb-4 text-ink-soft">
-              You did not have to do any of this. Each step shows who did the work: the AI, plain code, Porchlight acting
+              You did not have to do any of this. Each step shows who did the work: the AI, plain code, GoHome acting
               inside your limits, or a person.
             </p>
             <AgentFeed
               events={[
                 ...triageEvents({ request, triage, record: heaterRecord }),
-                ...(aboutHeater ? recordEvents(heaterRecord, state.tenantSkippedLabel) : []),
+                ...(aboutHeater ? recordEvents(heaterRecord, false) : []),
               ]}
             />
             <div className="mt-4 border-t border-line pt-3">
@@ -82,7 +82,7 @@ export default function OwnerRequestPage() {
           <Card
             title={
               <span className="flex items-center gap-2">
-                <RobotIcon /> What Porchlight found
+                <RobotIcon /> What GoHome found
               </span>
             }
           >
@@ -119,18 +119,14 @@ export default function OwnerRequestPage() {
               </div>
               <p className="mb-3 text-ink-soft">
                 {heaterRecord
-                  ? `${heaterRecord.fuelType}, ${heaterRecord.capacityGallons} gallons, ${ageOf(heater)} years old. Read from a label photo, no typing needed.`
-                  : `The home inspection says about ${heater.installYear} (${ageOf(heater)} years old). ${
-                      state.tenantSkippedLabel
-                        ? `${PROPERTY.tenant} could not reach the label, so you can add the details yourself.`
-                        : `Porchlight asked ${PROPERTY.tenant} for a photo of the label. It fills in here when they send it.`
-                    }`}
+                  ? `${heaterRecord.fuelType}, ${heaterRecord.capacityGallons} gallons, ${ageOf(heater)} years old, ${heater.location.toLowerCase()}. It was already in your home record.`
+                  : `About ${ageOf(heater)} years old.`}
               </p>
               <LifespanBar ageYears={ageOf(heater)} typicalLifeYears={heater.typicalLifeYears} tone={stage.tone} />
               <p className="mt-2 text-sm text-ink-soft">
                 Source: {heaterRecord ? heaterRecord.source : heater.source}.{" "}
-                <Link href={heaterRecord ? "/owner/record" : "/owner/label"} className="font-bold underline underline-offset-4">
-                  {heaterRecord ? "Open the house record" : "Add the details myself"}
+                <Link href="/owner/record" className="font-bold underline underline-offset-4">
+                  Open the home record
                 </Link>
               </p>
             </Card>
@@ -172,7 +168,7 @@ export default function OwnerRequestPage() {
 
           <Callout tone="info" title="Your decision">
             <p>
-              Porchlight can check the house record, collect and compare quotes, and book the visit for you. Nothing is
+              GoHome can check the house record, collect and compare quotes, and book the visit for you. Nothing is
               booked and nothing is spent until you tap approve on the last step.
             </p>
           </Callout>

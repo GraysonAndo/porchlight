@@ -5,7 +5,7 @@ const nextConfig: NextConfig = {
   experimental: {
     optimizePackageImports: ["@phosphor-icons/react"],
   },
-  // Old links from earlier versions of the prototype keep working.
+  // Old links from earlier versions keep working.
   async redirects() {
     return [
       { source: "/triage", destination: "/tenant", permanent: false },
@@ -13,7 +13,12 @@ const nextConfig: NextConfig = {
       { source: "/tenant/safety", destination: "/tenant", permanent: false },
       { source: "/tenant/label", destination: "/tenant", permanent: false },
       { source: "/tenant/status", destination: "/tenant", permanent: false },
-      { source: "/label", destination: "/owner/label", permanent: false },
+      // The label step is gone: the home record already knows every model.
+      { source: "/label", destination: "/owner/record", permanent: false },
+      { source: "/owner/label", destination: "/owner/record", permanent: false },
+      // The old demo consoles are gone. The agent panel on the main screens replaces them.
+      { source: "/live", destination: "/", permanent: false },
+      { source: "/sms", destination: "/", permanent: false },
       { source: "/record", destination: "/owner/record", permanent: false },
       { source: "/quote", destination: "/owner/quote", permanent: false },
       { source: "/decide", destination: "/owner/decide", permanent: false },
@@ -22,7 +27,7 @@ const nextConfig: NextConfig = {
       { source: "/rent", destination: "/owner/rent", permanent: false },
       // Routes people expect, sent to the page that does the job.
       { source: "/login", destination: "/", permanent: false },
-            { source: "/tenant/requests/new", destination: "/tenant", permanent: false },
+      { source: "/tenant/requests/new", destination: "/tenant", permanent: false },
       { source: "/tenant/requests", destination: "/tenant", permanent: false },
       { source: "/requests/new", destination: "/tenant", permanent: false },
       { source: "/owner/requests", destination: "/owner/request", permanent: false },

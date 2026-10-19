@@ -11,7 +11,7 @@ export type Party = "tenant" | "owner" | "contractor";
 export type AgentName = "triage" | "quote" | "sentinel" | "gate" | "chat";
 export type Channel = "sms" | "call" | "email";
 
-export type PhotoKind = "leak" | "label" | "blurry";
+export type PhotoKind = "leak";
 
 /** A button or quick reply under a message. */
 export interface MsgAction {
@@ -41,7 +41,7 @@ export interface Msg {
   /** Minutes since midnight on day 0. Each day adds 1440. */
   at: number;
   party: Party;
-  /** "in" is sent by the person to Porchlight. "out" is sent by Porchlight. */
+  /** "in" is sent by the person to GoHome. "out" is sent by GoHome. */
   dir: "in" | "out";
   channel: Channel;
   text: string;
@@ -50,6 +50,8 @@ export interface Msg {
   /** Delivered without a sound or a buzz (Do Not Disturb) */
   silent?: boolean;
   card?: MsgCard;
+  /** Id of a step-by-step picture guide shown under the message */
+  guide?: string;
   /** Wall-clock time (ms) after which the screen shows this entry, so replies arrive at a human pace */
   revealAt?: number;
   actions?: MsgAction[];
@@ -109,8 +111,6 @@ export type TriageStage =
   | "idle"
   | "asked_electrical"
   | "steps_given"
-  | "asked_photo"
-  | "confirm_serial"
   | "quotes_pending"
   | "decision_sent"
   | "booked"
@@ -129,8 +129,6 @@ export interface World {
   pending: Scheduled[];
   triage: {
     stage: TriageStage;
-    photoTries: number;
-    labelSkipped: boolean;
     ownerAcked: boolean;
     tenantConfirmed: boolean;
   };
@@ -151,6 +149,6 @@ export interface World {
   };
   /** Whether this month's rent was marked paid (demo) */
   rentPaid: boolean;
-  /** The vendor, limit, and time the owner picked by hand instead of Porchlight's plan */
+  /** The vendor, limit, and time the owner picked by hand instead of GoHome's plan */
   choice: { vendorId: string; notToExceed: number; accessWindow: string } | null;
 }

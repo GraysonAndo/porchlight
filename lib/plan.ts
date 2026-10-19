@@ -1,4 +1,4 @@
-// Porchlight's plan for the water heater job: the quotes it collected, how each
+// GoHome's plan for the water heater job: the quotes it collected, how each
 // one checks out, and which one it would book. Plain code (lib/recommend.ts).
 
 import { checkCandidates, recommendQuote, type CheckedCandidate, type Recommendation } from "./recommend";

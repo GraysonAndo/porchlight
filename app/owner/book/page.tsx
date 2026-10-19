@@ -129,12 +129,12 @@ function ApproveBody() {
           <Timeline approval={approval} vendor={sentVendor} />
         </Card>
 
-        <Card title="What Porchlight did after your tap">
+        <Card title="What GoHome did after your tap">
           <AgentFeed events={bookingEvents(approval)} />
         </Card>
 
         <Callout tone="caution" title="Nothing was actually sent">
-          <p>This is a prototype. No message went to any vendor or tenant. The times above are samples.</p>
+          <p>These are sample messages. Nothing was actually sent to a vendor or tenant, and the times above are samples.</p>
         </Callout>
 
         <Card title="What the tenant sees">
@@ -159,7 +159,7 @@ function ApproveBody() {
               <p>
                 The installer finished the job. The new water heater (Hearthline HL-40G-NG, serial 26J0007-A, 40 gallons,
                 natural gas) was added to your house record with its install date. The old heater was marked replaced and
-                the 5-year forecast was updated. Nobody typed or photographed anything.
+                the 5-year forecast was updated. Nobody had to type anything.
               </p>
               <p className="mt-2">
                 <Link href="/owner/record" className="font-bold underline underline-offset-4">
@@ -170,7 +170,7 @@ function ApproveBody() {
           ) : (
             <>
               <ol className="space-y-2">
-                <li>1. The plumber installs the new water heater and marks the job done in Porchlight.</li>
+                <li>1. The plumber installs the new water heater and marks the job done in GoHome.</li>
                 <li>
                   2. The installer&apos;s details (brand, model, serial number, size, fuel type, install date) go into your
                   house record <strong>automatically</strong>. No photos, no typing.
@@ -201,7 +201,7 @@ function ApproveBody() {
   return (
     <StepShell stepId="owner-book">
       <div className="hero-ink">
-        <p className="eyebrow !text-cream/70">Porchlight&apos;s plan, ready for one tap</p>
+        <p className="eyebrow !text-cream/70">GoHome&apos;s plan, ready for one tap</p>
         <p className="mt-2 text-3xl font-extrabold leading-tight sm:text-5xl">
           Book <span className="text-glow">{PLAN.vendorName}</span>
         </p>
@@ -233,10 +233,10 @@ function ApproveBody() {
           ))}
         </ul>
         <button type="button" className="btn btn-lg mt-5 w-full bg-glow font-extrabold text-ink hover:bg-glow-deep sm:w-auto" onClick={approvePlan}>
-          <TapIcon size={22} /> Approve Porchlight&apos;s plan
+          <TapIcon size={22} /> Approve GoHome&apos;s plan
         </button>
         <p className="mt-2 text-sm text-cream/75">
-          This is the one tap Porchlight waits for. Nothing is booked or spent before it. <EngineChip engine="human" />
+          This is the one tap GoHome waits for. Nothing is booked or spent before it. <EngineChip engine="human" />
         </p>
       </div>
 
@@ -393,7 +393,7 @@ function ApproveBody() {
           Approve and send
         </button>
         <p className="text-center text-sm text-ink-soft">
-          Prototype: pressing this does not send anything.{" "}
+          Sample data: pressing this does not send a real message.{" "}
           <Link href="/owner/quote" className="font-bold underline underline-offset-4">
             Review the quote check
           </Link>
