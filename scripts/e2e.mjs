@@ -501,17 +501,54 @@ const chatText = (page) => page.getByRole("log", { name: "Messages" }).innerText
   await page.goto(`${BASE}/about`);
   const team = page.locator("#team");
   await team.waitFor();
+  check("the team section has the new header and subhead", (await team.getByRole("heading", { name: "The team behind GoHome" }).count()) === 1 && (await count(page, "Three UCSB students building the property manager we wish small landlords had.")) === 1);
   const text = await team.innerText();
-  check("the team section has all three names and titles", ["Grayson Ando", "Chief Executive Officer", "Ezekiel Thun", "Chief Creative Officer", "Hayden Haar", "Chief Financial Officer"].every((t) => text.includes(t)));
-  const links = await team.locator("a[href*='linkedin.com/in/']").evaluateAll((els) => els.map((e) => e.getAttribute("href")));
-  check("each leader links to their LinkedIn", links.length === 3 && links.some((l) => l.includes("grayson-ando")) && links.some((l) => l.includes("ezekiel-thun")) && links.some((l) => l.includes("hayden-haar")), links.join(","));
-  check("LinkedIn links open in a new tab safely", (await team.locator("a[target=_blank][rel*=noreferrer]").count()) === 3);
-  check("with no photo files yet, each leader shows initials", (await team.getByText("GA", { exact: true }).count()) === 1 && (await team.getByText("ET", { exact: true }).count()) === 1 && (await team.getByText("HH", { exact: true }).count()) === 1);
+  check("the team section has all three names and the new titles", ["Grayson Ando", "Co-founder & CEO", "Ezekiel Thun", "Co-founder & Head of Design", "Hayden Haar", "Co-founder & Head of Finance"].every((t) => text.includes(t)), text.slice(0, 80));
+  check("each bio is two sentences at most", (await team.locator("article p").allInnerTexts()).filter((t) => t.length > 40).every((t) => (t.match(/[.!?](\s|$)/g) ?? []).length <= 2));
+  check("Grayson's bio names SanDisk and the San Jose rental, and Hayden's names Vantage Data Centers", text.includes("SanDisk") && text.includes("San Jose") && text.includes("Vantage Data Centers"));
+  check("no bio has a placeholder in it", !/\[|ADD ONE|TODO/.test(text));
+  const icons = await team.locator("a[href*='linkedin.com/in/']").evaluateAll((els) => els.map((e) => ({ href: e.getAttribute("href"), label: e.getAttribute("aria-label"), target: e.getAttribute("target"), rel: e.getAttribute("rel"), box: e.getBoundingClientRect().width })));
+  check("each leader has a small LinkedIn icon link with an aria-label", icons.length === 3 && icons.every((i) => /on LinkedIn/.test(i.label ?? "") && i.target === "_blank" && /noreferrer/.test(i.rel ?? "")), JSON.stringify(icons));
+  check("the LinkedIn links go to the right people", icons.some((i) => i.href.includes("grayson-ando") && i.label.startsWith("Grayson Ando")) && icons.some((i) => i.href.includes("ezekiel-thun") && i.label.startsWith("Ezekiel Thun")) && icons.some((i) => i.href.includes("hayden-haar") && i.label.startsWith("Hayden Haar")));
+  check("there is no big LinkedIn button any more", (await team.getByRole("link", { name: "LinkedIn", exact: true }).count()) === 0 && icons.every((i) => i.box <= 48));
+  const shades = await team.locator("article span[aria-hidden=true]").evaluateAll((els) => els.map((e) => getComputedStyle(e).backgroundColor));
+  check("with no photo files, each leader gets their own shade", shades.length === 3 && new Set(shades).size === 3, shades.join(" | "));
+  const row = await team.locator("article").evaluateAll((els) => els.map((e) => Math.round(e.getBoundingClientRect().top)));
+  check("on desktop the three cards sit side by side in one row", row.length === 3 && Math.max(...row) - Math.min(...row) <= 2, row.join(","));
+  const avatar = await team.locator("article span[aria-hidden=true]").first().evaluate((e) => Math.round(e.getBoundingClientRect().width));
+  check("the photo circle is 120px on desktop", avatar === 120, `${avatar}`);
+  await team.locator("article").first().scrollIntoViewIfNeeded();
+  await page.waitForTimeout(1200);
+  const before = await team.locator("article").first().evaluate((e) => e.getBoundingClientRect().top);
+  await team.locator("article").first().hover();
+  await page.waitForTimeout(400);
+  const after = await team.locator("article").first().evaluate((e) => e.getBoundingClientRect().top);
+  check("a card lifts about 4px on hover", Math.round(before - after) === 4, `${before} ${after}`);
   await page.goto(`${BASE}/`);
   await page.getByRole("link", { name: "Our team" }).click();
   await page.waitForURL("**/about#team");
   check("the welcome page links to the team", true);
   check("no console errors on the team section", errors.length === 0, errors.join(" | "));
+  await context.close();
+}
+
+// ======================= The team on a phone =======================
+{
+  const { context, page, errors } = await newPage({ viewport: { width: 390, height: 844 } });
+  await page.goto(`${BASE}/about#team`);
+  const team = page.locator("#team");
+  await team.waitFor();
+  await team.locator("article").last().scrollIntoViewIfNeeded();
+  await page.waitForTimeout(700);
+  const cards = await team.locator("article").evaluateAll((els) => els.map((e) => ({ h: Math.round(e.getBoundingClientRect().height), top: Math.round(e.getBoundingClientRect().top + window.scrollY) })));
+  check("on a phone the cards are stacked", cards.length === 3 && cards[1].top > cards[0].top + 100 && cards[2].top > cards[1].top + 100, JSON.stringify(cards));
+  check("each card fits in about half a phone screen", cards.every((c) => c.h <= 430), JSON.stringify(cards));
+  const avatar = await team.locator("article span[aria-hidden=true]").first().evaluate((e) => Math.round(e.getBoundingClientRect().width));
+  check("the photo circle is 96px on a phone", avatar === 96, `${avatar}`);
+  check("no horizontal scroll on the team section", await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1));
+  const faded = await team.locator("article").first().evaluate((e) => getComputedStyle(e.parentElement).opacity);
+  check("cards that scrolled into view are visible", faded === "1", faded);
+  check("no console errors on the phone", errors.length === 0, errors.join(" | "));
   await context.close();
 }
 

@@ -223,6 +223,14 @@ async function run(browser, vp) {
   await snap(page, vp, "31-pricing");
   await page.goto(`${BASE}/about`);
   await page.locator("#team").waitFor();
+  // The cards fade in as they scroll into view, so scroll through before taking the picture.
+  await page.evaluate(async () => {
+    for (let y = 0; y < document.body.scrollHeight; y += 300) {
+      window.scrollTo(0, y);
+      await new Promise((r) => setTimeout(r, 120));
+    }
+  });
+  await page.waitForTimeout(900);
   await snap(page, vp, "32a-about-team");
   await page.getByText("What counts as an emergency?").click();
   await snap(page, vp, "32-about-and-faq");
