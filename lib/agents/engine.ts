@@ -295,6 +295,10 @@ function handle(w: World, ev: Ev): void {
       return onLeaseCheck(w);
     case "rent.paid":
       return onRentPaid(w, ev.paid, ev.confirmation);
+    case "record.edit":
+      return onRecordEdit(w, ev.patch);
+    case "rent.notice":
+      return onRentNotice(w, ev.kind, ev.from, ev.to, ev.effective);
     case "utilities.paid":
       return onUtilitiesPaid(w, ev.amount, ev.confirmation);
     case "owner.markDone":
@@ -329,6 +333,31 @@ function onRentPaid(w: World, paid: boolean, confirmation?: string): void {
   tool(w, "chat", "record_rent_payment", "action", confirmation ? "Rent received" : "Rent marked paid", `${RENT_MONTH}: ${usd(PROPERTY.rent)}.${ref}`);
   say(w, "tenant", confirmation ? `Thanks! Your ${RENT_MONTH} rent of ${usd(PROPERTY.rent)} was received.${ref}` : `Thanks! Your ${RENT_MONTH} rent of ${usd(PROPERTY.rent)} is marked paid.`);
   say(w, "owner", `${PROPERTY.tenant} paid ${RENT_MONTH} rent: ${usd(PROPERTY.rent)}.${ref}`, { silent: true });
+}
+
+/** The owner corrected a detail in the home record. The record changes, and everything GoHome says from now on uses it. */
+function onRecordEdit(w: World, patch: Record<string, string>): void {
+  record(w, patch, "Corrected by the owner");
+  tool(w, "chat", "update_house_record", "action", "Updated the home record", "The owner corrected a detail. GoHome uses the corrected record from now on, and the tenant's guides match it.");
+}
+
+/** The heater's brand and model as the home record has them now, for anything GoHome says about it. */
+function heaterLabel(w: World): string {
+  const v = recordAt(w.timeline, w.timeline.length).values;
+  return `${v["heater.brand"] ?? ""} ${v["heater.model"] ?? ""}`.trim() || "water heater";
+}
+
+/** The owner sends a rent notice from the rent page: the tenant is told by text, and the owner gets a confirmation. */
+function onRentNotice(w: World, kind: "increase" | "decrease", from: string, to: string, effective: string): void {
+  tool(w, "sentinel", "send_notice", "action", "Mailed the rent notice", `${kind === "decrease" ? "Rent decrease" : "Rent increase"} from ${from} to ${to}, starting ${effective}. A rent notice has to be properly served, so it goes by mail with proof of service. Sample: nothing was really mailed.`);
+  say(
+    w,
+    "tenant",
+    kind === "decrease"
+      ? `Good news: your owner is lowering your rent from ${from} to ${to} per month, starting ${effective}. A notice is on its way by mail. You do not need to do anything.`
+      : `Your owner sent you a notice by mail. Your rent changes from ${from} to ${to} per month starting ${effective}. You do not need to do anything now. Ask me here if you have questions.`,
+  );
+  say(w, "owner", `Your rent notice to ${PROPERTY.tenant} is on its way by mail, and I told them by text. New rent ${to} starts ${effective}.`, { silent: true });
 }
 
 /** Utilities paid by the tenant: both people get a text. */
@@ -563,12 +592,12 @@ function startCase(w: World, text: string): void {
       "lookup_house_record",
       "code",
       "Looked up the house record",
-      "Found the water heater in the home record: Hearthline HL-40G-NG, 40 gallon gas, made March 2015. Everything about it is already on file.",
+      `Found the water heater in the home record: ${heaterLabel(w)}, 40 gallon gas, made March 2015. Everything about it is already on file.`,
     );
     say(
       w,
       "tenant",
-      `Hi, this is GoHome for ${PROPERTY.address}. I'm on it, and I already have your water heater on file (Hearthline HL-40G-NG). Safety first: is the water near an outlet, or is anything electrical in the puddle?\nReply 1 = yes, 2 = no`,
+      `Hi, this is GoHome for ${PROPERTY.address}. I'm on it, and I already have your water heater on file (${heaterLabel(w)}). Safety first: is the water near an outlet, or is anything electrical in the puddle?\nReply 1 = yes, 2 = no`,
       {
         actions: [
           { id: "1", label: "1  Yes", text: "1" },
@@ -636,7 +665,7 @@ function answerElectrical(w: World, text: string): void {
   say(
     w,
     "tenant",
-    `Good. Two quick steps for your Hearthline HL-40G-NG:\n${numbered(steps)}\nNot sure how? Tap Show me how for a picture guide made for your exact heater, or reply HELP. Don't touch the heater if you're standing in water, and never touch the gas valve. If you smell gas, leave and call 911. Reply DONE when you're finished.`,
+    `Good. Two quick steps for your ${heaterLabel(w)}:\n${numbered(steps)}\nNot sure how? Tap Show me how for a picture guide made for your exact heater, or reply HELP. Don't touch the heater if you're standing in water, and never touch the gas valve. If you smell gas, leave and call 911. Reply DONE when you're finished.`,
     {
       guide: "heater-water-off",
       actions: [
@@ -660,7 +689,7 @@ function afterSteps(w: World, text: string): void {
     const body = guide
       ? `${guide.title} (${guide.time}):\n${numbered(guide.steps.slice(0, 4))}\nStop and get help if: ${guide.stopIf[0] ?? "anything looks unsafe"}`
       : "Find the shut-off valve on the cold water pipe above the heater and turn the handle crosswise to the pipe.";
-    tool(w, "triage", "send_guide", "code", "Sent the guide for this exact heater", "Hand-written guide for the Hearthline HL-40G-NG from the home record. General safety information, not professional advice.");
+    tool(w, "triage", "send_guide", "code", "Sent the guide for this exact heater", `Hand-written guide for the ${heaterLabel(w)} from the home record. General safety information, not professional advice.`);
     say(w, "tenant", body, {
       guide: "heater-water-off",
       actions: [{ id: "done", label: "Done", text: "done" }],
@@ -706,7 +735,7 @@ function dispatch(w: World): void {
   say(
     w,
     "owner",
-    `From your house record: Hearthline HL-40G-NG, 40 gal gas, made March 2015, ${age} years old (typical life ${heater.typicalLifeYears}*). Warranty expired*. I asked 3 vendors for quotes and I'll send you one decision when they're in.\n*Illustrative placeholder, not market data`,
+    `From your house record: ${heaterLabel(w)}, 40 gal gas, made March 2015, ${age} years old (typical life ${heater.typicalLifeYears}*). Warranty expired*. I asked 3 vendors for quotes and I'll send you one decision when they're in.\n*Illustrative placeholder, not market data`,
     { silent: true },
   );
   w.triage.stage = "quotes_pending";
@@ -754,10 +783,11 @@ function quotesArrive(w: World): void {
         summary: `The heater is ${age} years old and the tank is leaking, so it cannot be repaired. GoHome checked 3 quotes and picked the best one for you.`,
         facts: [
           { label: "Price", value: `${usd(PLAN.total)}, a fair price`, tone: "good" },
-          { label: "Spending limit", value: usd(PLAN.notToExceed) },
+          { label: "Spending limit", value: `${usd(PLAN.notToExceed)} (quote plus 10%)` },
           { label: "You save", value: `${usd(PLAN.savedVsHighest)} vs the highest quote`, tone: "good" },
           { label: "Visit", value: windowText() },
         ],
+        note: `Your limit is the quote plus 10%: ${usd(PLAN.total)} becomes ${usd(PLAN.notToExceed)}. The plumber must call you before going over it. Nothing is spent until you tap.`,
       },
       actions: [
         { id: "approve", label: "Approve" },

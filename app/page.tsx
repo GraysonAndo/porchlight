@@ -1,9 +1,8 @@
 "use client";
 
-import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { HomeIcon, KeyIcon } from "@/components/icons";
-import { Logo, LogoMark } from "@/components/Logo";
+import { LogoMark } from "@/components/Logo";
 import { useDemo } from "@/lib/store";
 
 function RoleCard({
@@ -44,22 +43,7 @@ export default function GatePage() {
 
   return (
     <div className="flex flex-1 flex-col bg-gradient-to-b from-brand-tint/60 to-cream">
-      <header className="mx-auto flex w-full max-w-5xl items-center justify-between px-4 py-4 sm:px-6">
-        <Logo />
-        <nav aria-label="More about GoHome" className="flex gap-1 text-sm font-bold">
-          <Link href="/about#team" className="inline-flex min-h-11 items-center rounded-lg px-3 text-ink-soft hover:bg-white hover:text-ink">
-            Our team
-          </Link>
-          <Link href="/about" className="inline-flex min-h-11 items-center rounded-lg px-3 text-ink-soft hover:bg-white hover:text-ink">
-            About
-          </Link>
-          <Link href="/pricing" className="inline-flex min-h-11 items-center rounded-lg px-3 text-ink-soft hover:bg-white hover:text-ink">
-            Pricing
-          </Link>
-        </nav>
-      </header>
-
-      <div className="mx-auto flex w-full max-w-3xl flex-1 flex-col items-center justify-center px-4 pb-16 pt-6 text-center sm:px-6">
+      <div className="mx-auto flex w-full max-w-3xl flex-1 flex-col items-center justify-center px-4 pb-16 pt-10 text-center sm:px-6">
         <LogoMark size={72} />
         <h1 className="mt-5 text-5xl font-extrabold leading-none tracking-tight sm:text-7xl">GoHome</h1>
         <p className="mt-3 text-xl text-ink-soft sm:text-2xl">Your home, made easy.</p>
@@ -81,9 +65,6 @@ export default function GatePage() {
         </div>
       </div>
 
-      <p className="px-4 pb-6 text-center text-xs text-ink-soft">
-        GoHome is a student project. All names and numbers are sample data.
-      </p>
     </div>
   );
 }

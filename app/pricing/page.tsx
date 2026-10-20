@@ -40,9 +40,9 @@ const TIERS: { id: Pick; name: string; price: number; line: string; features: st
     line: "GoHome watches the details for you.",
     features: [
       "Everything in Plus",
-      "Rent increase checks and notice drafts (California AB 1482)",
+      "Rent increase checks, notice drafts, and sending the notice (California)",
       "Quote audit with a drafted counter-offer",
-      "Text-message agent that calls you for emergencies",
+      "Coming in the full product: updates by text, and a call to you for emergencies",
     ],
   },
 ];
@@ -61,7 +61,8 @@ export default function PricingPage() {
           and we are testing which tier makes sense. Tell us which you would pick.
         </p>
         <p className="mt-2">
-          <PlaceholderNote /> <span className="text-sm text-ink-soft">(prices and what is in each tier, for a pricing test)</span>
+          <PlaceholderNote />{" "}
+          <span className="text-sm text-ink-soft">(prices and what is in each tier, for a pricing test)</span>
         </p>
       </div>
 
@@ -72,8 +73,8 @@ export default function PricingPage() {
             <li key={t.id} className={`card flex flex-col ${chosen ? "!border-ink ring-4 ring-glow" : ""}`}>
               <h2 className="font-display text-2xl font-extrabold">{t.name}</h2>
               <p className="mt-1">
-                <span className="text-4xl font-extrabold">${t.price}</span>
-                <span className="text-ink-soft"> per unit per month</span>
+                <span className="text-4xl font-extrabold">${t.price}</span>{" "}
+                <span className="text-ink-soft">per unit per month</span>
               </p>
               <p className="mt-2 text-ink-soft">{t.line}</p>
               <ul className="mt-3 flex-1 space-y-2">

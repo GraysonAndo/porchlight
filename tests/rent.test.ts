@@ -6,6 +6,10 @@ import {
   effectiveDateFor,
   maxNewRentFor,
   noticeDaysFor,
+  MAX_SANE_RENT,
+  noticeKindFor,
+  rentLooksTooHigh,
+  roundToCents,
   type RentInputs,
 } from "../lib/rent";
 
@@ -154,5 +158,50 @@ describe("notice draft", () => {
     expect(text).toContain("$3,360.00");
     expect(text).toContain("November 12, 2026");
     expect(text).toContain("Owner signature");
+  });
+});
+
+describe("money rounding and sanity", () => {
+  it("rounds to the cent, so a typed 1234.567 never carries a float tail", () => {
+    expect(roundToCents(1234.567)).toBe(1234.57);
+    expect(roundToCents(3520.01)).toBe(3520.01);
+    expect(roundToCents(0.1 + 0.2)).toBe(0.3);
+    expect(String(roundToCents(1234.5670166015625))).toBe("1234.57");
+  });
+
+  it("flags a rent too high to be real for one home", () => {
+    expect(rentLooksTooHigh(99999999)).toBe(true);
+    expect(rentLooksTooHigh(3200)).toBe(false);
+    expect(rentLooksTooHigh(MAX_SANE_RENT)).toBe(false);
+  });
+});
+
+describe("the notice matches the change", () => {
+  const input = { ownerName: "O", tenantName: "T", address: "A", currentRent: 3200, newRent: 3360, noticeDate: "2026-10-19", noticeDays: 30 as const };
+
+  it("tells an increase, a decrease, and no change apart", () => {
+    expect(noticeKindFor(3200, 3360)).toBe("increase");
+    expect(noticeKindFor(3200, 3000)).toBe("decrease");
+    expect(noticeKindFor(3200, 3200)).toBe("none");
+  });
+
+  it("titles a rent decrease as a decrease, never as an increase", () => {
+    const text = buildNotice({ ...input, newRent: 3000 });
+    expect(text).toContain("NOTICE OF RENT DECREASE");
+    expect(text).not.toContain("RENT INCREASE");
+    expect(text).not.toMatch(/gives you \d+ days/);
+    expect(text).toContain("$3,000.00");
+  });
+
+  it("keeps the increase wording and the notice days for an increase", () => {
+    const text = buildNotice(input);
+    expect(text).toContain("NOTICE OF RENT INCREASE");
+    expect(text).toContain("This notice gives you 30 days");
+  });
+
+  it("says nothing is changing when the rent stays the same", () => {
+    const text = buildNotice({ ...input, newRent: 3200 });
+    expect(text).toContain("NOTICE OF NO RENT CHANGE");
+    expect(text).not.toContain("new rent will be");
   });
 });

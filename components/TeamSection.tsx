@@ -34,7 +34,7 @@ function Avatar({ member }: { member: TeamMember }) {
 
 export function TeamSection() {
   return (
-    <section id="team" className="scroll-mt-4 space-y-4 md:-mx-16 lg:-mx-32" aria-labelledby="team-heading">
+    <section id="team" className="scroll-mt-24 space-y-4 md:-mx-16 lg:-mx-32" aria-labelledby="team-heading">
       <div className="text-center">
         <h2 id="team-heading" className="text-2xl font-extrabold sm:text-3xl">
           The team behind GoHome

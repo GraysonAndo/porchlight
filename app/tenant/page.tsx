@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useState } from "react";
 import { AgentPanel } from "@/components/AgentPanel";
 import { Thread } from "@/components/Thread";
@@ -23,7 +24,10 @@ export default function TenantPage() {
       <div>
         <h1 className="text-3xl font-extrabold leading-tight sm:text-4xl">How can we help?</h1>
         <p className="mt-1 text-lg text-ink-soft">
-          Tell GoHome what is going on. It knows your home, gives you safe steps, and handles the rest.
+          Tell GoHome what is going on. It knows your home, gives you safe steps, and handles the rest.{" "}
+          <Link href="/tenant/texts" className="font-bold text-brand underline underline-offset-4">
+            See how it will feel by text
+          </Link>
         </p>
       </div>
 

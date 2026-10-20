@@ -1,5 +1,7 @@
 "use client";
 
+import { ResetButton } from "@/components/ResetButton";
+import Link from "next/link";
 import { SwitchRow } from "@/components/Switch";
 import { TextUpdatesToggle } from "@/components/TextUpdates";
 import { PROPERTY } from "@/lib/seed";
@@ -51,6 +53,11 @@ export default function TenantSettingsPage() {
           />
         </div>
         <p className="hint">Emergency safety messages are always sent, even if you turn these off.</p>
+        <p className="mt-2">
+          <Link href="/tenant/texts" className="font-bold text-brand underline underline-offset-4">
+            See how GoHome will feel by text
+          </Link>
+        </p>
       </Section>
 
       <Section id="payments" title="Payments">
@@ -66,9 +73,9 @@ export default function TenantSettingsPage() {
 
       <Section id="data" title="Your data">
         <p className="text-sm text-ink-soft">Everything in this sample is stored only in this browser. You can clear it any time.</p>
-        <button type="button" className="btn btn-secondary mt-3" onClick={() => actions.reset()}>
-          Reset sample data
-        </button>
+        <div className="mt-3">
+          <ResetButton variant="secondary" />
+        </div>
       </Section>
     </div>
   );

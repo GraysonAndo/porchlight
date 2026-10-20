@@ -1,14 +1,13 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname } from "next/navigation";
 import { FeedbackLink } from "./FeedbackButton";
-import { useDemo } from "@/lib/store";
+import { ResetButton } from "./ResetButton";
 import { roleForPath } from "@/lib/steps";
 
+/** The same footer on every page. Pricing is left out for tenants, because it is an owner topic. */
 export function SiteFooter() {
-  const { actions } = useDemo();
-  const router = useRouter();
   const pathname = usePathname();
   const role = roleForPath(pathname);
 
@@ -17,7 +16,7 @@ export function SiteFooter() {
       <div className="mx-auto flex w-full max-w-6xl flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div className="space-y-1">
           <nav aria-label="More about GoHome" className="flex flex-wrap gap-x-5 gap-y-0 text-sm font-bold">
-            {role === "owner" && (
+            {role !== "tenant" && (
               <Link href="/pricing" className="inline-flex min-h-11 items-center underline underline-offset-4">
                 Pricing
               </Link>
@@ -38,16 +37,7 @@ export function SiteFooter() {
             really sent or charged.
           </p>
         </div>
-        <button
-          type="button"
-          className="btn btn-ghost text-sm"
-          onClick={() => {
-            actions.reset();
-            router.push("/");
-          }}
-        >
-          Reset sample data
-        </button>
+        <ResetButton />
       </div>
     </footer>
   );

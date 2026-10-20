@@ -43,8 +43,8 @@ export interface HomeGuide {
   forItem: string | null;
 }
 
-function item(id: string): EquipmentItem {
-  const found = EQUIPMENT.find((e) => e.id === id);
+function itemIn(equipment: EquipmentItem[], id: string): EquipmentItem {
+  const found = equipment.find((e) => e.id === id);
   if (!found) throw new Error(`Unknown equipment: ${id}`);
   return found;
 }
@@ -55,10 +55,10 @@ const inWhere = (e: EquipmentItem) => `in the ${e.location.charAt(0).toLowerCase
 
 export const GAS_WARNING = "You smell gas. Leave the home right away, do not touch anything, and call 911.";
 
-function build(): HomeGuide[] {
-  const heater = item("water-heater");
-  const furnace = item("furnace");
-  const dish = item("dishwasher");
+function build(equipment: EquipmentItem[]): HomeGuide[] {
+  const heater = itemIn(equipment, "water-heater");
+  const furnace = itemIn(equipment, "furnace");
+  const dish = itemIn(equipment, "dishwasher");
 
   return [
     {
@@ -289,23 +289,28 @@ function build(): HomeGuide[] {
   ];
 }
 
-const GUIDES = build();
+const SEED_GUIDES = build(EQUIPMENT);
 
-export function guideById(id: string): HomeGuide | null {
-  return GUIDES.find((g) => g.id === id) ?? null;
+/** The guides, written for the equipment as the home record has it now (including the owner's corrections). */
+export function guidesFor(equipment: EquipmentItem[]): HomeGuide[] {
+  return equipment === EQUIPMENT ? SEED_GUIDES : build(equipment);
 }
 
-export function guidesForEquipment(equipmentId: string): HomeGuide[] {
-  return GUIDES.filter((g) => g.equipmentId === equipmentId);
+export function guideById(id: string, equipment: EquipmentItem[] = EQUIPMENT): HomeGuide | null {
+  return guidesFor(equipment).find((g) => g.id === id) ?? null;
+}
+
+export function guidesForEquipment(equipmentId: string, equipment: EquipmentItem[] = EQUIPMENT): HomeGuide[] {
+  return guidesFor(equipment).filter((g) => g.equipmentId === equipmentId);
 }
 
 /** Guides for the whole home (not tied to one item), such as a tripped breaker. */
-export function homeWideGuides(): HomeGuide[] {
-  return GUIDES.filter((g) => g.equipmentId === null);
+export function homeWideGuides(equipment: EquipmentItem[] = EQUIPMENT): HomeGuide[] {
+  return guidesFor(equipment).filter((g) => g.equipmentId === null);
 }
 
 export function allGuides(): HomeGuide[] {
-  return GUIDES;
+  return SEED_GUIDES;
 }
 
 /** A guide that fits what the tenant wrote, or null. Used so the agent can offer a picture guide. */

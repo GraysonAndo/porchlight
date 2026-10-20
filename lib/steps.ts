@@ -40,6 +40,7 @@ export const PAGE_TITLES: Record<string, string> = {
   "/tenant/home": "My home",
   "/tenant/pay": "Pay rent and utilities",
   "/tenant/settings": "Settings",
+  "/tenant/texts": "By text",
   "/owner/settings": "Settings",
   "/owner": "Inbox",
   "/owner/request": "Repair request",
@@ -50,7 +51,7 @@ export const PAGE_TITLES: Record<string, string> = {
   "/owner/forecast": "5-year forecast",
   "/owner/rent": "Rent increase",
   "/pricing": "Pricing",
-  "/about": "About and FAQ",
+  "/about": "Help and FAQ",
   "/feedback": "Feedback notes",
 };
 

@@ -95,7 +95,6 @@ export function AgentFeed({ events, live = false, className = "" }: AgentFeedPro
             </span>
             <div className="min-w-0 flex-1">
               <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
-                <span className="rounded bg-cream-deep px-1.5 py-0.5 font-mono text-xs font-bold">{event.tool}</span>
                 <EngineChip engine={event.engine} />
                 <span className="ml-auto text-xs font-bold text-ink-soft">{event.clock}</span>
               </div>

@@ -6,16 +6,21 @@ import { MobileTabs, SiteHeader } from "./SiteHeader";
 import { SiteFooter } from "./SiteFooter";
 import { FlowPrompt } from "./FlowPrompt";
 
-/** The frame around every page. The landing page ("/") is full-screen and has no header or footer. */
+/** The frame around every page: a header (the role's own, or the public one), the page, and one footer. */
 export function Shell({ children }: { children: ReactNode }) {
   const pathname = usePathname();
   // The embedded checkout sits inside another page, so it has no frame of its own.
   if (pathname === "/checkout") return <main id="main">{children}</main>;
+  // The welcome page has the same header and footer as every other page, with its own full-width content.
   if (pathname === "/") {
     return (
-      <main id="main" className="flex min-h-screen flex-1 flex-col">
-        {children}
-      </main>
+      <>
+        <SiteHeader />
+        <main id="main" className="flex flex-1 flex-col">
+          {children}
+        </main>
+        <SiteFooter />
+      </>
     );
   }
   return (

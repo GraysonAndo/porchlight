@@ -1,5 +1,5 @@
 import { EQUIPMENT, NEW_HEATER_RECORD } from "./seed";
-import type { DemoState, EquipmentItem, WaterHeaterRecord } from "./types";
+import type { DemoState, EquipmentEdit, EquipmentItem, WaterHeaterRecord } from "./types";
 
 /** Year from an ISO "YYYY-MM" date, or null if it does not parse. */
 export function yearOf(isoMonth: string): number | null {
@@ -30,7 +30,26 @@ export function recordIsComplete(record: WaterHeaterRecord | null): boolean {
  * the water heater uses its manufacture year and source. Otherwise the home
  * inspection estimate (about 2015) is used.
  */
-export function equipmentFor(record: WaterHeaterRecord | null): EquipmentItem[] {
+export function equipmentFor(record: WaterHeaterRecord | null, edits: Record<string, EquipmentEdit> = {}): EquipmentItem[] {
+  return applyEdits(baseEquipment(record), edits);
+}
+
+/** The owner's corrections laid over the recorded details. Blank corrections are ignored. */
+export function applyEdits(items: EquipmentItem[], edits: Record<string, EquipmentEdit>): EquipmentItem[] {
+  return items.map((item) => {
+    const e = edits[item.id];
+    if (!e) return item;
+    return {
+      ...item,
+      brand: e.brand?.trim() || item.brand,
+      model: e.model?.trim() || item.model,
+      serial: e.serial?.trim() || item.serial,
+      location: e.location?.trim() || item.location,
+    };
+  });
+}
+
+function baseEquipment(record: WaterHeaterRecord | null): EquipmentItem[] {
   if (!record) return EQUIPMENT;
   const year = yearOf(record.manufactureDate);
   return EQUIPMENT.map((item) =>

@@ -58,7 +58,7 @@ export function ApprovalCard({ msg, onTap }: { msg: Msg; onTap: (msgId: string, 
           ))}
         </div>
       )}
-      {!emergency && <p className="mt-2 text-sm text-ink-soft">One tap. Nothing is spent or sent until you tap.</p>}
+      {!emergency && <p className="mt-2 text-sm text-ink-soft">{card?.note ?? "One tap. Nothing is spent or sent until you tap."}</p>}
 
       <details className="mt-3 rounded-2xl bg-cream/70 px-4">
         <summary className="flex min-h-11 cursor-pointer items-center font-bold">See the details, or change something</summary>

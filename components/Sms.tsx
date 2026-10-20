@@ -90,7 +90,7 @@ export function Bubble({ msg, perspective, via }: { msg: Msg; perspective: Party
             </span>
           )}
           {mine && <span>Delivered</span>}
-          {!mine && via && <span>{via === "text" ? "Texted" : "In app only"}</span>}
+          {!mine && via && <span>{via === "text" ? "Text (sample)" : "In app only"}</span>}
           <span>{clockText(msg.at)}</span>
         </p>
       </div>

@@ -1,5 +1,6 @@
 "use client";
 
+import { ResetButton } from "@/components/ResetButton";
 import { SwitchRow } from "@/components/Switch";
 import { TextUpdatesToggle } from "@/components/TextUpdates";
 import { PROPERTY } from "@/lib/seed";
@@ -73,9 +74,9 @@ export default function OwnerSettingsPage() {
 
       <Section id="data" title="Your data">
         <p className="text-sm text-ink-soft">Everything in this sample is stored only in this browser. You can clear it any time.</p>
-        <button type="button" className="btn btn-secondary mt-3" onClick={() => actions.reset()}>
-          Reset sample data
-        </button>
+        <div className="mt-3">
+          <ResetButton variant="secondary" />
+        </div>
       </Section>
     </div>
   );

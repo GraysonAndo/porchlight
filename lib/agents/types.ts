@@ -33,6 +33,8 @@ export interface MsgCard {
   /** One plain sentence on what this is */
   summary: string;
   facts: { label: string; value: string; tone?: "good" | "caution" | "urgent" }[];
+  /** A line shown right under the main button, for what the owner should know before tapping */
+  note?: string;
 }
 
 export interface Msg {
@@ -95,6 +97,8 @@ export type Ev =
   | { type: "cron.lease" }
   | { type: "rent.paid"; paid: boolean; confirmation?: string }
   | { type: "utilities.paid"; amount: string; confirmation: string }
+  | { type: "record.edit"; patch: Record<string, string> }
+  | { type: "rent.notice"; kind: "increase" | "decrease"; from: string; to: string; effective: string }
   | { type: "owner.markDone" }
   | { type: "owner.choose"; vendorId: string; notToExceed: number; accessWindow: string }
   | { type: "timer"; id: TimerId };

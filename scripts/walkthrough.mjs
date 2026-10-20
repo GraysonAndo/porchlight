@@ -217,6 +217,26 @@ async function run(browser, vp) {
   await page.getByRole("button", { name: /Act as the owner: Approve/ }).waitFor(W);
   await snap(page, vp, "27e-tenant-live-preview-owner-plan");
 
+  // ---------- Editing the home record, and the phone preview ----------
+  await resetApp(page);
+  await page.goto(`${BASE}/owner/record`);
+  await page.getByRole("button", { name: "Edit details" }).first().click();
+  await page.getByLabel("Model").waitFor();
+  await snap(page, vp, "27f-owner-record-edit");
+  await page.goto(`${BASE}/owner/rent`);
+  await page.getByText("From your lease").waitFor();
+  await snap(page, vp, "27g-owner-rent-prefilled");
+  await page.getByRole("button", { name: "Send notice to Sample Tenant" }).click();
+  await page.getByText(/was told by text, and the notice goes by mail/).waitFor(W);
+  await snap(page, vp, "27h-owner-rent-notice-sent");
+  await page.goto(`${BASE}/tenant/texts`);
+  await page.getByRole("region", { name: /phone showing a text conversation/ }).getByRole("button", { name: "My water heater is leaking" }).click();
+  await page.getByRole("region", { name: /phone showing a text conversation/ }).getByText(/near an outlet/).waitFor(W);
+  await page.getByRole("region", { name: /phone showing a text conversation/ }).getByRole("button", { name: /^2\s+No$/ }).click();
+  await page.getByText("Picture guide for your heater").waitFor(W);
+  await page.waitForTimeout(500);
+  await snap(page, vp, "27i-tenant-text-thread-phone");
+
   // ---------- Pricing, about, 404, feedback ----------
   await page.goto(`${BASE}/pricing`);
   await page.getByRole("button", { name: "I would pick Plus" }).click();

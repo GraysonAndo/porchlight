@@ -175,7 +175,7 @@ export default function QuotePage() {
           That is <strong className="text-glow">{usd(PLAN.savedVsHighest)} less</strong> than the highest quote.
         </p>
         <ul className="mt-4 space-y-2">
-          {PLAN.reasons.map((reason) => (
+          {PLAN.reasons.filter((r) => !/less than the highest quote/.test(r)).map((reason) => (
             <li key={reason} className="flex items-start gap-3">
               <span className="mt-0.5 inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-glow text-ink">
                 <CheckIcon size={14} />

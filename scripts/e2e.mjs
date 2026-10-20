@@ -303,7 +303,7 @@ const chatText = (page) => page.getByRole("log", { name: "Messages" }).innerText
   await page.getByLabel("The tenant was given the required written exemption notice.").check();
   await page.locator("#proposed-rent").fill("3600");
   await page.getByRole("button", { name: "Reset sample data" }).click();
-  await page.waitForURL(`${BASE}/`);
+  await page.getByRole("button", { name: "Yes, reset" }).click();
   await page.goto(`${BASE}/owner/rent`);
   check("Reset restores the rent numbers and checkboxes", (await page.locator("#proposed-rent").inputValue()) === "3360" && !(await page.getByLabel("The tenant was given the required written exemption notice.").isChecked()));
   check("no console errors on the owner side", errors.length === 0, errors.join(" | "));
@@ -485,6 +485,7 @@ const chatText = (page) => page.getByRole("log", { name: "Messages" }).innerText
   await page.getByRole("switch", { name: "Text updates" }).click();
   check("the owner can turn text updates off", (await page.getByRole("switch", { name: "Text updates" }).getAttribute("aria-checked")) === "false");
   await page.getByLabel("Your data").getByRole("button", { name: "Reset sample data" }).click();
+  await page.getByLabel("Your data").getByRole("button", { name: "Yes, reset" }).click();
   await page.waitForTimeout(400);
   check("reset in settings restores the defaults", (await page.getByRole("switch", { name: "Text updates" }).getAttribute("aria-checked")) === "true");
 
@@ -511,12 +512,11 @@ const chatText = (page) => page.getByRole("log", { name: "Messages" }).innerText
   check("each leader has a small LinkedIn icon link with an aria-label", icons.length === 3 && icons.every((i) => /on LinkedIn/.test(i.label ?? "") && i.target === "_blank" && /noreferrer/.test(i.rel ?? "")), JSON.stringify(icons));
   check("the LinkedIn links go to the right people", icons.some((i) => i.href.includes("grayson-ando") && i.label.startsWith("Grayson Ando")) && icons.some((i) => i.href.includes("ezekiel-thun") && i.label.startsWith("Ezekiel Thun")) && icons.some((i) => i.href.includes("hayden-haar") && i.label.startsWith("Hayden Haar")));
   check("there is no big LinkedIn button any more", (await team.getByRole("link", { name: "LinkedIn", exact: true }).count()) === 0 && icons.every((i) => i.box <= 48));
-  const shades = await team.locator("article span[aria-hidden=true]").evaluateAll((els) => els.map((e) => getComputedStyle(e).backgroundColor));
-  check("with no photo files, each leader gets their own shade", shades.length === 3 && new Set(shades).size === 3, shades.join(" | "));
+  const photos = await team.locator("article img").evaluateAll((els) => els.map((e) => ({ alt: e.alt, ok: e.complete && e.naturalWidth > 0, w: Math.round(e.getBoundingClientRect().width), round: getComputedStyle(e).borderRadius })));
+  check("each leader shows their real photo, and it loads", photos.length === 3 && photos.every((p) => p.ok) && photos.some((p) => p.alt === "Photo of Grayson Ando") && photos.some((p) => p.alt === "Photo of Ezekiel Thun") && photos.some((p) => p.alt === "Photo of Hayden Haar"), JSON.stringify(photos));
+  check("the photos are 120px circles on desktop", photos.every((p) => p.w === 120 && (p.round.includes("%") || parseFloat(p.round) >= 60)), JSON.stringify(photos));
   const row = await team.locator("article").evaluateAll((els) => els.map((e) => Math.round(e.getBoundingClientRect().top)));
   check("on desktop the three cards sit side by side in one row", row.length === 3 && Math.max(...row) - Math.min(...row) <= 2, row.join(","));
-  const avatar = await team.locator("article span[aria-hidden=true]").first().evaluate((e) => Math.round(e.getBoundingClientRect().width));
-  check("the photo circle is 120px on desktop", avatar === 120, `${avatar}`);
   await team.locator("article").first().scrollIntoViewIfNeeded();
   await page.waitForTimeout(1200);
   const before = await team.locator("article").first().evaluate((e) => e.getBoundingClientRect().top);
@@ -525,7 +525,7 @@ const chatText = (page) => page.getByRole("log", { name: "Messages" }).innerText
   const after = await team.locator("article").first().evaluate((e) => e.getBoundingClientRect().top);
   check("a card lifts about 4px on hover", Math.round(before - after) === 4, `${before} ${after}`);
   await page.goto(`${BASE}/`);
-  await page.getByRole("link", { name: "Our team" }).click();
+  await page.locator("header").getByRole("link", { name: "Our team" }).click();
   await page.waitForURL("**/about#team");
   check("the welcome page links to the team", true);
   check("no console errors on the team section", errors.length === 0, errors.join(" | "));
@@ -543,7 +543,7 @@ const chatText = (page) => page.getByRole("log", { name: "Messages" }).innerText
   const cards = await team.locator("article").evaluateAll((els) => els.map((e) => ({ h: Math.round(e.getBoundingClientRect().height), top: Math.round(e.getBoundingClientRect().top + window.scrollY) })));
   check("on a phone the cards are stacked", cards.length === 3 && cards[1].top > cards[0].top + 100 && cards[2].top > cards[1].top + 100, JSON.stringify(cards));
   check("each card fits in about half a phone screen", cards.every((c) => c.h <= 430), JSON.stringify(cards));
-  const avatar = await team.locator("article span[aria-hidden=true]").first().evaluate((e) => Math.round(e.getBoundingClientRect().width));
+  const avatar = await team.locator("article img").first().evaluate((e) => Math.round(e.getBoundingClientRect().width));
   check("the photo circle is 96px on a phone", avatar === 96, `${avatar}`);
   check("no horizontal scroll on the team section", await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1));
   const faded = await team.locator("article").first().evaluate((e) => getComputedStyle(e.parentElement).opacity);
@@ -602,6 +602,271 @@ const chatText = (page) => page.getByRole("log", { name: "Messages" }).innerText
   check("acting as the owner books the plumber and texts the tenant", true);
   check("the prompt is not on the Pay or Settings pages", await (async () => { await page.goto(`${BASE}/tenant/pay`); return (await page.getByRole("complementary", { name: /Live preview/ }).count()) === 0; })());
   check("no console errors with prompts", errors.length === 0, errors.join(" | "));
+  await context.close();
+}
+
+// ======================= Round 5 defects: the rent page =======================
+{
+  const { context, page, errors } = await newPage();
+  await resetApp(page);
+  await page.goto(`${BASE}/owner/rent`);
+  const out = () => page.locator("main").innerText();
+
+  // 1: money is rounded to the cent.
+  await page.locator("#proposed-rent").fill("1234.567");
+  await page.locator("#proposed-rent").blur();
+  check("a typed rent is rounded to the cent", (await page.locator("#proposed-rent").inputValue()) === "1234.57", await page.locator("#proposed-rent").inputValue());
+  check("no float tail anywhere on the rent page", !/\d\.\d{3,}/.test(await out()));
+  await page.locator("#current-rent").fill("3200.456");
+  await page.locator("#current-rent").blur();
+  check("the current rent is rounded too", (await page.locator("#current-rent").inputValue()) === "3200.46");
+  await page.locator("#current-rent").fill("3200");
+  await page.locator("#current-rent").blur();
+
+  // 2: a decrease is a decrease.
+  await page.locator("#proposed-rent").fill("3000");
+  const decrease = await page.locator("pre").innerText();
+  check("a rent decrease is titled as a decrease, never as an increase", decrease.includes("NOTICE OF RENT DECREASE") && !decrease.includes("RENT INCREASE"));
+  check("a decrease says it lowers the rent, and the result agrees", (await count(page, "OK: this lowers the rent")) === 1);
+  await page.locator("#proposed-rent").fill("3200");
+  check("an unchanged rent has no notice to send", (await page.locator("pre").count()) === 0 && (await count(page, "same as the current rent")) > 0);
+
+  // 6: the letter is in the page once.
+  await page.locator("#proposed-rent").fill("3360");
+  const dup = await page.evaluate(() => (document.body.textContent.match(/Owner signature/g) ?? []).length);
+  check("the notice letter is in the page once, so a screen reader reads it once", dup === 1, `${dup}`);
+
+  // 7: no result, no made-up notice date.
+  await page.locator("#proposed-rent").fill("");
+  await page.getByText("Fill in the numbers to see the result").waitFor(wait20);
+  const blank = await out();
+  check("with a blank number there is no 90 day notice or start date", !/90 day|new rent would start|send the notice by/.test(blank) && (await page.locator("pre").count()) === 0);
+
+  // 8: the same guard for absurd rent and absurd inflation.
+  await page.locator("#proposed-rent").fill("99999999");
+  await page.getByText("Check the rent numbers").waitFor(wait20);
+  check("an absurd rent is flagged and makes no notice", (await page.locator("pre").count()) === 0);
+  await page.locator("#proposed-rent").fill("3360");
+  await page.locator("#cpi").fill("20");
+  await page.getByText("Check the inflation number").waitFor(wait20);
+  check("an absurd inflation number is flagged the same way", (await page.locator("pre").count()) === 0);
+  await page.locator("#cpi").fill("3");
+
+  // 11: prefilled from the lease, with a suggestion, a deadline, and a way to send.
+  check("the rent page starts from the lease", (await count(page, "From your lease")) > 0 && (await count(page, "$3,200 a month")) > 0 && (await count(page, "December 14, 2026")) > 0);
+  await page.locator("#proposed-rent").fill("3300");
+  await page.getByRole("button", { name: /^Use \$3,360$/ }).click();
+  check("one tap uses GoHome's suggestion", (await page.locator("#proposed-rent").inputValue()) === "3360");
+  check("the inflation number is looked up for you, not left for you to find", (await count(page, /GoHome looked this up for your area/)) > 0 && !/Look up the current figure/.test(await out()));
+  check("the page gives the last day to send the notice", (await page.getByText(/To start on December 14, 2026, send the notice by/).count()) === 1);
+  await page.locator("#start-date").fill("2020-01-01");
+  check("a start date that is already too early is called out", (await page.getByText(/Too late for a January 1, 2020 start/).count()) === 1);
+  await page.locator("#start-date").fill("2026-12-14");
+  await page.getByRole("button", { name: "Send notice to Sample Tenant" }).click();
+  await page.getByText(/was told by text, and the notice goes by mail/).waitFor(wait20);
+  check("the notice can be sent from the page", (await page.getByRole("button", { name: "Notice sent" }).isDisabled()));
+  await page.goto(`${BASE}/tenant`);
+  await page.getByText(/Your owner sent you a notice by mail/).waitFor(wait20);
+  check("the tenant is texted about the notice", true);
+  await page.goto(`${BASE}/owner/rent`);
+  check("a sent notice stays sent after a reload", (await page.getByRole("button", { name: "Notice sent" }).count()) === 1);
+
+  // 12: plain words, no raw keys.
+  const rentText = await out();
+  check("the rent page has no unexplained jargon", !/just cause|CPI change|REIT, a corporation/.test(rentText) && /large investment company/.test(rentText) && /rules about when a tenant can be asked to leave/.test(rentText), rentText.slice(0, 60));
+  check("no raw tool names on the owner pages", await (async () => {
+    for (const path of ["/owner/request", "/owner/book", "/owner"]) {
+      await page.goto(`${BASE}${path}`);
+      await page.waitForTimeout(500);
+      const t = await page.locator("body").innerText();
+      if (/read_label|owner_approval|book_vendor|message_tenant|emergency_rules/.test(t)) return false;
+    }
+    return true;
+  })());
+  check("no console errors on the rent page", errors.length === 0, errors.join(" | "));
+  await context.close();
+}
+
+// ======================= Round 5 defects: request, quote, and approve =======================
+{
+  const { context, page, errors } = await newPage();
+  await resetApp(page);
+  await page.goto(`${BASE}/owner`);
+  await page.getByRole("button", { name: "See how GoHome handles a repair" }).click();
+  await page.getByRole("button", { name: "Approve", exact: true }).waitFor(wait20);
+
+  // 10: the plus 10% rule is on the approve tap itself.
+  const card = await page.getByLabel(/Needs your OK: Replace the water heater/).innerText();
+  check("the approval card explains the quote plus 10% limit before the tap", /quote plus 10%/.test(card) && /\$2,450 becomes \$2,695/.test(card), card.slice(-200));
+
+  // 3 and 4: no waiting for answers that cannot come, and the badge follows the status.
+  await page.goto(`${BASE}/owner/request`);
+  check("the request page does not wait for answers the tenant is never asked for", (await count(page, /Waiting for the tenant/)) === 0 && (await count(page, /answers/)) === 0);
+  check("before approving, the request says it needs a decision", (await count(page, "NEEDS YOUR DECISION")) === 1);
+  await page.goto(`${BASE}/owner`);
+  await page.getByRole("button", { name: "Approve", exact: true }).click();
+  await page.getByRole("button", { name: "Mark done" }).waitFor(wait20);
+  await page.goto(`${BASE}/owner/request`);
+  check("after approving, the badge says approved and booked, not needs a decision", (await count(page, "NEEDS YOUR DECISION")) === 0 && (await count(page, "APPROVED AND BOOKED")) === 1);
+  await page.goto(`${BASE}/owner`);
+  await page.getByRole("button", { name: "Mark done" }).click();
+  await page.getByText("All done", { exact: true }).waitFor(wait20);
+  await page.goto(`${BASE}/owner/request`);
+  check("when the job is done, the badge says done", (await page.locator("main").innerText()).includes("DONE") && (await count(page, "NEEDS YOUR DECISION")) === 0);
+
+  // 9: the saving is stated once.
+  await page.goto(`${BASE}/owner/quote`);
+  const quote = await page.locator("main").innerText();
+  check("the best pick card says $400 less than the highest quote once", (quote.match(/less than the highest quote/g) ?? []).length === 1, `${(quote.match(/less than the highest quote/g) ?? []).length}`);
+
+  // 10 again, on the booking page.
+  await resetApp(page);
+  await page.goto(`${BASE}/owner/book`);
+  await page.getByRole("button", { name: /Approve GoHome.s plan/ }).waitFor(wait20);
+  await page.locator("label", { hasText: "Willow Glen" }).click();
+  await page.getByText(/Your limit is the quote plus 10%: \$2,450 becomes \$2,695/).waitFor(wait20);
+  check("the booking page explains the limit next to the approve button", true);
+  await page.locator("#nte").fill("2800");
+  await page.getByText(/which you changed from the usual quote plus 10%/).waitFor(wait20);
+  check("a limit you changed is described as yours", true);
+  check("no console errors on request, quote, and approve", errors.length === 0, errors.join(" | "));
+  await context.close();
+}
+
+// ======================= Round 5 defect 5: the home record can be corrected =======================
+{
+  const { context, page, errors } = await newPage();
+  await resetApp(page);
+  await page.goto(`${BASE}/owner/record`);
+  check("the owner record no longer claims nobody ever types anything", (await count(page, "You never have to type any of this")) === 0 && (await page.getByRole("button", { name: "Edit details" }).count()) === 6);
+  await page.getByRole("button", { name: "Edit details" }).first().click();
+  await page.getByLabel("Model").fill("");
+  await page.getByRole("button", { name: "Save", exact: true }).click();
+  check("an empty field is refused with a reason", (await page.getByText("Model cannot be empty.").count()) === 1);
+  await page.getByLabel("Brand").fill("Hearthline");
+  await page.getByLabel("Model").fill("HL-40G-LP");
+  await page.getByLabel("Serial number").fill("15C0412-Z");
+  await page.getByLabel("Where it is").fill("Garage, east wall");
+  await page.getByRole("button", { name: "Save", exact: true }).click();
+  await page.getByText(/Water heater updated\. Your tenant now sees the corrected details and guides\./).waitFor(wait20);
+  check("a misread model can be corrected, and the record says it was", (await count(page, "HL-40G-LP")) > 0 && (await count(page, "Corrected by you")) === 1);
+  await page.reload();
+  check("the correction survives a reload", (await count(page, "HL-40G-LP")) > 0);
+
+  // The tenant, the guides, and what GoHome says all use the corrected record.
+  await page.goto(`${BASE}/tenant/home`);
+  check("the tenant's My home shows the corrected model, serial, and place", (await count(page, "Hearthline HL-40G-LP")) > 0 && (await count(page, "15C0412-Z")) > 0 && (await count(page, "Garage, east wall")) > 0);
+  await page.goto(`${BASE}/tenant/guides/heater-water-off`);
+  check("the picture guide is written for the corrected model", (await count(page, /For your Hearthline HL-40G-LP/)) > 0);
+  await page.goto(`${BASE}/tenant`);
+  await page.getByRole("button", { name: "My water heater is leaking" }).click();
+  await page.getByText(/near an outlet/).waitFor(wait20);
+  check("GoHome names the corrected model in the chat", /Hearthline HL-40G-LP/.test(await chatText(page)) && !/HL-40G-NG/.test(await chatText(page)));
+  await page.getByText(/Found your water heater in your home record: Hearthline HL-40G-LP/).waitFor(wait20);
+  check("and in the activity panel", true);
+
+  // Putting it back.
+  await page.goto(`${BASE}/owner/record`);
+  await page.getByRole("button", { name: "Edit details" }).first().click();
+  await page.getByRole("button", { name: "Put the recorded details back" }).click();
+  check("the recorded details can be put back", (await count(page, "HL-40G-NG")) > 0 && (await count(page, "Corrected by you")) === 0);
+  check("no console errors while editing the record", errors.length === 0, errors.join(" | "));
+  await context.close();
+}
+
+// ======================= Round 5 defects: the About page, the shell, and pricing =======================
+{
+  const { context, page, errors } = await newPage();
+  await resetApp(page);
+
+  // 17: one header and one footer on every public page.
+  const headerLinks = [];
+  const footerLinks = [];
+  for (const path of ["/", "/about", "/pricing", "/feedback"]) {
+    await page.goto(`${BASE}${path}`);
+    headerLinks.push((await page.locator("header").first().getByRole("link").allInnerTexts()).join("|"));
+    footerLinks.push((await page.locator("footer").getByRole("link").allInnerTexts()).join("|") + "|" + (await page.locator("footer").getByRole("button").allInnerTexts()).join("|"));
+  }
+  check("the welcome, About, Pricing, and Feedback pages share one header", new Set(headerLinks).size === 1 && headerLinks[0].includes("Our team") && headerLinks[0].includes("Pricing"), headerLinks.join(" // "));
+  check("and one footer", new Set(footerLinks).size === 1, footerLinks.join(" // "));
+
+  // 16: the footer feedback link is on the welcome page too.
+  await page.goto(`${BASE}/`);
+  check("the welcome page footer has Send feedback and Reset sample data", (await page.getByRole("button", { name: "Send feedback" }).count()) === 1 && (await page.getByRole("button", { name: "Reset sample data" }).count()) === 1);
+  await page.getByRole("button", { name: "Send feedback" }).click();
+  check("the feedback sheet on the welcome page works", (await page.getByText("How clear was this screen?").count()) === 1);
+  await page.getByRole("button", { name: "Cancel" }).click();
+
+  // 15: reset asks first, stays put, and says it is done.
+  await page.goto(`${BASE}/about`);
+  await page.getByRole("button", { name: "Reset sample data" }).click();
+  await page.getByRole("button", { name: "Cancel" }).click();
+  check("cancelling a reset changes nothing", (await page.getByRole("button", { name: "Reset sample data" }).count()) === 1);
+  await page.getByRole("button", { name: "Reset sample data" }).click();
+  check("a reset asks before it clears anything", (await page.getByRole("alertdialog", { name: "Reset the sample data?" }).count()) === 1);
+  await page.getByRole("button", { name: "Yes, reset" }).click();
+  await page.getByText("Sample data was reset.").waitFor(wait20);
+  check("after a reset you stay on the same page, and it says so", new URL(page.url()).pathname === "/about");
+
+  // 14: anchor jumps stop below the sticky header.
+  const headerHeight = await page.locator("header").first().evaluate((e) => e.getBoundingClientRect().height);
+  for (const id of ["team", "faq", "contact", "price-ranges"]) {
+    await page.goto(`${BASE}/about#${id}`);
+    await page.waitForTimeout(500);
+    const top = await page.locator(`#${id} h2`).first().evaluate((e) => e.getBoundingClientRect().top);
+    check(`/about#${id} lands with its heading below the header`, top >= headerHeight - 1, `${top} vs ${headerHeight}`);
+  }
+
+  // 18, 19, 13: names, naming, and the future wording.
+  await page.goto(`${BASE}/about`);
+  const about = await page.locator("main").innerText();
+  check("the About page connects GoHome and Porchlight", /called Porchlight/.test(about));
+  check("the FAQ section is called Help and FAQ everywhere", (await page.getByRole("heading", { name: "Help and FAQ" }).count()) === 1 && (await page.getByRole("link", { name: "Help and FAQ" }).count()) === 1 && !/Questions\n/.test(about));
+  await page.getByRole("button", { name: "Send feedback" }).click();
+  check("and the feedback sheet names it the same", (await page.getByText("Help and FAQ", { exact: true }).count()) >= 1 && (await page.locator("dialog").innerText()).includes("Screen: Help and FAQ"));
+  await page.getByRole("button", { name: "Cancel" }).click();
+  await page.getByText("What counts as an emergency?").click();
+  await page.getByText("What does my tenant see?").click();
+  check("the FAQ frames texting and calls as the full product", (await page.locator("#faq").innerText()).split("In the full product").length - 1 >= 2);
+  check("the About page says tenants see a chat today", /Today, a simple chat page/.test(await page.locator("#faq").innerText()));
+
+  // 20: pricing words are not run together.
+  await page.goto(`${BASE}/pricing`);
+  const merged = await page.evaluate(() => document.querySelector("main").textContent.match(/\$\d+per|data\(/g) ?? []);
+  check("pricing has no run together words like $4per", merged.length === 0, merged.join(","));
+  check("no console errors on the About and Pricing pages", errors.length === 0, errors.join(" | "));
+  await context.close();
+}
+
+// ======================= Item 21: the phone text thread =======================
+{
+  const { context, page, errors } = await newPage();
+  await resetApp(page);
+  await page.goto(`${BASE}/tenant/settings`);
+  await page.getByRole("link", { name: "See how GoHome will feel by text" }).click();
+  await page.waitForURL("**/tenant/texts");
+  check("settings links to the phone preview", true);
+  check("the phone page says this is how the full product will look and nothing is sent", (await count(page, /In the full product, GoHome works over text message/)) === 1);
+  const phone = page.getByRole("region", { name: /phone showing a text conversation/ });
+  check("a phone mockup is shown", (await phone.count()) === 1 && (await phone.getByText("9:41").count()) === 1 && (await phone.getByText("Text message").count()) === 1);
+  await phone.getByRole("button", { name: "My water heater is leaking" }).click();
+  await phone.getByText(/near an outlet/).waitFor(wait20);
+  check("the tenant's text and GoHome's safety question show as text bubbles", (await phone.getByText("water heater is leaking all over the garage").count()) === 1);
+  await phone.getByRole("button", { name: /^2\s+No$/ }).click();
+  await phone.getByText("Picture guide for your heater").waitFor(wait20);
+  check("GoHome texts the safe steps with a picture guide", (await phone.getByText(/Two quick steps for your Hearthline HL-40G-NG/).count()) === 1);
+  const real = await page.evaluate(() => JSON.parse(window.localStorage.getItem("gohome-v1") ?? "{}").agent?.timeline?.length ?? 0);
+  check("the phone preview never touches the real conversation", real === 0, `${real}`);
+
+  // The whole story, by itself.
+  await page.getByRole("button", { name: "Start over" }).click();
+  check("start over empties the phone", (await phone.getByText(/near an outlet/).count()) === 0);
+  await page.getByRole("button", { name: "Play the whole story" }).click();
+  await phone.getByText(/All fixed/).waitFor({ timeout: 90000 });
+  const story = await phone.innerText();
+  check("the story runs from the problem to a plumber booked to fixed, all as texts", /Good news: Willow Glen/.test(story) && /see you then/.test(story) && /All fixed/.test(story));
+  check("the tenant's phone shows no prices", !/\$\d|quote/i.test(story), story.slice(0, 80));
+  check("no console errors on the phone page", errors.length === 0, errors.join(" | "));
   await context.close();
 }
 
@@ -716,7 +981,7 @@ const chatText = (page) => page.getByRole("log", { name: "Messages" }).innerText
 {
   const { context, page } = await newPage();
   await resetApp(page);
-  const paths = ["/", "/pricing", "/about", "/tenant", "/tenant/home", "/tenant/guides/heater-water-off", "/owner", "/owner/request", "/owner/record", "/owner/forecast", "/owner/rent", "/owner/decide", "/owner/quote", "/owner/book", "/feedback"];
+  const paths = ["/", "/pricing", "/about", "/tenant", "/tenant/home", "/tenant/pay", "/tenant/settings", "/tenant/texts", "/owner/settings", "/tenant/guides/heater-water-off", "/owner", "/owner/request", "/owner/record", "/owner/forecast", "/owner/rent", "/owner/decide", "/owner/quote", "/owner/book", "/feedback"];
   for (const path of paths) {
     await page.goto(`${BASE}${path}`);
     await page.waitForTimeout(1200);
@@ -727,7 +992,27 @@ const chatText = (page) => page.getByRole("log", { name: "Messages" }).innerText
         if (/[a-z]\.[A-Z][a-z]/.test(t) && !/\d\.\d/.test(t) && !/\.com|\.org|\.gov|\.example/.test(t)) hits.push(`${pagePath}: ${t.slice(0, 60)}`);
         if (/\u2014|\u2013/.test(t)) hits.push(`${pagePath}: dash in "${t.slice(0, 40)}"`);
       }
-      return hits.slice(0, 3);
+      // Words run together across inline elements, like "$4" and "per unit" with no space between (a flex or grid gap does not count).
+      const block = (n) => {
+        let e = n.parentElement;
+        while (e && getComputedStyle(e).display === "inline") e = e.parentElement;
+        return e;
+      };
+      const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
+      let prev = null;
+      for (let n = walker.nextNode(); n; n = walker.nextNode()) {
+        const el = n.parentElement;
+        if (!el || !el.offsetParent || ["SCRIPT", "STYLE"].includes(el.tagName) || n.textContent === "") continue;
+        if (prev && prev.parentElement !== el) {
+          const b = block(prev);
+          const d = b ? getComputedStyle(b).display : "";
+          if (b && b === block(n) && !/flex|grid/.test(d) && /[A-Za-z0-9%$)]$/.test(prev.textContent) && /^[A-Za-z0-9($]/.test(n.textContent)) {
+            hits.push(`${pagePath}: run together "${prev.textContent.slice(-12)}|${n.textContent.slice(0, 12)}"`);
+          }
+        }
+        prev = n;
+      }
+      return hits.slice(0, 4);
     }, path);
     check(`text spacing and dashes on ${path}`, bad.length === 0, bad.join(" || "));
   }

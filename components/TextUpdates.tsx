@@ -13,7 +13,7 @@ export function TextUpdatesToggle({ party }: { party: "tenant" | "owner" }) {
   return (
     <SwitchRow
       title="Text updates"
-      description={on ? `GoHome texts ${phone} each time something changes.` : "Updates only show here in the app."}
+      description={on ? `In the full product, GoHome texts ${phone} each time something changes.` : "Updates only show here in the app."}
       on={on}
       onChange={(next) => actions.setTextUpdates(party, next)}
       icon={<BellIcon size={20} />}

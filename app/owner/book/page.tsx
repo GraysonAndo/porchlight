@@ -397,6 +397,13 @@ function ApproveBody() {
         >
           Approve and send
         </button>
+        {vendor && (
+          <p className="text-center text-sm font-bold text-ink">
+            {notToExceed === defaultNotToExceed(vendor)
+              ? `Your limit is the quote plus 10%: ${usd(vendor.total)} becomes ${usd(notToExceed)}. The vendor must call you before going over it.`
+              : `Your limit is ${usd(notToExceed)}, which you changed from the usual quote plus 10% (${usd(defaultNotToExceed(vendor))}). The vendor must call you before going over it.`}
+          </p>
+        )}
         <p className="text-center text-sm text-ink-soft">
           Sample data: pressing this does not send a real message.{" "}
           <Link href="/owner/quote" className="font-bold underline underline-offset-4">

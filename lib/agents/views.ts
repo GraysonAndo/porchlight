@@ -15,7 +15,7 @@ export interface ActivityItem {
 
 const TENANT_TEXT: Record<string, (t: ToolCall) => string> = {
   emergency_rules: (t) => (/matched/i.test(t.title) ? "Checked your problem against the emergency safety rules. This one is urgent." : "Checked your problem against the emergency safety rules. Not an emergency."),
-  lookup_house_record: () => "Found your water heater in your home record: Hearthline HL-40G-NG",
+  lookup_house_record: (t) => `Found your water heater in your home record${/record: ([^,]+),/.exec(t.detail)?.[1] ? `: ${/record: ([^,]+),/.exec(t.detail)?.[1]}` : ""}`,
   pick_safety_steps: () => "Picked safe steps for this problem",
   skip_fix_steps: () => "Decided not to ask you to fix anything. Getting safe comes first.",
   send_guide: () => "Opened the picture guide made for your exact heater",
@@ -32,6 +32,7 @@ const TENANT_TEXT: Record<string, (t: ToolCall) => string> = {
   answer_from_record: (t) => (/don't know/i.test(t.title) ? "Checked your home record and the lease. The answer is not there, so I did not guess." : "Looked that up in your home record"),
   ask_owner: () => "Passed your question to your landlord",
   record_rent_payment: () => "Recorded your rent payment",
+  send_notice: () => "Told you about your owner's rent notice",
   record_utility_payment: () => "Recorded your water and trash payment",
 };
 

@@ -21,7 +21,6 @@ export default function OwnerRequestPage() {
   const { state } = useDemo();
   const { request, triage } = useTriage();
   const status = useJobStatus();
-  const answers = state.tenantAnswers;
   const heaterRecord = heaterBeforeRepair(state);
   const heater = equipmentFor(heaterRecord)[0];
   const stage = lifeStage(ageOf(heater), heater.typicalLifeYears);
@@ -33,7 +32,15 @@ export default function OwnerRequestPage() {
         title={
           <span className="flex flex-wrap items-center gap-2">
             New request from {PROPERTY.tenant}
-            <Badge tone="caution">NEEDS YOUR DECISION</Badge>
+            {status === "done" ? (
+              <Badge tone="good">DONE</Badge>
+            ) : status === "approved" || status === "booked" ? (
+              <Badge tone="good">APPROVED AND BOOKED</Badge>
+            ) : status === "quoted" ? (
+              <Badge tone="caution">NEEDS YOUR DECISION</Badge>
+            ) : (
+              <Badge tone="info">NEW</Badge>
+            )}
           </span>
         }
       >
@@ -138,40 +145,14 @@ export default function OwnerRequestPage() {
             interactive={false}
           />
 
-          <Card title={`${PROPERTY.tenant}'s answers`}>
-            {answers ? (
-              <ol className="space-y-2">
-                {triage.tenantQuestions.map((q, i) => (
-                  <li key={q}>
-                    <p className="font-bold">{q}</p>
-                    <p className="text-ink-soft">{answers[i]?.trim() || "(no answer)"}</p>
-                  </li>
-                ))}
-              </ol>
-            ) : (
-              <>
-                <p className="text-ink-soft">Waiting for the tenant to answer these questions:</p>
-                <ol className="mt-2 list-decimal space-y-1 pl-6">
-                  {triage.tenantQuestions.map((q) => (
-                    <li key={q}>{q}</li>
-                  ))}
-                </ol>
-                <p className="mt-2 text-sm text-ink-soft">
-                  You do not need to wait for the answers to keep going.{" "}
-                  <Link href="/tenant" className="font-bold underline underline-offset-4">
-                    See the tenant&apos;s screen
-                  </Link>
-                </p>
-              </>
-            )}
-          </Card>
-
-          <Callout tone="info" title="Your decision">
-            <p>
-              GoHome can check the house record, collect and compare quotes, and book the visit for you. Nothing is
-              booked and nothing is spent until you tap approve on the last step.
-            </p>
-          </Callout>
+          {(status === "new" || status === "quoted") && (
+            <Callout tone="info" title="Your decision">
+              <p>
+                GoHome checks the home record, collects and compares quotes, and books the visit for you. Nothing is booked and
+                nothing is spent until you tap Approve in your inbox.
+              </p>
+            </Callout>
+          )}
         </>
       )}
     </StepShell>

@@ -150,7 +150,7 @@ export default function OwnerHomePage() {
               onSend={(text) => agent.send({ type: "owner.text", text })}
               suggestions={ASK}
               via={via}
-              empty="Nothing yet. When something happens, GoHome texts you here and by phone."
+              empty="Nothing yet. When something happens, GoHome tells you here. In the full product, it texts you too."
               heightClass="h-[28rem] lg:h-[32rem]"
             />
           )}
