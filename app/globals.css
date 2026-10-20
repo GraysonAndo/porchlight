@@ -91,6 +91,18 @@ h3 {
     border-color: var(--color-brand);
     box-shadow: 0 8px 24px -12px rgba(15, 37, 82, 0.3);
   }
+  /* The team cards lift a little more on desktop, and only where there is a real pointer. */
+  @media (hover: hover) and (min-width: 768px) {
+    .team-card {
+      transition:
+        transform 0.2s ease,
+        box-shadow 0.2s ease;
+    }
+    .team-card:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 14px 28px -12px rgba(15, 37, 82, 0.35);
+    }
+  }
   .eyebrow {
     @apply text-xs font-extrabold uppercase tracking-widest text-ink-soft;
   }
@@ -291,8 +303,12 @@ h3 {
   .bar-grow,
   .bar-rise,
   .glow-pulse,
-  .card-lift {
+  .card-lift,
+  .team-card {
     animation: none;
     transition: none;
+  }
+  .team-card:hover {
+    transform: none;
   }
 }

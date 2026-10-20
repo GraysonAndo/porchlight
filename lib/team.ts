@@ -1,40 +1,43 @@
-// The leadership team. Photos are optional: put a square image at public/team/<photo>.jpg and it shows up by itself.
-// Until then, the avatar shows initials. The bios below describe each person's role at GoHome. Add your own lines
-// about yourselves (school, past work, why you care) in `about`.
+// The founding team. Photos are optional: put a square headshot at public/team/<photo>.jpg (png, jpeg, and webp also work)
+// and it shows up at the next build. Until then, the avatar shows initials on its own shade of the brand palette.
 
 export interface TeamMember {
   name: string;
+  /** Shown under the name */
   role: string;
   /** File name without the extension, in public/team */
   photo: string;
   linkedin: string;
-  /** What this person leads at GoHome */
+  /** At most two sentences: what they own at GoHome, then one specific credential */
   bio: string;
-  /** A line about the person themselves. Fill this in. */
-  about?: string;
+  /** Background for the initials circle if the photo is missing. White text on each of these passes WCAG AA. */
+  shade: string;
 }
 
 export const TEAM: TeamMember[] = [
   {
     name: "Grayson Ando",
-    role: "Chief Executive Officer",
-    photo: "grayson-ando",
+    role: "Co-founder & CEO",
+    photo: "grayson",
     linkedin: "https://www.linkedin.com/in/grayson-ando/",
-    bio: "Grayson sets GoHome's direction and leads the product and the conversations with owners and tenants. His rule for every screen: if a person has to think about how to use it, it is not done yet.",
+    bio: "Sets GoHome's direction and leads the product and every conversation with owners and tenants. He manages his family's rental property in San Jose and spent the summer as a Business Operations Analyst at SanDisk, so he knows both the landlord headaches and how to fix broken processes.",
+    shade: "bg-brand",
   },
   {
     name: "Ezekiel Thun",
-    role: "Chief Creative Officer",
-    photo: "ezekiel-thun",
+    role: "Co-founder & Head of Design",
+    photo: "ezekiel",
     linkedin: "https://www.linkedin.com/in/ezekiel-thun-4b8853442/",
-    bio: "Ezekiel leads the brand, the look, and the feel of GoHome, from the welcome page to the step-by-step guides. He makes sure a stressed tenant at 4 AM and a busy owner at lunch both find the next step right away.",
+    bio: "Leads the brand, design, and customer discovery, from the welcome page to the step-by-step guides.",
+    shade: "bg-ink",
   },
   {
     name: "Hayden Haar",
-    role: "Chief Financial Officer",
-    photo: "hayden-haar",
+    role: "Co-founder & Head of Finance",
+    photo: "hayden",
     linkedin: "https://www.linkedin.com/in/hayden-haar-a05502279/",
-    bio: "Hayden leads GoHome's finances, pricing, and the numbers owners rely on, like the repair or replace math, the 5-year forecast, and what each tier costs per unit. He keeps every number honest and explainable.",
+    bio: "Owns pricing, the repair-or-replace math, and the 5-year forecast, keeping every number honest and explainable. He has worked in capital markets and corporate development at Vantage Data Centers, so he is used to putting a number behind big decisions.",
+    shade: "bg-[#c2410c]",
   },
 ];
 

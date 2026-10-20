@@ -88,7 +88,11 @@ Who does what, shown with a small chip on every step in the owner's activity pan
 
 ## The team
 
-The leadership section on `/about` is data in `lib/team.ts`: Grayson Ando (CEO), Ezekiel Thun (Chief Creative Officer), and Hayden Haar (CFO), each with a LinkedIn link. **Photos:** save a square image as `public/team/grayson-ando.jpg`, `ezekiel-thun.jpg`, and `hayden-haar.jpg` (png and webp also work). The site picks them up at build time, and shows initials until a file exists. **Bios:** the text describes each person's role at GoHome. It was written without access to their LinkedIn pages, so it says nothing about schooling or past jobs. Add a line about yourselves in the `about` field of each person.
+"The team behind GoHome" on `/about` is data in `lib/team.ts`: Grayson Ando (Co-founder & CEO), Ezekiel Thun (Co-founder & Head of Design), and Hayden Haar (Co-founder & Head of Finance). Each card has a photo, name, role, a two-sentence bio, and a small LinkedIn icon link. On desktop the three cards sit in one row and lift 4px on hover. On a phone they stack and each fits in about half a screen. Cards fade in as they scroll into view (not with reduced motion).
+
+- **Photos:** save square headshots as `public/team/grayson.jpg`, `ezekiel.jpg`, and `hayden.jpg` (png, jpeg, and webp also work). They show as 120px circles (96px on a phone) with a thin white ring. The site checks for the files when it is built, so after adding them, redeploy. Until a file exists, the avatar shows initials on its own shade of the brand palette (blue, navy, and burnt orange, all with white text that passes WCAG AA).
+- **Bios:** each is the role plus one credential. The credentials for Grayson (family rental in San Jose, Business Operations Analyst at SanDisk) and Hayden (capital markets and corporate development at Vantage Data Centers) came from the team. **Please check the wording**, especially Hayden's. Ezekiel's bio has no credential yet, because none was provided and none should be made up. Add one sentence to his `bio` in `lib/team.ts`.
+- LinkedIn could not be reached from the build environment, so the photos and bios were not copied from the profiles.
 
 ## What is REAL vs FAKED
 

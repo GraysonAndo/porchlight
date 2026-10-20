@@ -25,6 +25,7 @@ import {
   Package,
   Pause,
   Gear,
+  LinkedinLogo,
   PhoneCall,
   Play,
   Robot,
@@ -78,6 +79,10 @@ export const MobileIcon = wrap(DeviceMobile);
 export const PlayIcon = wrap(Play);
 export const PauseIcon = wrap(Pause);
 export const GearIcon = wrap(Gear);
+/** The LinkedIn mark, solid so it reads clearly at 24px. */
+export function LinkedInIcon({ size = 24 }: P) {
+  return <LinkedinLogo size={size} weight="fill" aria-hidden="true" className="shrink-0" />;
+}
 export const BackIcon = wrap(SkipBack);
 export const ForwardIcon = wrap(SkipForward);
 export const RestartIcon = wrap(ArrowCounterClockwise);
