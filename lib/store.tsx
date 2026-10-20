@@ -7,17 +7,20 @@
 import { createContext, useContext, useSyncExternalStore, type ReactNode } from "react";
 import { openOwnerMessage, send as agentStep, advanceTo, nextTimerAt } from "./agents/engine";
 import { stampReveal } from "./agents/pacing";
+import { longDate } from "./format";
 import { money as moneyText } from "./payments";
 import { syncFromWorld } from "./agents/sync";
 import type { Ev } from "./agents/types";
-import { DEFAULT_RENT_FORM, INITIAL_STATE } from "./seed";
+import { DEFAULT_RENT_FORM, EQUIPMENT, INITIAL_STATE, NEW_HEATER_RECORD } from "./seed";
 import type {
   Approval,
   DemoState,
   FeedbackNote,
   Payment,
+  EquipmentEdit,
   Photo,
   Prefs,
+  RentNoticeSent,
   QuoteCheckResult,
   RentFormState,
   RepairRequest,
@@ -58,6 +61,8 @@ function readStorage(): DemoState {
       textUpdates: { ...INITIAL_STATE.textUpdates, ...(parsed.textUpdates ?? {}) },
       prefs: { ...INITIAL_STATE.prefs, ...(parsed.prefs ?? {}) },
       payments: Array.isArray(parsed.payments) ? parsed.payments : [],
+      rentNotice: parsed.rentNotice ?? null,
+      equipmentEdits: parsed.equipmentEdits && typeof parsed.equipmentEdits === "object" ? parsed.equipmentEdits : {},
       agent: parsed.agent && Array.isArray(parsed.agent.timeline) ? { ...INITIAL_STATE.agent, ...parsed.agent } : INITIAL_STATE.agent,
       feedback: Array.isArray(parsed.feedback) ? parsed.feedback : [],
     };
@@ -146,6 +151,10 @@ export interface DemoActions {
   /** The tenant paid rent and/or utilities through the checkout. Keeps only the last four digits. */
   recordPayments(payments: Payment[]): void;
   setPref<K extends keyof Prefs>(key: K, value: Prefs[K]): void;
+  /** The owner sends the rent notice from the rent page. The tenant is texted. */
+  sendRentNotice(info: Omit<RentNoticeSent, "sentAt">): void;
+  /** The owner corrected a detail in the home record. Pass null to put the recorded details back. */
+  saveEquipmentEdit(id: string, edit: EquipmentEdit | null): void;
   /** Send an event to GoHome's agent (a text, a photo, a tap). */
   agentSend(ev: Ev): void;
   /** Send several events at once, shown quickly (used by "Show me a sample repair"). */
@@ -218,6 +227,31 @@ export const actions: DemoActions = {
         else next = runAgent(next, { type: "utilities.paid", amount: moneyText(p.cents), confirmation: p.confirmation });
       }
       return next;
+    }),
+  saveEquipmentEdit: (id, edit) =>
+    update((s) => {
+      const equipmentEdits = { ...s.equipmentEdits };
+      if (edit) equipmentEdits[id] = edit;
+      else delete equipmentEdits[id];
+      let next: DemoState = { ...s, equipmentEdits };
+      // The water heater is also in the agent's record, so what GoHome says about it follows the correction.
+      if (id === "water-heater") {
+        const recorded = EQUIPMENT.find((e) => e.id === id);
+        // Putting the recorded details back means the new heater's details once the old one was replaced.
+        const base = s.jobCompletedAt ? { brand: NEW_HEATER_RECORD.manufacturer, model: NEW_HEATER_RECORD.model, serial: NEW_HEATER_RECORD.serial } : { brand: recorded?.brand ?? "", model: recorded?.model ?? "", serial: recorded?.serial ?? "" };
+        const patch: Record<string, string> = {
+          "heater.brand": edit?.brand?.trim() || base.brand,
+          "heater.model": edit?.model?.trim() || base.model,
+          "heater.serial": edit?.serial?.trim() || base.serial,
+        };
+        next = runAgent(next, { type: "record.edit", patch });
+      }
+      return next;
+    }),
+  sendRentNotice: (info) =>
+    update((s) => {
+      const sentAt = new Date().toISOString();
+      return runAgent({ ...s, rentNotice: { ...info, sentAt } }, { type: "rent.notice", kind: info.kind, from: moneyText(Math.round(info.from * 100)), to: moneyText(Math.round(info.to * 100)), effective: longDate(info.effective) });
     }),
   setPref: (key, value) => update((s) => ({ ...s, prefs: { ...s.prefs, [key]: value } })),
   setPricingPick: (pricingPick) => update((s) => ({ ...s, pricingPick })),

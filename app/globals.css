@@ -28,6 +28,8 @@
 
 html {
   background: var(--color-cream);
+  /* Links that jump to a section stop below the sticky header instead of under it. */
+  scroll-padding-top: 5rem;
 }
 
 body {

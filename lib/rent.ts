@@ -10,15 +10,40 @@ export const MAX_CAP_PERCENT = 10;
 export const DEFAULT_CPI_PERCENT = 3.0;
 export const MAX_INCREASES_PER_12_MONTHS = 2;
 
+/** One home renting for more than this per month is almost surely a typing mistake. */
+export const MAX_SANE_RENT = 25000;
+
+/** Dollars rounded to the cent, so 1234.567 is 1234.57 and nothing downstream sees 1234.5670166015625. */
+export function roundToCents(dollars: number): number {
+  return Math.round((dollars + Number.EPSILON) * 100) / 100;
+}
+
+/** A rent number that is too big to be real for one home. */
+export function rentLooksTooHigh(dollars: number): boolean {
+  return dollars > MAX_SANE_RENT;
+}
+
+export type NoticeKind = "increase" | "decrease" | "none";
+
+/** Whether the change from the current rent to the new rent is an increase, a decrease, or no change at all. */
+export function noticeKindFor(currentRent: number, newRent: number): NoticeKind {
+  const diff = toCentsSafe(newRent) - toCentsSafe(currentRent);
+  return diff > 0 ? "increase" : diff < 0 ? "decrease" : "none";
+}
+
+function toCentsSafe(dollars: number): number {
+  return Math.round(dollars * 100);
+}
+
 export interface RentInputs {
   currentRent: number;
-  /** Local CPI change, in percent. Placeholder until the owner looks it up. */
+  /** Local inflation (CPI) change, in percent. A sample number until it is looked up. */
   cpiPercent: number;
   proposedRent: number;
   tenancy12Plus: boolean;
   increasesInLast12Months: number;
   singleFamilyOrCondo: boolean;
-  /** Not owned by a REIT, a corporation, or an LLC with a corporate member */
+  /** Not owned by a large investment company (REIT), a corporation, or an LLC with a corporate member */
   notCorporateOwned: boolean;
   /** Tenant was given the required written exemption notice */
   exemptionNoticeGiven: boolean;
@@ -70,7 +95,7 @@ export function exemptionFor(inputs: RentInputs): { mayBeExempt: boolean; reason
     return {
       mayBeExempt: true,
       reason:
-        "Single family home or condo, not owned by a REIT, corporation, or LLC with a corporate member, and the written exemption notice was given.",
+        "A single family home or condo, not owned by a large investment company or a corporation, where the tenant was given the written exemption notice.",
     };
   }
   if (inputs.buildingUnder15Years) {
@@ -119,24 +144,32 @@ export function effectiveDateFor(noticeDate: string, noticeDays: number): string
   return addDays(noticeDate, noticeDays);
 }
 
-/** Plain-language rent increase notice, stamped as a draft. */
+/** Plain-language notice of a rent change, stamped as a draft. An increase and a decrease get different titles and wording. */
 export function buildNotice(input: NoticeInput): string {
   const effective = longDate(effectiveDateFor(input.noticeDate, input.noticeDays));
   const given = longDate(input.noticeDate);
+  const kind = noticeKindFor(input.currentRent, input.newRent);
+  const title = kind === "decrease" ? "NOTICE OF RENT DECREASE" : kind === "none" ? "NOTICE OF NO RENT CHANGE" : "NOTICE OF RENT INCREASE";
+  const opening =
+    kind === "decrease"
+      ? `Good news: your rent is going down. Your current rent is ${usdCents(input.currentRent)} per month.`
+      : kind === "none"
+        ? `Your rent is not changing. Your rent stays ${usdCents(input.currentRent)} per month.`
+        : `Your rent is changing. Your current rent is ${usdCents(input.currentRent)} per month.`;
   return [
     "DRAFT, NOT LEGAL ADVICE",
     "",
-    "NOTICE OF RENT INCREASE",
+    title,
     "",
     `Date of notice: ${given || "(add date)"}`,
     `To: ${input.tenantName}`,
     `From: ${input.ownerName}`,
     `Property: ${input.address}`,
     "",
-    `Your rent is changing. Your current rent is ${usdCents(input.currentRent)} per month.`,
-    `Starting ${effective || "(add date)"}, your new rent will be ${usdCents(input.newRent)} per month.`,
+    opening,
+    ...(kind === "none" ? [] : [`Starting ${effective || "(add date)"}, your new rent will be ${usdCents(input.newRent)} per month.`]),
     "",
-    `This notice gives you ${input.noticeDays} days before the change starts.`,
+    ...(kind === "increase" ? [`This notice gives you ${input.noticeDays} days before the change starts.`] : []),
     "All other terms of your tenancy stay the same.",
     "",
     "If you have questions, please contact me.",

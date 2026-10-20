@@ -38,7 +38,7 @@ export function Thread({ party, msgs, typing, placeholder, onSend, onPhoto, onTa
         <LogoMark size={34} />
         <div>
           <p className="font-extrabold leading-tight">GoHome</p>
-          <p className="text-xs font-bold text-ink-soft">{via === "text" ? "Also texts you every update" : "Updates show here (text updates are off)"}</p>
+          <p className="text-xs font-bold text-ink-soft">{via === "text" ? "Updates here, and by text in the full product" : "Updates show here (text updates are off)"}</p>
         </div>
       </div>
       <div ref={box} className={`${heightClass} overflow-y-auto bg-cream p-3`}>

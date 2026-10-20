@@ -24,6 +24,7 @@ export interface QaAnswer {
 }
 
 export const LEASE_ANNIVERSARY = "December 14, 2026";
+export const LEASE_ANNIVERSARY_ISO = "2026-12-14";
 
 export const QA_SUGGESTIONS = [
   "How much is my rent?",

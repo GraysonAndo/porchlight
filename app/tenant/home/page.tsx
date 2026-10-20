@@ -2,18 +2,18 @@
 
 import Link from "next/link";
 import { Badge } from "@/components/ui";
-import { currentHeater, equipmentFor } from "@/lib/equipment";
 import { guidesForEquipment, homeWideGuides } from "@/lib/homeGuides";
 import { PROPERTY } from "@/lib/seed";
 import { LEASE_ANNIVERSARY } from "@/lib/houseQa";
 import { usd } from "@/lib/format";
 import { BILLS, money } from "@/lib/payments";
 import { useDemo } from "@/lib/store";
+import { useEquipment } from "@/lib/useEquipment";
 
 export default function TenantHomePage() {
   const { state } = useDemo();
-  const equipment = equipmentFor(currentHeater(state));
-  const wide = homeWideGuides();
+  const equipment = useEquipment();
+  const wide = homeWideGuides(equipment);
   const paidKinds = new Set(state.payments.map((p) => p.kind));
   if (state.rentPaidAt) paidKinds.add("rent");
   const dueCents = BILLS.filter((b) => !paidKinds.has(b.kind)).reduce((sum, b) => sum + b.cents, 0);
@@ -34,7 +34,7 @@ export default function TenantHomePage() {
         </div>
         <ul className="grid gap-4 md:grid-cols-2">
           {equipment.map((item) => {
-            const guides = guidesForEquipment(item.id);
+            const guides = guidesForEquipment(item.id, equipment);
             return (
               <li key={item.id} className="card flex flex-col gap-2">
                 <div>

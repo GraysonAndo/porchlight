@@ -5,11 +5,11 @@ import { TeamSection } from "@/components/TeamSection";
 const FAQ: { q: string; a: string }[] = [
   {
     q: "What counts as an emergency?",
-    a: "A gas smell, smoke or sparks, flooding, water near electricity, or no heat. For these, GoHome gives your tenant no fix steps. It tells them to get safe and call 911 or the gas company, and it alerts you right away, by call if needed.",
+    a: "A gas smell, smoke or sparks, flooding, water near electricity, or no heat. For these, GoHome gives your tenant no fix steps. It tells them to get safe and call 911 or the gas company, and it alerts you right away. In the full product, that alert is a text and, if needed, a phone call.",
   },
   {
     q: "What does my tenant see?",
-    a: "A simple page, or text messages. They text a problem (or a question) on one screen, get safe steps, send one photo of an equipment label if asked, and get a text for every update. Answers come only from the house record and the lease on file, and if it is not there, GoHome says it does not know. They never see prices, quotes, or your decisions.",
+    a: "Today, a simple chat page: they tell GoHome about a problem (or ask a question), get safe steps made for their exact equipment, and follow each update. Answers come only from the home record and the lease on file, and if it is not there, GoHome says it does not know. In the full product, they will also get every update as a text message (see how that will look on the tenant side, under Settings). They never see prices, quotes, or your decisions.",
   },
   {
     q: "Does the AI set prices or the rent cap?",
@@ -36,14 +36,15 @@ export default function AboutPage() {
         <p className="eyebrow mb-2">About GoHome</p>
         <h1 className="font-display text-4xl font-extrabold leading-tight sm:text-5xl">How it works, and why you can trust it</h1>
         <p className="mt-3 text-lg text-ink-soft">
-          GoHome is built for owners with 1 to 10 rental units in California, and the tenants who live in them. Here is how the prices work,
-          the questions people ask, and how to reach us.
+          GoHome is built for owners with 1 to 10 rental units in California, and the tenants who live in them. It was called Porchlight while
+          we built it, so you may still see that name in the web address. Here is who we are, how the prices work, the questions people ask, and
+          how to reach us.
         </p>
       </div>
 
       <TeamSection />
 
-      <section id="price-ranges" className="card scroll-mt-4 space-y-2" aria-labelledby="price-heading">
+      <section id="price-ranges" className="card scroll-mt-24 space-y-2" aria-labelledby="price-heading">
         <h2 id="price-heading" className="font-display text-2xl font-extrabold">
           How our price ranges work
         </h2>
@@ -61,9 +62,9 @@ export default function AboutPage() {
         </p>
       </section>
 
-      <section id="faq" className="scroll-mt-4 space-y-2" aria-labelledby="faq-heading">
+      <section id="faq" className="scroll-mt-24 space-y-2" aria-labelledby="faq-heading">
         <h2 id="faq-heading" className="font-display text-2xl font-extrabold">
-          Questions
+          Help and FAQ
         </h2>
         <div className="space-y-2">
           {FAQ.map((item) => (
@@ -75,7 +76,7 @@ export default function AboutPage() {
         </div>
       </section>
 
-      <section id="contact" className="card scroll-mt-4 space-y-2" aria-labelledby="contact-heading">
+      <section id="contact" className="card scroll-mt-24 space-y-2" aria-labelledby="contact-heading">
         <h2 id="contact-heading" className="font-display text-2xl font-extrabold">
           Contact
         </h2>

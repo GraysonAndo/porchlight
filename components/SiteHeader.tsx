@@ -7,9 +7,41 @@ import { Logo } from "./Logo";
 import { OWNER_NAV, TENANT_NAV, isActive, roleForPath } from "@/lib/steps";
 import { PROPERTY } from "@/lib/seed";
 
+/** The header for pages that belong to neither side: the welcome page, About, Pricing, and Feedback. Same links on every one. */
+export function PublicHeader() {
+  const pathname = usePathname();
+  const links = [
+    { href: "/about#team", label: "Our team" },
+    { href: "/about", label: "About" },
+    { href: "/pricing", label: "Pricing" },
+  ];
+  return (
+    <header className="sticky top-0 z-30 border-b border-line bg-white/95 backdrop-blur">
+      <div className="mx-auto flex w-full max-w-6xl items-center gap-2 px-4 py-2 sm:px-6">
+        <Link href="/" className="mr-auto inline-flex min-h-11 items-center rounded-lg" aria-label="GoHome home">
+          <Logo />
+        </Link>
+        <nav aria-label="More about GoHome" className="flex gap-0.5 text-sm font-bold sm:gap-1">
+          {links.map((l) => (
+            <Link
+              key={l.href}
+              href={l.href}
+              aria-current={pathname === l.href ? "page" : undefined}
+              className={`inline-flex min-h-11 items-center rounded-lg px-2 sm:px-3 ${pathname === l.href ? "bg-brand-tint text-brand" : "text-ink-soft hover:bg-cream-deep hover:text-ink"}`}
+            >
+              {l.label}
+            </Link>
+          ))}
+        </nav>
+      </div>
+    </header>
+  );
+}
+
 export function SiteHeader() {
   const pathname = usePathname();
   const role = roleForPath(pathname);
+  if (!role) return <PublicHeader />;
   const nav = role === "owner" ? OWNER_NAV : role === "tenant" ? TENANT_NAV : [];
   const name = role === "owner" ? PROPERTY.owner : PROPERTY.tenant;
 

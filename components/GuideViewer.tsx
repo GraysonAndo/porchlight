@@ -7,6 +7,7 @@ import { useEffect, useRef, useState } from "react";
 import { GuideScene } from "./GuideScene";
 import { AlertIcon, PlayIcon } from "./icons";
 import { guideById, type HomeGuide } from "@/lib/homeGuides";
+import { useEquipment } from "@/lib/useEquipment";
 
 const PLAY_STEP_MS = 4500;
 
@@ -124,7 +125,7 @@ export function GuideViewer({ guide, onDone, doneLabel = "Done" }: { guide: Home
 /** A button that opens a guide in a sheet. Used under chat messages. */
 export function GuideButton({ guideId, label = "Show me how" }: { guideId: string; label?: string }) {
   const ref = useRef<HTMLDialogElement>(null);
-  const guide = guideById(guideId);
+  const guide = guideById(guideId, useEquipment());
   if (!guide) return null;
   return (
     <>
@@ -147,4 +148,11 @@ export function GuideButton({ guideId, label = "Show me how" }: { guideId: strin
       </dialog>
     </>
   );
+}
+
+/** A guide looked up by id, written for the equipment as the home record has it now. Shows "not found" for an unknown id. */
+export function GuideFromStore({ id }: { id: string }) {
+  const guide = guideById(id, useEquipment());
+  if (!guide) return <p className="card">We could not find that guide.</p>;
+  return <GuideViewer guide={guide} />;
 }

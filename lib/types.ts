@@ -212,6 +212,24 @@ export interface Payment {
   confirmation: string;
 }
 
+/** A correction the owner made to an item in the home record, for example a misread model number. */
+export interface EquipmentEdit {
+  brand?: string;
+  model?: string;
+  serial?: string;
+  location?: string;
+}
+
+/** A rent notice the owner sent. Nothing is really mailed. */
+export interface RentNoticeSent {
+  kind: "increase" | "decrease";
+  from: number;
+  to: number;
+  /** ISO date the new rent starts */
+  effective: string;
+  sentAt: string;
+}
+
 /** Settings for each side. */
 export interface Prefs {
   tenantEmail: boolean;
@@ -240,6 +258,10 @@ export interface DemoState {
   /** Payments the tenant made, newest last */
   payments: Payment[];
   prefs: Prefs;
+  /** The rent notice the owner sent from the rent page, or null */
+  rentNotice: RentNoticeSent | null;
+  /** Corrections the owner made to the home record, by equipment id */
+  equipmentEdits: Record<string, EquipmentEdit>;
   /** GoHome's agent: every text, tool call, and record write, shared by the tenant and owner screens */
   agent: World;
   /** Whether each person gets GoHome's updates by text */

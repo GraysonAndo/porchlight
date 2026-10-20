@@ -1,22 +1,26 @@
 "use client";
 
 import { LifespanBar } from "@/components/Bars";
+import { EquipmentEditor } from "@/components/EquipmentEditor";
 import { StepShell } from "@/components/StepShell";
 import { CheckIcon } from "@/components/icons";
 import { Badge, Callout, Card, PlaceholderNote } from "@/components/ui";
-import { currentHeater, equipmentFor, heaterBeforeRepair } from "@/lib/equipment";
+import { heaterBeforeRepair } from "@/lib/equipment";
 import { monthYear, usdRange } from "@/lib/format";
 import { guidesForEquipment } from "@/lib/homeGuides";
 import { ageOf, lifeStage } from "@/lib/life";
 import { PROPERTY } from "@/lib/seed";
 import { useDemo } from "@/lib/store";
+import { useEquipment } from "@/lib/useEquipment";
+import { useState } from "react";
 
 export default function OwnerRecordPage() {
-  const { state } = useDemo();
-  const record = currentHeater(state);
+  const { state, actions } = useDemo();
+  const [editing, setEditing] = useState<string | null>(null);
+  const [saved, setSaved] = useState<string | null>(null);
   const replaced = state.jobCompletedAt !== null;
   const old = heaterBeforeRepair(state);
-  const equipment = equipmentFor(record);
+  const equipment = useEquipment();
 
   return (
     <StepShell stepId="owner-record">
@@ -25,10 +29,10 @@ export default function OwnerRecordPage() {
         need to replace.
       </p>
 
-      <Callout tone="info" title="You never have to type any of this">
+      <Callout tone="info" title="Already filled in for you">
         <p>
-          Brand, model, and serial number were recorded at move-in from each data plate. When an installer finishes a job, the new equipment is
-          added automatically.
+          Brand, model, and serial number were recorded at move-in from each data plate, and new equipment is added automatically when an
+          installer finishes a job. If something was misread, tap Edit on that item to correct it.
         </p>
       </Callout>
 
@@ -50,7 +54,8 @@ export default function OwnerRecordPage() {
         {equipment.map((item) => {
           const age = ageOf(item);
           const s = lifeStage(age, item.typicalLifeYears);
-          const guides = guidesForEquipment(item.id);
+          const guides = guidesForEquipment(item.id, equipment);
+          const corrected = Boolean(state.equipmentEdits[item.id]);
           return (
             <li key={item.id} className="card space-y-3">
               <div className="flex flex-wrap items-start justify-between gap-2">
@@ -62,6 +67,7 @@ export default function OwnerRecordPage() {
                 </div>
                 <span className="flex flex-wrap gap-1.5">
                   {item.id === "water-heater" && replaced && <Badge tone="good">New, added automatically</Badge>}
+                  {corrected && <Badge tone="info">Corrected by you</Badge>}
                   <Badge tone={s.tone}>{s.label}</Badge>
                 </span>
               </div>
@@ -85,6 +91,32 @@ export default function OwnerRecordPage() {
                   {age === 0 ? "New" : `${age} of ${item.typicalLifeYears} typical years`} ({s.percentOfLife}% of life)
                 </p>
               </div>
+              {editing === item.id ? (
+                <EquipmentEditor
+                  item={item}
+                  corrected={corrected}
+                  onCancel={() => setEditing(null)}
+                  onReset={() => {
+                    actions.saveEquipmentEdit(item.id, null);
+                    setEditing(null);
+                    setSaved(`${item.name}: the recorded details are back.`);
+                  }}
+                  onSave={(edit) => {
+                    actions.saveEquipmentEdit(item.id, edit);
+                    setEditing(null);
+                    setSaved(`${item.name} updated. Your tenant now sees the corrected details and guides.`);
+                  }}
+                />
+              ) : (
+                <button type="button" className="btn btn-secondary !min-h-10 text-sm" onClick={() => { setEditing(item.id); setSaved(null); }}>
+                  Edit details
+                </button>
+              )}
+              {saved?.startsWith(item.name) && (
+                <p role="status" className="text-sm font-bold text-good-ink">
+                  {saved}
+                </p>
+              )}
               <p className="text-sm text-ink-soft">
                 <strong className="text-ink">How we know:</strong> {item.source}.{" "}
                 {guides.length > 0
