@@ -2,14 +2,13 @@
 
 import { BellIcon } from "./icons";
 import { SwitchRow } from "./Switch";
-import { PROPERTY } from "@/lib/seed";
 import { useDemo } from "@/lib/store";
 
 /** "Text updates": GoHome texts this person every update. They can turn it off. Lives in Settings. */
 export function TextUpdatesToggle({ party }: { party: "tenant" | "owner" }) {
   const { state, actions } = useDemo();
   const on = state.textUpdates[party];
-  const phone = party === "tenant" ? PROPERTY.tenantPhone : PROPERTY.ownerPhone;
+  const phone = party === "tenant" ? state.prefs.tenantPhone : state.prefs.ownerPhone;
   return (
     <SwitchRow
       title="Text updates"

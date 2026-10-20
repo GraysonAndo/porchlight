@@ -45,6 +45,8 @@ export function applyEdits(items: EquipmentItem[], edits: Record<string, Equipme
       model: e.model?.trim() || item.model,
       serial: e.serial?.trim() || item.serial,
       location: e.location?.trim() || item.location,
+      summary: e.summary?.trim() || item.summary,
+      installYear: e.installYear !== undefined && Number.isInteger(e.installYear) && e.installYear >= 1950 && e.installYear <= 2100 ? e.installYear : item.installYear,
     };
   });
 }

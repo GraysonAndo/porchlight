@@ -5,8 +5,8 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { LogoMark } from "./Logo";
-import { PlayIcon, RestartIcon } from "./icons";
-import { advanceTo, clockText, createWorld, nextTimerAt, openOwnerMessage, send } from "@/lib/agents/engine";
+import { PauseIcon, PlayIcon, RestartIcon } from "./icons";
+import { advanceTo, clockText, createWorld, nextTimerAt, openOwnerMessage, send, shownFor } from "@/lib/agents/engine";
 import type { Ev, Msg, World } from "@/lib/agents/types";
 
 const STARTERS = [
@@ -30,6 +30,10 @@ export function PhoneThread() {
   const [playing, setPlaying] = useState(false);
   const box = useRef<HTMLDivElement>(null);
   const stop = useRef(false);
+  const paused = useRef(false);
+  const [isPaused, setIsPaused] = useState(false);
+  const [fast, setFast] = useState(false);
+  const fastRef = useRef(false);
 
   const all = tenantMsgs(world);
   const visible = all.slice(0, shown);
@@ -53,6 +57,8 @@ export function PhoneThread() {
 
   function reset() {
     stop.current = true;
+    paused.current = false;
+    setIsPaused(false);
     setWorld(createWorld());
     setShown(0);
     setPlaying(false);
@@ -63,6 +69,8 @@ export function PhoneThread() {
     reset();
     await wait(50);
     stop.current = false;
+    paused.current = false;
+    setIsPaused(false);
     setPlaying(true);
     let w = createWorld();
     const push = (ev: Ev) => {
@@ -71,11 +79,12 @@ export function PhoneThread() {
     };
     for (const step of SCRIPT) {
       if (stop.current) return;
-      await wait(step === "leak" ? 600 : 2600);
+      await wait((step === "leak" ? 600 : 2600) / (fastRef.current ? 2.5 : 1));
+      while (paused.current && !stop.current) await wait(150);
       if (stop.current) return;
-      if (step === "leak") push({ type: "tenant.text", text: STARTERS[0].text });
-      else if (step === "no") push({ type: "tenant.text", text: "2" });
-      else if (step === "done") push({ type: "tenant.text", text: "done" });
+      if (step === "leak") push({ type: "tenant.text", text: STARTERS[0].text, shown: STARTERS[0].label });
+      else if (step === "no") push({ type: "tenant.text", text: "2", shown: "No" });
+      else if (step === "done") push({ type: "tenant.text", text: "done", shown: "Done" });
       else if (step === "quotes") {
         const at = nextTimerAt(w);
         if (at !== null) {
@@ -85,7 +94,7 @@ export function PhoneThread() {
       } else if (step === "approve") {
         const open = openOwnerMessage(w);
         if (open) push({ type: "owner.tap", msgId: open.id, action: "approve" });
-      } else if (step === "works") push({ type: "tenant.text", text: "1" });
+      } else if (step === "works") push({ type: "tenant.text", text: "1", shown: "That works" });
       else if (step === "finish") push({ type: "owner.markDone" });
     }
     setPlaying(false);
@@ -99,24 +108,51 @@ export function PhoneThread() {
         </p>
         <ol className="list-decimal space-y-2 pl-6 text-lg">
           <li>You text a problem, the way you would text a friend.</li>
-          <li>GoHome asks one safety question, then sends two safe steps and a picture guide made for your exact equipment.</li>
+          <li>For a leak, GoHome asks one safety question, then sends two safe steps and a link to a picture guide made for your exact equipment. For a gas smell, it asks nothing: it tells you to leave and call for help.</li>
           <li>It texts you the plumber&apos;s name and time, and again when it is fixed. You never log in or call anyone.</li>
         </ol>
         <div className="flex flex-wrap gap-3">
-          <button type="button" className="btn btn-primary" onClick={play} disabled={playing}>
-            <PlayIcon size={20} /> {playing ? "Playing..." : "Play the whole story"}
-          </button>
+          {playing ? (
+            <>
+              <button
+                type="button"
+                className="btn btn-primary"
+                aria-pressed={isPaused}
+                onClick={() => {
+                  paused.current = !paused.current;
+                  setIsPaused(paused.current);
+                }}
+              >
+                {isPaused ? <PlayIcon size={20} /> : <PauseIcon size={20} />} {isPaused ? "Resume" : "Pause"}
+              </button>
+              <button
+                type="button"
+                className="btn btn-secondary"
+                aria-pressed={fast}
+                onClick={() => {
+                  fastRef.current = !fastRef.current;
+                  setFast(fastRef.current);
+                }}
+              >
+                {fast ? "Normal speed" : "Faster"}
+              </button>
+            </>
+          ) : (
+            <button type="button" className="btn btn-primary" onClick={play}>
+              <PlayIcon size={20} /> Play the whole story
+            </button>
+          )}
           <button type="button" className="btn btn-secondary" onClick={reset}>
             <RestartIcon size={20} /> Start over
           </button>
         </div>
-        <p className="text-sm text-ink-soft">Or play it yourself: tap a message, or type to GoHome on the phone.</p>
+        <p className="text-sm text-ink-soft">The story is a slideshow of one sample repair. Or play it yourself: tap a message, or type to GoHome on the phone.</p>
       </div>
 
       <section aria-label="A phone showing a text conversation with GoHome" className="mx-auto w-[320px] max-w-full rounded-[2.6rem] border-[10px] border-ink bg-ink shadow-xl">
         <div className="overflow-hidden rounded-[1.9rem] bg-white">
           <div className="flex items-center justify-between bg-white px-5 pb-1 pt-3 text-xs font-extrabold" aria-hidden="true">
-            <span>9:41</span>
+            <span>{clockText(visible[visible.length - 1]?.at ?? 247)}</span>
             <span className="h-5 w-24 rounded-full bg-ink" />
             <span>5G</span>
           </div>
@@ -133,7 +169,7 @@ export function PhoneThread() {
               <div key={m.id} className={`flex ${m.dir === "in" ? "justify-end" : "justify-start"}`}>
                 <div className={`max-w-[85%] rounded-2xl px-3 py-2 text-sm ${m.dir === "in" ? "rounded-br-sm bg-brand text-white" : "rounded-bl-sm bg-white shadow-sm"}`}>
                   <p className="whitespace-pre-line">{m.text}</p>
-                  {m.guide && <p className="mt-1.5 rounded-lg bg-brand-tint px-2 py-1 text-xs font-extrabold text-brand">Picture guide for your heater</p>}
+                  {m.guide && <p className="mt-1.5 rounded-lg bg-brand-tint px-2 py-1 text-xs font-extrabold text-brand">Show me how: picture guide for your heater</p>}
                   <p className={`mt-1 text-right text-[11px] font-bold ${m.dir === "in" ? "text-white/80" : "text-ink-soft"}`}>{clockText(m.at)}</p>
                 </div>
               </div>
@@ -152,7 +188,7 @@ export function PhoneThread() {
             {(chips.length > 0 || visible.length === 0) && (
               <div className="flex flex-wrap gap-1.5" role="group" aria-label="Quick replies">
                 {(visible.length === 0 ? STARTERS.map((s) => ({ id: s.label, label: s.label, text: s.text })) : chips.map((c) => ({ id: c.id, label: c.label, text: c.text ?? c.label }))).map((c) => (
-                  <button key={c.id} type="button" className="btn btn-secondary !min-h-11 !px-3 text-left text-xs" disabled={playing} onClick={() => act({ type: "tenant.text", text: c.text })}>
+                  <button key={c.id} type="button" className="btn btn-secondary !min-h-11 !px-3 text-left text-xs" disabled={playing} onClick={() => act({ type: "tenant.text", text: c.text, shown: shownFor(c.label) })}>
                     {c.label}
                   </button>
                 ))}

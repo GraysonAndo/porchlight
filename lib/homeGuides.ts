@@ -101,8 +101,8 @@ function build(equipment: EquipmentItem[]): HomeGuide[] {
         },
         {
           part: "tank",
-          caption: "Tap Done in the chat. GoHome takes it from here.",
-          text: "That is it. Tap Done in the chat and GoHome will arrange the repair with your landlord. You do not need to call anyone.",
+          caption: "Close this guide, then tap Done in the chat. GoHome takes it from here.",
+          text: "That is it. Close this guide, then tap Done in the chat and GoHome will arrange the repair with your landlord. You do not need to call anyone.",
         },
       ],
       stopIf: [GAS_WARNING, "Water is near an outlet, a cord, or the breaker panel.", "The valve will not turn, or water keeps pouring out. Leave it and tell GoHome."],

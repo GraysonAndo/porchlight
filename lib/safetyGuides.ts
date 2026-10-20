@@ -54,7 +54,7 @@ const ENTRIES: GuideEntry[] = [
       steps: [
         "Leave the home now, with everyone inside, and leave the door open.",
         "Do not use light switches, lighters, or anything that could spark while you are inside.",
-        "From outside, call 911 or your gas company's emergency number.",
+        "From outside, call 911 or your gas company's emergency number (PG&E customers: 1-800-743-5000).",
         "Do not touch the gas valve or the heater, and do not go back in until you are told it is safe.",
       ],
       stopIf: [GENERAL_GAS_WARNING, "Anyone feels dizzy, sick, or has a headache. Get fresh air and call 911."],

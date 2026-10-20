@@ -99,7 +99,11 @@ export function Callout({
 
 /** The required label for any number that is not from a real source. */
 export function PlaceholderNote({ className = "" }: { className?: string }) {
-  return <span className={`text-sm italic text-ink-soft ${className}`}>{PLACEHOLDER_LABEL}</span>;
+  return (
+    <>
+      <span className={`text-sm italic text-ink-soft ${className}`}>{PLACEHOLDER_LABEL}</span>{" "}
+    </>
+  );
 }
 
 /** "Thinking" state for the mock AI. */
@@ -132,6 +136,7 @@ export function NumberField({
   hint,
   invalid,
   onEmptyChange,
+  validate,
 }: {
   id: string;
   label: ReactNode;
@@ -145,9 +150,15 @@ export function NumberField({
   invalid?: boolean;
   /** Called with true when the box is cleared, and false when it has a number again or loses focus */
   onEmptyChange?: (empty: boolean) => void;
+  /** Returns a message when a typed number cannot be used (for example, a negative count). That number is not passed on. */
+  validate?: (value: number) => string | null;
 }) {
   const [draft, setDraft] = useState<string | null>(null);
   const shown = draft ?? String(value);
+  const typed = draft === null ? NaN : Number(draft);
+  const blank = draft !== null && (draft.trim() === "" || !Number.isFinite(typed));
+  const problem = draft !== null && !blank ? (validate?.(typed) ?? null) : null;
+  const message = blank ? "Enter a number." : problem;
 
   return (
     <div>
@@ -165,21 +176,29 @@ export function NumberField({
           min={min}
           value={shown}
           aria-describedby={hint ? `${id}-hint` : undefined}
-          aria-invalid={invalid ? true : undefined}
+          aria-invalid={invalid || message ? true : undefined}
           onChange={(e) => {
             setDraft(e.target.value);
             const parsed = Number(e.target.value);
             const empty = e.target.value.trim() === "" || !Number.isFinite(parsed);
-            onEmptyChange?.(empty);
-            if (!empty) onChange(parsed);
+            const bad = !empty && validate?.(parsed) != null;
+            onEmptyChange?.(empty || bad);
+            if (!empty && !bad) onChange(parsed);
           }}
           onBlur={() => {
+            // A number that cannot be used stays on screen with its message. It is never swapped for an old value.
+            if (blank || problem) return;
             setDraft(null);
             onEmptyChange?.(false);
           }}
         />
         {suffix && <span className="text-lg font-bold">{suffix}</span>}
       </div>
+      {message && (
+        <p role="alert" className="mt-1 text-sm font-bold text-urgent">
+          {message}
+        </p>
+      )}
       {hint && (
         <div id={`${id}-hint`} className="hint">
           {hint}

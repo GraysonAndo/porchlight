@@ -5,9 +5,10 @@
 // so the app still works if storage is blocked (private mode, strict settings).
 
 import { createContext, useContext, useSyncExternalStore, type ReactNode } from "react";
-import { openOwnerMessage, send as agentStep, advanceTo, nextTimerAt } from "./agents/engine";
+import { INITIAL_RECORD, openOwnerMessage, send as agentStep, advanceTo, nextTimerAt } from "./agents/engine";
 import { stampReveal } from "./agents/pacing";
 import { longDate } from "./format";
+import { ageOf } from "./life";
 import { money as moneyText } from "./payments";
 import { syncFromWorld } from "./agents/sync";
 import type { Ev } from "./agents/types";
@@ -30,6 +31,7 @@ import type {
 } from "./types";
 
 const STORAGE_KEY = "gohome-v1";
+const INITIAL_RECORD_MADE = INITIAL_RECORD["heater.made"];
 /** Photos bigger than this (as a data URL) are not kept across reloads. */
 const MAX_STORED_PHOTO_CHARS = 120_000;
 
@@ -52,6 +54,7 @@ function toStorable(state: DemoState): DemoState {
 function readStorage(): DemoState {
   try {
     const raw = window.localStorage.getItem(STORAGE_KEY);
+    lastRaw = raw;
     if (!raw) return INITIAL_STATE;
     const parsed = JSON.parse(raw) as Partial<DemoState>;
     return {
@@ -62,6 +65,8 @@ function readStorage(): DemoState {
       prefs: { ...INITIAL_STATE.prefs, ...(parsed.prefs ?? {}) },
       payments: Array.isArray(parsed.payments) ? parsed.payments : [],
       rentNotice: parsed.rentNotice ?? null,
+      rentNoticeLog: Array.isArray(parsed.rentNoticeLog) ? parsed.rentNoticeLog : parsed.rentNotice ? [parsed.rentNotice] : [],
+      guideProgress: parsed.guideProgress && typeof parsed.guideProgress === "object" ? parsed.guideProgress : {},
       equipmentEdits: parsed.equipmentEdits && typeof parsed.equipmentEdits === "object" ? parsed.equipmentEdits : {},
       agent: parsed.agent && Array.isArray(parsed.agent.timeline) ? { ...INITIAL_STATE.agent, ...parsed.agent } : INITIAL_STATE.agent,
       feedback: Array.isArray(parsed.feedback) ? parsed.feedback : [],
@@ -71,9 +76,14 @@ function readStorage(): DemoState {
   }
 }
 
+/** The last text this tab wrote or read, so a different value in storage means another tab saved. */
+let lastRaw: string | null = null;
+
 function writeStorage(state: DemoState): void {
   try {
-    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(toStorable(state)));
+    const raw = JSON.stringify(toStorable(state));
+    window.localStorage.setItem(STORAGE_KEY, raw);
+    lastRaw = raw;
   } catch {
     // Storage blocked or full. The app keeps working with in-memory state.
   }
@@ -111,8 +121,20 @@ function getServerSnapshot(): DemoState {
   return INITIAL_STATE;
 }
 
+/** Another tab saved since this one last looked: take its state first, so a save here never wipes its changes. */
+function freshSnapshot(): DemoState {
+  const base = getSnapshot();
+  try {
+    if (window.localStorage.getItem(STORAGE_KEY) !== lastRaw) current = readStorage();
+  } catch {
+    // Storage blocked: keep working from memory.
+    return base;
+  }
+  return current;
+}
+
 function update(change: (state: DemoState) => DemoState): void {
-  current = change(getSnapshot());
+  current = change(freshSnapshot());
   writeStorage(current);
   listeners.forEach((l) => l());
 }
@@ -153,6 +175,8 @@ export interface DemoActions {
   setPref<K extends keyof Prefs>(key: K, value: Prefs[K]): void;
   /** The owner sends the rent notice from the rent page. The tenant is texted. */
   sendRentNotice(info: Omit<RentNoticeSent, "sentAt">): void;
+  /** Remember which step of a how-to guide the tenant is on. */
+  setGuideStep(id: string, step: number): void;
   /** The owner corrected a detail in the home record. Pass null to put the recorded details back. */
   saveEquipmentEdit(id: string, edit: EquipmentEdit | null): void;
   /** Send an event to GoHome's agent (a text, a photo, a tap). */
@@ -216,7 +240,12 @@ export const actions: DemoActions = {
   setTextUpdates: (party, on) => update((s) => ({ ...s, textUpdates: { ...s.textUpdates, [party]: on } })),
   setTenantAnswers: (tenantAnswers) => update((s) => ({ ...s, tenantAnswers })),
   confirmAccess: (tenantAccess) => update((s) => ({ ...s, tenantAccess })),
-  completeJob: () => update((s) => ({ ...s, jobCompletedAt: new Date().toISOString() })),
+  // Marking the job done goes through the agent when a job is booked, so the activity feeds and the texts record it.
+  completeJob: () =>
+    update((s) => {
+      if (s.agent.triage.stage === "booked") return runAgent(s, { type: "owner.markDone" });
+      return { ...s, jobCompletedAt: new Date().toISOString() };
+    }),
   setRentPaid: (paid) =>
     update((s) => runAgent({ ...s, rentPaidAt: paid ? new Date().toISOString() : null }, { type: "rent.paid", paid })),
   recordPayments: (payments) =>
@@ -243,7 +272,14 @@ export const actions: DemoActions = {
           "heater.brand": edit?.brand?.trim() || base.brand,
           "heater.model": edit?.model?.trim() || base.model,
           "heater.serial": edit?.serial?.trim() || base.serial,
+          "heater.location": edit?.location?.trim() || (s.jobCompletedAt ? "Garage, against the north wall" : recorded?.location ?? "Garage, against the north wall"),
         };
+        // A corrected year changes the age the agent works from, so what GoHome says about the heater follows it.
+        if (!s.jobCompletedAt) {
+          const year = edit?.installYear ?? Number(/\d{4}/.exec(INITIAL_RECORD_MADE)?.[0] ?? 2015);
+          patch["heater.made"] = `March ${year}`;
+          patch["heater.age"] = `${ageOf({ installYear: year })} years`;
+        }
         next = runAgent(next, { type: "record.edit", patch });
       }
       return next;
@@ -251,8 +287,10 @@ export const actions: DemoActions = {
   sendRentNotice: (info) =>
     update((s) => {
       const sentAt = new Date().toISOString();
-      return runAgent({ ...s, rentNotice: { ...info, sentAt } }, { type: "rent.notice", kind: info.kind, from: moneyText(Math.round(info.from * 100)), to: moneyText(Math.round(info.to * 100)), effective: longDate(info.effective) });
+      const sent = { ...info, sentAt };
+      return runAgent({ ...s, rentNotice: sent, rentNoticeLog: [...s.rentNoticeLog, sent] }, { type: "rent.notice", kind: info.kind, from: moneyText(Math.round(info.from * 100)), to: moneyText(Math.round(info.to * 100)), effective: longDate(info.effective) });
     }),
+  setGuideStep: (id, step) => update((s) => ({ ...s, guideProgress: { ...s.guideProgress, [id]: step } })),
   setPref: (key, value) => update((s) => ({ ...s, prefs: { ...s.prefs, [key]: value } })),
   setPricingPick: (pricingPick) => update((s) => ({ ...s, pricingPick })),
   addFeedback: ({ screen, rating, note }) =>
@@ -269,6 +307,7 @@ export const actions: DemoActions = {
   clearFeedback: () => update((s) => ({ ...s, feedback: [] })),
   reset: () => {
     clearStorage();
+    lastRaw = null;
     current = INITIAL_STATE;
     loaded = true;
     listeners.forEach((l) => l());
@@ -287,6 +326,16 @@ interface DemoContextValue {
 const DemoContext = createContext<DemoContextValue | null>(null);
 
 const subscribeNever = () => () => {};
+
+// When another tab saves (or resets), this tab picks it up right away instead of waiting for a reload.
+if (typeof window !== "undefined") {
+  window.addEventListener("storage", (e) => {
+    if (e.key !== STORAGE_KEY && e.key !== null) return;
+    current = readStorage();
+    loaded = true;
+    listeners.forEach((l) => l());
+  });
+}
 
 export function StoreProvider({ children }: { children: ReactNode }) {
   const state = useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);

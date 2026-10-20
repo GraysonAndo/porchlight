@@ -171,10 +171,10 @@ async function run(browser, vp) {
   await page.getByText("Plan to set aside each year").waitFor();
   await snap(page, vp, "24-owner-forecast");
   await page.goto(`${BASE}/owner/rent`);
-  await page.getByText("OK: within the state cap").waitFor();
+  await page.getByText("OK to send: within the yearly limit").first().waitFor();
   await snap(page, vp, "25-owner-rent-ok");
   await page.locator("#proposed-rent").fill("3600");
-  await page.getByText(/Exceeds cap by/).waitFor();
+  await page.getByText(/Do not send: over the limit by/).first().waitFor();
   await snap(page, vp, "26-owner-rent-over-cap");
 
   // ---------- Emergency and the empty states ----------
@@ -233,7 +233,7 @@ async function run(browser, vp) {
   await page.getByRole("region", { name: /phone showing a text conversation/ }).getByRole("button", { name: "My water heater is leaking" }).click();
   await page.getByRole("region", { name: /phone showing a text conversation/ }).getByText(/near an outlet/).waitFor(W);
   await page.getByRole("region", { name: /phone showing a text conversation/ }).getByRole("button", { name: /^2\s+No$/ }).click();
-  await page.getByText("Picture guide for your heater").waitFor(W);
+  await page.getByText(/picture guide for your heater/i).waitFor(W);
   await page.waitForTimeout(500);
   await snap(page, vp, "27i-tenant-text-thread-phone");
 

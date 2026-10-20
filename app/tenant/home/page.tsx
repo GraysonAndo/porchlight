@@ -39,8 +39,9 @@ export default function TenantHomePage() {
               <li key={item.id} className="card flex flex-col gap-2">
                 <div>
                   <p className="text-lg font-extrabold">{item.name}</p>
-                  <p className="font-bold text-brand">
-                    {item.brand} {item.model}
+                  <p className="font-bold text-ink">
+                    {item.brand}{" "}
+                    <span>{item.model}</span>
                   </p>
                 </div>
                 <dl className="grid grid-cols-[6rem_1fr] gap-y-1 text-sm">
@@ -50,8 +51,8 @@ export default function TenantHomePage() {
                   <dd>{item.summary}</dd>
                   <dt className="font-bold text-ink-soft">Installed</dt>
                   <dd>{item.installYear}</dd>
-                  <dt className="font-bold text-ink-soft">Serial</dt>
-                  <dd>{item.serial}</dd>
+                  <dt className="font-bold text-ink-soft">{/^lot\b/i.test(item.serial) ? "Lot number" : "Serial"}</dt>
+                  <dd>{item.serial.replace(/^lot\s*/i, "")}</dd>
                 </dl>
                 {guides.length > 0 ? (
                   <div className="mt-auto flex flex-col gap-2 pt-2">
@@ -100,7 +101,7 @@ export default function TenantHomePage() {
             <dl className="grid grid-cols-[8rem_1fr] gap-y-1 text-sm">
               <dt className="font-bold text-ink-soft">Rent</dt>
               <dd>{usd(PROPERTY.rent)} per month</dd>
-              <dt className="font-bold text-ink-soft">Lease anniversary</dt>
+              <dt className="font-bold text-ink-soft">Next lease anniversary</dt>
               <dd>{LEASE_ANNIVERSARY}</dd>
               <dt className="font-bold text-ink-soft">Your owner</dt>
               <dd>{PROPERTY.owner}</dd>

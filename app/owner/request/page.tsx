@@ -22,7 +22,7 @@ export default function OwnerRequestPage() {
   const { request, triage } = useTriage();
   const status = useJobStatus();
   const heaterRecord = heaterBeforeRepair(state);
-  const heater = equipmentFor(heaterRecord)[0];
+  const heater = equipmentFor(heaterRecord, state.equipmentEdits)[0];
   const stage = lifeStage(ageOf(heater), heater.typicalLifeYears);
   const aboutHeater = isHeaterJob(request.description, triage);
 

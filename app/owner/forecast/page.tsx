@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { PlainCodeNote } from "@/components/Agent";
 import { StepShell } from "@/components/StepShell";
 import { Badge, Callout, Card, PlaceholderNote, type Tone } from "@/components/ui";
@@ -21,9 +22,18 @@ function compact(n: number): string {
   return `$${Number.isInteger(k) ? k : k.toFixed(1)}k`;
 }
 
+/** A new heater is on this list because a repair finished. This is the way back to that job. */
+function JobLink() {
+  return (
+    <Link href="/owner/request" className="mt-0.5 block text-sm font-bold text-brand underline underline-offset-4">
+      Replaced, see the job
+    </Link>
+  );
+}
+
 export default function ForecastPage() {
   const { state } = useDemo();
-  const built = buildForecast(equipmentFor(currentHeater(state)));
+  const built = buildForecast(equipmentFor(currentHeater(state), state.equipmentEdits));
   // Soonest first, so the most urgent items are at the top.
   const forecast = { ...built, rows: [...built.rows].sort((x, y) => x.dueYear - y.dueYear) };
   const maxHigh = Math.max(1, ...forecast.years.map((y) => y.high));
@@ -69,7 +79,14 @@ export default function ForecastPage() {
               return (
                 <div key={y.year} className="flex h-full flex-1 flex-col justify-end">
                   <p className="mb-1 text-center text-xs font-bold sm:text-sm">
-                    {y.high === 0 ? "$0" : `${compact(y.low)} to ${compact(y.high)}`}
+                    {y.high === 0 ? (
+                      "$0"
+                    ) : (
+                      <>
+                        <span className="sm:hidden">{`${compact(y.low)} to ${compact(y.high)}`}</span>
+                        <span className="hidden sm:inline">{usdRange(y.low, y.high)}</span>
+                      </>
+                    )}
                   </p>
                   <div className="bar-rise relative w-full" style={{ height: `${highPct * 0.82}%` }}>
                     <div className="absolute inset-0 rounded-t-lg bg-glow/50" />
@@ -109,7 +126,10 @@ export default function ForecastPage() {
           {forecast.rows.map((row) => (
             <li key={row.id} className="py-3">
               <div className="flex flex-wrap items-center justify-between gap-2">
-                <p className="text-lg font-extrabold">{row.name}</p>
+                <p className="text-lg font-extrabold">
+                  {row.name}
+                  {row.id === "water-heater" && state.jobCompletedAt && <JobLink />}
+                </p>
                 <Badge tone={STATUS_TONE[row.status]}>{row.status}</Badge>
               </div>
               <p className="text-ink-soft">
@@ -136,7 +156,10 @@ export default function ForecastPage() {
             <tbody className="divide-y divide-line">
               {forecast.rows.map((row) => (
                 <tr key={row.id}>
-                  <th scope="row" className="px-3 py-2 font-bold">{row.name}</th>
+                  <th scope="row" className="px-3 py-2 font-bold">
+                    {row.name}
+                    {row.id === "water-heater" && state.jobCompletedAt && <JobLink />}
+                  </th>
                   <td className="px-3 py-2">{row.installYear}</td>
                   <td className="px-3 py-2">{row.typicalLifeYears} years</td>
                   <td className="px-3 py-2">{row.dueYear}</td>

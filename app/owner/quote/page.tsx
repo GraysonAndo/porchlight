@@ -17,6 +17,7 @@ function PasteQuote() {
   const [parsed, setParsed] = useState<ParsedQuote | null>(null);
   const [fromPhoto, setFromPhoto] = useState<string | null>(null);
 
+  const [checkAnyway, setCheckAnyway] = useState(false);
   const job = detectQuoteJob(text);
   const quote: VendorQuote | null =
     parsed && parsed.lines.length > 0 && job.kind === "water-heater"
@@ -52,11 +53,15 @@ function PasteQuote() {
             setText(e.target.value);
             setParsed(null);
             setFromPhoto(null);
+            setCheckAnyway(false);
           }}
-          placeholder={"Vendor name\nWater heater unit ........ $800\nLabor ........ $1,200\nTOTAL $2,500"}
+          placeholder={"Example, type over it:\nVendor name\nWater heater unit ........ $800\nLabor ........ $1,200\nTOTAL $2,500"}
         />
         <div className="mt-3 flex flex-col gap-3 sm:flex-row">
-          <button type="button" className="btn btn-primary" disabled={text.trim() === ""} onClick={() => setParsed(parseQuoteText(text))}>
+          <button type="button" className="btn btn-primary" disabled={text.trim() === ""} onClick={() => {
+              setCheckAnyway(false);
+              setParsed(parseQuoteText(text));
+            }}>
             Check this quote
           </button>
           <button
@@ -153,7 +158,19 @@ function PasteQuote() {
               </ul>
             </Callout>
           )}
-          <QuoteDetail quote={quote} />
+          {parsed.mismatch !== null && !checkAnyway ? (
+            <Callout tone="caution" title="No verdict yet: the quote does not add up">
+              <p>
+                A fair, high, or low verdict would be a guess while the lines and the total disagree by {usd(Math.abs(parsed.mismatch))}. Ask the
+                vendor for a corrected quote, or check it anyway using the total on the quote.
+              </p>
+              <button type="button" className="btn btn-secondary mt-3" onClick={() => setCheckAnyway(true)}>
+                Check it anyway
+              </button>
+            </Callout>
+          ) : (
+            <QuoteDetail quote={quote} />
+          )}
         </div>
       )}
     </div>

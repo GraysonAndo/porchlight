@@ -229,7 +229,7 @@ function buildLeakScenario(): Scenario {
           kind: "push",
           urgency: "urgent",
           title: "Urgent: water heater leak",
-          text: "1200 Example Court. Your tenant has safe steps. I'm handling the next steps. Nothing needed from you yet.",
+          text: "1200 Example Court. Your tenant has safe steps to follow. I'm lining up the next steps. Nothing needed from you yet.",
         },
       ],
       agent: [

@@ -35,7 +35,7 @@ describe("mockAI", () => {
     // Bayside's quote already has a permit line, so GoHome does not ask about the permit.
     expect(r.questionsToAsk.join(" ")).not.toMatch(/permit/i);
     expect(r.estimatedSavingsLow).toBe(250);
-    expect(r.estimatedSavingsHigh).toBe(500);
+    expect(r.estimatedSavingsHigh).toBe(750);
   });
 
   it("quote check finds no savings for a fair quote", async () => {

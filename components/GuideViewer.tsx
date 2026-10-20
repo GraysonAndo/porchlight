@@ -4,17 +4,23 @@
 // as a short animated walkthrough. It keeps people inside GoHome instead of sending them to a video site.
 
 import { useEffect, useRef, useState } from "react";
+import { useRouter } from "next/navigation";
 import { GuideScene } from "./GuideScene";
 import { AlertIcon, PlayIcon } from "./icons";
 import { guideById, type HomeGuide } from "@/lib/homeGuides";
+import { useDemo } from "@/lib/store";
 import { useEquipment } from "@/lib/useEquipment";
 
 const PLAY_STEP_MS = 4500;
 
 export function GuideViewer({ guide, onDone, doneLabel = "Done" }: { guide: HomeGuide; onDone?: () => void; doneLabel?: string }) {
-  const [index, setIndex] = useState(0);
-  const [playing, setPlaying] = useState(false);
+  const { state, actions } = useDemo();
   const last = guide.steps.length - 1;
+  // Where the tenant was is remembered, so a reload or a phone call in the middle of a guide loses nothing.
+  const index = Math.min(Math.max(state.guideProgress[guide.id] ?? 0, 0), last);
+  const setIndex = (change: number | ((i: number) => number)) =>
+    actions.setGuideStep(guide.id, typeof change === "function" ? change(index) : change);
+  const [playing, setPlaying] = useState(false);
   const step = guide.steps[index];
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -22,11 +28,11 @@ export function GuideViewer({ guide, onDone, doneLabel = "Done" }: { guide: Home
   const isPlaying = playing && index < last;
   useEffect(() => {
     if (!isPlaying) return;
-    timer.current = setTimeout(() => setIndex((i) => Math.min(i + 1, last)), PLAY_STEP_MS);
+    timer.current = setTimeout(() => actions.setGuideStep(guide.id, Math.min(index + 1, last)), PLAY_STEP_MS);
     return () => {
       if (timer.current) clearTimeout(timer.current);
     };
-  }, [isPlaying, index, last]);
+  }, [isPlaying, index, last, actions, guide.id]);
 
   function play() {
     if (index >= last) setIndex(0);
@@ -99,7 +105,15 @@ export function GuideViewer({ guide, onDone, doneLabel = "Done" }: { guide: Home
             Next step
           </button>
         ) : (
-          <button type="button" className="btn btn-primary" onClick={onDone}>
+          <button
+            type="button"
+            className="btn btn-primary"
+            onClick={() => {
+              setPlaying(false);
+              setIndex(0);
+              onDone?.();
+            }}
+          >
             {doneLabel}
           </button>
         )}
@@ -152,7 +166,8 @@ export function GuideButton({ guideId, label = "Show me how" }: { guideId: strin
 
 /** A guide looked up by id, written for the equipment as the home record has it now. Shows "not found" for an unknown id. */
 export function GuideFromStore({ id }: { id: string }) {
+  const router = useRouter();
   const guide = guideById(id, useEquipment());
   if (!guide) return <p className="card">We could not find that guide.</p>;
-  return <GuideViewer guide={guide} />;
+  return <GuideViewer guide={guide} doneLabel="Done, back to GoHome" onDone={() => router.push("/tenant")} />;
 }

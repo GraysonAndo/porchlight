@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { Badge } from "@/components/ui";
-import { BILLS, DIRECT_UTILITIES, money, type PayKind } from "@/lib/payments";
+import { BILLS, DIRECT_UTILITIES, dueStatus, money, type PayKind } from "@/lib/payments";
 import { longDate } from "@/lib/format";
 import { useDemo } from "@/lib/store";
 import type { Payment } from "@/lib/types";
@@ -29,6 +29,14 @@ function PayBody() {
   const due = BILLS.filter((b) => !paidKinds.has(b.kind));
   const dueTotal = due.reduce((s, b) => s + b.cents, 0);
   const checkouts = new Set(state.payments.map((p) => p.confirmation)).size;
+  // One receipt per checkout: the bills paid, the card fee on its own line, and what was charged in all.
+  const receipts = [...new Set(state.payments.map((p) => p.confirmation))]
+    .reverse()
+    .map((confirmation) => {
+      const items = state.payments.filter((p) => p.confirmation === confirmation);
+      const fee = items.reduce((sum, p) => sum + p.feeCents, 0);
+      return { confirmation, items, fee, total: items.reduce((sum, p) => sum + p.cents, 0) + fee, paidAt: items[0].paidAt, method: items[0].method, last4: items[0].last4 };
+    });
 
   // The checkout keeps the address it started with, so its receipt is not wiped when a bill is recorded as paid.
   // After "Done" it is cleared, and a fresh checkout appears if something is still due.
@@ -81,17 +89,18 @@ function PayBody() {
             <ul className="divide-y divide-line">
               {BILLS.map((b) => {
                 const paid = paidKinds.has(b.kind);
+                const status = dueStatus(b.kind);
                 return (
                   <li key={b.kind} className="flex items-center justify-between gap-3 py-3">
                     <div className="min-w-0">
                       <p className="font-bold">{b.label}</p>
                       <p className="text-sm text-ink-soft">
-                        {b.due}. {b.detail}
+                        {paid ? "Paid" : status.text} {b.detail}.
                       </p>
                     </div>
                     <div className="flex shrink-0 items-center gap-2">
                       <span className="font-extrabold">{money(b.cents)}</span>
-                      {paid ? <Badge tone="good">Paid</Badge> : <Badge tone="caution">Due</Badge>}
+                      {paid ? <Badge tone="good">Paid</Badge> : status.overdue ? <Badge tone="urgent">{status.badge}</Badge> : <Badge tone="neutral" icon={false}>{status.badge}</Badge>}
                     </div>
                   </li>
                 );
@@ -108,15 +117,29 @@ function PayBody() {
               <p className="text-ink-soft">No payments yet. Your receipts will show here.</p>
             ) : (
               <ul className="divide-y divide-line">
-                {[...state.payments].reverse().map((p) => (
-                  <li key={p.id} className="flex items-start justify-between gap-3 py-3">
-                    <div className="min-w-0">
-                      <p className="font-bold">{p.label}</p>
-                      <p className="text-sm text-ink-soft">
-                        {longDate(p.paidAt.slice(0, 10))}, {p.method === "card" ? "card" : "bank account"} ending in {p.last4}. Confirmation {p.confirmation}.
-                      </p>
-                    </div>
-                    <span className="shrink-0 font-extrabold">{money(p.cents + p.feeCents)}</span>
+                {receipts.map((r) => (
+                  <li key={r.confirmation} className="py-3">
+                    <p className="text-sm text-ink-soft">
+                      {longDate(r.paidAt.slice(0, 10))}, {r.method === "card" ? "card" : "bank account"} ending in {r.last4}. Confirmation {r.confirmation}.
+                    </p>
+                    <dl className="mt-1 space-y-0.5">
+                      {r.items.map((p) => (
+                        <div key={p.id} className="flex justify-between gap-3">
+                          <dt className="font-bold">{p.label}</dt>
+                          <dd className="font-extrabold">{money(p.cents)}</dd>
+                        </div>
+                      ))}
+                      {r.fee > 0 && (
+                        <div className="flex justify-between gap-3 text-sm text-ink-soft">
+                          <dt>Card fee</dt>
+                          <dd className="font-bold">{money(r.fee)}</dd>
+                        </div>
+                      )}
+                      <div className="flex justify-between gap-3 border-t border-line pt-0.5">
+                        <dt className="font-bold">Total paid</dt>
+                        <dd className="font-extrabold">{money(r.total)}</dd>
+                      </div>
+                    </dl>
                   </li>
                 ))}
               </ul>

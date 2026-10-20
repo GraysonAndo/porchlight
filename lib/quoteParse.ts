@@ -17,7 +17,11 @@ export interface ParsedQuote {
   warnings: string[];
 }
 
-const MONEY_AT_END = /\s*(-?)\$?(\d{1,3}(?:,\d{3})+|\d+)(?:\.(\d{1,2}))?\s*$/;
+// An amount at the end of a line. It has to start after a space, a dot leader, a colon, or the start of the line, so the
+// tail of "CSLB #123456" (after a #) or "555-0134" (after a digit and a hyphen) is not read as money.
+const MONEY_AT_END = /(?:^|[\s.:\u2026_])(-?)\$?(\d{1,3}(?:,\d{3})+|\d+)(?:\.(\d{1,2}))?\s*$/;
+/** Lines that carry a phone number, license number, or quote number, never a price. */
+const NOT_A_PRICE_LINE = /\(?\b\d{3}\)?[\s.-]\d{3}[\s.-]\d{4}\b|\b(cslb|license|licence|lic\.?|contractor)\b.*#?\s*\d|#\s*\d/i;
 
 function toNumber(sign: string, whole: string, cents: string | undefined): number {
   const value = Number(whole.replace(/,/g, "")) + (cents ? Number(`0.${cents}`) : 0);
@@ -59,7 +63,7 @@ export function parseQuoteText(text: string): ParsedQuote {
     const line = rawLine.trim();
     if (!line) continue;
 
-    const money = MONEY_AT_END.exec(line);
+    const money = NOT_A_PRICE_LINE.test(line) && !/\$|total/i.test(line) ? null : MONEY_AT_END.exec(line);
     if (!money) {
       // A line with no amount is usually a header. The first one that looks like a name is the vendor.
       if (!vendorName && /[A-Za-z]{3}/.test(line) && line.length < 80 && !/quote\s*#|estimate|date|invoice|phone|@/i.test(line)) {

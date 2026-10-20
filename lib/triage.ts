@@ -187,7 +187,7 @@ export function triageText(description: string): TriageResult {
       safetySteps: [
         "Leave the home now, with everyone inside, and leave the door open.",
         "Do not use light switches, phones, lighters, or anything that could spark while you are inside.",
-        "From outside, call 911 or your gas company's emergency number.",
+        "From outside, call 911 or your gas company's emergency number (PG&E customers: 1-800-743-5000).",
         "Do not go back in until they tell you it is safe.",
       ],
       tenantQuestions: [
@@ -287,7 +287,7 @@ export function triageText(description: string): TriageResult {
   return {
     category: name,
     urgency,
-    summary: `This sounds like a ${name.toLowerCase()} issue: "${snippet(text)}". ${
+    summary: `This sounds like ${/^[aeiou]/i.test(name) ? "an" : "a"} ${name.toLowerCase()} issue: "${snippet(text)}". ${
       urgency === "urgent"
         ? "It should be looked at soon, but it does not sound like an emergency."
         : "It can wait for a normal visit unless it gets worse."

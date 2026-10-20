@@ -113,3 +113,26 @@ describe("detectQuoteJob", () => {
     expect(detectQuoteJob("Something else\nTotal $500")).toEqual({ kind: "unknown", guess: null });
   });
 });
+
+describe("license and phone numbers are not prices", () => {
+  const body = `Harbor View Plumbing
+CSLB #123456
+Call us at (408) 555-0134
+Water heater unit .......... $820.00
+Labor .......... $1,080.00
+TOTAL $1,900.00`;
+
+  it("ignores a license number and a phone number", () => {
+    const q = parseQuoteText(body);
+    expect(q.lines.map((l) => l.label)).toEqual(["Water heater unit", "Labor"]);
+    expect(q.sumOfLines).toBe(1900);
+    expect(q.mismatch).toBeNull();
+    expect(q.warnings.join(" ")).not.toMatch(/add up/);
+  });
+
+  it("still reads a plain amount after a space and a negative discount", () => {
+    const q = parseQuoteText("Labor 500\nDiscount -$50\nTotal $450");
+    expect(q.lines.map((l) => l.amount)).toEqual([500, -50]);
+    expect(q.mismatch).toBeNull();
+  });
+});

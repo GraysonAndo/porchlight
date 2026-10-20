@@ -1,5 +1,6 @@
 "use client";
 
+import { PhoneField } from "@/components/PhoneField";
 import { ResetButton } from "@/components/ResetButton";
 import { SwitchRow } from "@/components/Switch";
 import { TextUpdatesToggle } from "@/components/TextUpdates";
@@ -28,8 +29,6 @@ export default function OwnerSettingsPage() {
         <dl className="grid grid-cols-[7rem_1fr] gap-y-1.5 text-sm">
           <dt className="font-bold text-ink-soft">Name</dt>
           <dd>{PROPERTY.owner}</dd>
-          <dt className="font-bold text-ink-soft">Phone</dt>
-          <dd>{PROPERTY.ownerPhone}</dd>
           <dt className="font-bold text-ink-soft">Property</dt>
           <dd>
             {PROPERTY.address} ({PROPERTY.units} unit)
@@ -37,6 +36,10 @@ export default function OwnerSettingsPage() {
           <dt className="font-bold text-ink-soft">Tenant</dt>
           <dd>{PROPERTY.tenant}</dd>
         </dl>
+        <div className="mt-3">
+          <PhoneField party="owner" />
+          <p className="hint">GoHome texts and calls this number. Fix it here if it is wrong.</p>
+        </div>
       </Section>
 
       <Section id="notifications" title="Notifications">
@@ -44,7 +47,7 @@ export default function OwnerSettingsPage() {
           <TextUpdatesToggle party="owner" />
           <SwitchRow
             title="Call me for emergencies"
-            description="A gas smell, flooding, or no heat rings your phone, even in Do Not Disturb."
+            description="In the full product, a gas smell, flooding, or no heat will ring your phone, even in Do Not Disturb."
             on={state.prefs.ownerEmergencyCalls}
             onChange={(v) => actions.setPref("ownerEmergencyCalls", v)}
           />
@@ -55,7 +58,7 @@ export default function OwnerSettingsPage() {
             onChange={(v) => actions.setPref("ownerEmail", v)}
           />
         </div>
-        <p className="hint">These are saved settings. This sample does not place real calls or send real emails.</p>
+        <p className="hint">These settings are saved on this device. This sample does not place real calls or send real emails.</p>
       </Section>
 
       <Section id="approvals" title="What GoHome may do without asking">

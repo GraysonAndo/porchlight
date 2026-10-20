@@ -117,8 +117,10 @@ export function FeedbackLink() {
                   id="feedback-note"
                   className="field min-h-28"
                   value={note}
+                  maxLength={1000}
                   onChange={(e) => setNote(e.target.value)}
                 />
+                <p className="hint text-right">{note.length} of 1000 characters</p>
               </div>
 
               {error && (
