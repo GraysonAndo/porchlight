@@ -6,7 +6,7 @@ import Link from "next/link";
 import { CheckIcon } from "./icons";
 import { Badge, Card } from "./ui";
 import { longDate } from "@/lib/format";
-import { BILLS, money } from "@/lib/payments";
+import { BILLS, dueStatus, money } from "@/lib/payments";
 import { PROPERTY, RENT_MONTH } from "@/lib/seed";
 import { useDemo } from "@/lib/store";
 
@@ -21,7 +21,7 @@ export function RentCard() {
       title={
         <span className="flex flex-wrap items-center gap-2">
           Rent and utilities
-          {paid ? <Badge tone="good">Rent received</Badge> : <Badge tone="caution">Rent not received</Badge>}
+          {paid ? <Badge tone="good">Rent received</Badge> : dueStatus("rent").overdue ? <Badge tone="urgent">Rent overdue</Badge> : <Badge tone="caution">Rent not received</Badge>}
         </span>
       }
     >
@@ -29,6 +29,7 @@ export function RentCard() {
         {BILLS.map((b) => {
           const p = b.kind === "rent" ? rentPayment : utilityPayment;
           const done = b.kind === "rent" ? paid : Boolean(utilityPayment);
+          const status = dueStatus(b.kind);
           return (
             <li key={b.kind} className="flex items-start justify-between gap-3 py-2">
               <div className="min-w-0">
@@ -40,12 +41,12 @@ export function RentCard() {
                     ? `${longDate(p.paidAt.slice(0, 10))}, ${p.method === "card" ? "card" : "bank transfer"} ending in ${p.last4}. Confirmation ${p.confirmation}.`
                     : done
                       ? `Marked paid on ${longDate((state.rentPaidAt ?? "").slice(0, 10))}.`
-                      : `${PROPERTY.tenant} has not paid yet. ${b.due}.`}
+                      : `${PROPERTY.tenant} has not paid yet. ${status.text}`}
                 </p>
               </div>
               <span className="flex shrink-0 items-center gap-2">
                 <span className="font-extrabold">{money(b.cents)}</span>
-                {done && <CheckIcon size={20} />}
+                {done ? <CheckIcon size={20} /> : status.overdue ? <Badge tone="urgent">Overdue</Badge> : null}
               </span>
             </li>
           );

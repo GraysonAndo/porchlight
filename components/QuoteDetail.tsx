@@ -109,12 +109,7 @@ export function QuoteDetail({ quote, license }: { quote: VendorQuote; license?: 
                           <Badge tone="caution">Low</Badge>
                         </span>
                       )}
-                      {!high && line.verdict !== "low" && flaggedNames.has(line.label) && (
-                        <span className="ml-1 align-middle">{" "}
-                          <Badge tone="caution">Ask</Badge>
-                        </span>
-                      )}
-                      {line.verdict === "fair" && !flaggedNames.has(line.label) && (
+                      {line.verdict === "fair" && (
                         <span className="ml-1 align-middle">{" "}
                           <Badge tone="good">OK</Badge>
                         </span>
@@ -124,6 +119,11 @@ export function QuoteDetail({ quote, license }: { quote: VendorQuote; license?: 
                           <Badge tone="neutral" icon={false}>Not compared</Badge>
                         </span>
                       )}
+                      {!high && flaggedNames.has(line.label) && (
+                          <span className="mt-0.5 block text-sm font-bold text-caution-ink">
+                            Question for the vendor: {check.data?.flaggedLines.find((f) => f.line === line.label)?.reason}
+                          </span>
+                        )}
                       {line.range && (
                           <span className="block text-sm text-ink-soft sm:hidden">
                             Typical {usdRange(line.range.low, line.range.high)}
@@ -191,6 +191,10 @@ export function QuoteDetail({ quote, license }: { quote: VendorQuote; license?: 
               {usd(check.data.estimatedSavingsLow)} to {usd(check.data.estimatedSavingsHigh)}
             </strong>{" "}
             off this quote, or choose a quote that is already fair.
+          </p>
+          <p className="mt-1 text-sm">
+            {usd(check.data.estimatedSavingsLow)} brings it down to {usd(total.range.high)}, the top of the typical range.{" "}
+            {usd(check.data.estimatedSavingsHigh)} brings it to {usd(Math.round((total.range.low + total.range.high) / 2))}, the middle of it.
           </p>
         </Callout>
       )}

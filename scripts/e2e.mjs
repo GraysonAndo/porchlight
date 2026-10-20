@@ -286,6 +286,8 @@ const chatText = (page) => page.getByRole("log", { name: "Messages" }).innerText
   await page.getByText("Fill in the numbers to see the result").waitFor(wait20);
   check("an empty current rent blocks the result instead of using an old number", (await page.getByText("Highest allowed new rent").count()) === 0);
   await page.locator("#current-rent").blur();
+  check("a cleared box is not swapped for an old number, it says what is wrong", (await page.locator("#current-rent").inputValue()) === "" && (await page.getByText("Enter a number.").count()) === 1);
+  await page.locator("#current-rent").fill("3200");
   await page.getByText("Highest allowed new rent").first().waitFor(wait20);
   await page.locator("#proposed-rent").fill("-100");
   await page.getByText("Fill in the numbers to see the result").waitFor(wait20);
@@ -294,7 +296,9 @@ const chatText = (page) => page.getByRole("log", { name: "Messages" }).innerText
   check("a rent with cents shows no float artifact", !/\d\.\d{3,}/.test(await page.locator("main").innerText()));
   await page.locator("#proposed-rent").fill("3360");
   await page.locator("#increases").fill("-1");
-  check("negative earlier increases are not accepted", (await page.locator("#increases").inputValue()) !== "-1" || (await page.locator("#increases").evaluate((el) => !el.checkValidity())));
+  check("negative earlier increases are refused with a message", (await page.getByText("Enter 0 or more.").count()) === 1 && (await page.getByText("Fill in the numbers to see the result").count()) === 1);
+  await page.locator("#increases").fill("1.5");
+  check("a fractional count of increases is refused", (await page.getByText(/Enter a whole number/).count()) === 1);
   await page.locator("#increases").fill("0");
   await page.locator("#cpi").fill("-5");
   await page.getByText(/Check this number/).waitFor(wait20);
@@ -470,7 +474,7 @@ const chatText = (page) => page.getByRole("log", { name: "Messages" }).innerText
   const tenant = await page.locator("main").innerText();
   check("tenant settings has account, notifications, payments, and data", ["Your account", "Notifications", "Payments", "Your data"].every((t) => tenant.includes(t)));
   check("tenant settings has no owner topics", !/quote|forecast|spending limit|approve/i.test(tenant), tenant.slice(0, 80));
-  check("autopay needs a saved payment method first", await page.getByRole("switch", { name: "Autopay" }).isDisabled());
+  check("autopay can be turned on before any payment, with a sample account", await page.getByRole("switch", { name: "Autopay" }).isEnabled() && (await page.getByText(/Turn this on to pay rent automatically/).count()) === 1);
   await page.getByRole("switch", { name: "Email receipts and updates" }).click();
   check("a tenant setting can be changed", (await page.getByRole("switch", { name: "Email receipts and updates" }).getAttribute("aria-checked")) === "false");
   await page.reload();
@@ -627,7 +631,7 @@ const chatText = (page) => page.getByRole("log", { name: "Messages" }).innerText
   await page.locator("#proposed-rent").fill("3000");
   const decrease = await page.locator("pre").innerText();
   check("a rent decrease is titled as a decrease, never as an increase", decrease.includes("NOTICE OF RENT DECREASE") && !decrease.includes("RENT INCREASE"));
-  check("a decrease says it lowers the rent, and the result agrees", (await count(page, "OK: this lowers the rent")) === 1);
+  check("a decrease says it lowers the rent, and the result agrees", (await count(page, "OK to send: this lowers the rent")) >= 1);
   await page.locator("#proposed-rent").fill("3200");
   check("an unchanged rent has no notice to send", (await page.locator("pre").count()) === 0 && (await count(page, "same as the current rent")) > 0);
 
@@ -653,11 +657,12 @@ const chatText = (page) => page.getByRole("log", { name: "Messages" }).innerText
   await page.locator("#cpi").fill("3");
 
   // 11: prefilled from the lease, with a suggestion, a deadline, and a way to send.
-  check("the rent page starts from the lease", (await count(page, "From your lease")) > 0 && (await count(page, "$3,200 a month")) > 0 && (await count(page, "December 14, 2026")) > 0);
+  check("the rent page starts from the lease", (await count(page, "From your lease")) > 0 && (await count(page, "$3,200.00 a month")) > 0 && (await count(page, "December 14, 2026")) > 0);
   await page.locator("#proposed-rent").fill("3300");
-  await page.getByRole("button", { name: /^Use \$3,360$/ }).click();
+  await page.getByRole("button", { name: /^Modest: \$3,360\.00/ }).click();
   check("one tap uses GoHome's suggestion", (await page.locator("#proposed-rent").inputValue()) === "3360");
-  check("the inflation number is looked up for you, not left for you to find", (await count(page, /GoHome looked this up for your area/)) > 0 && !/Look up the current figure/.test(await out()));
+  check("the other suggestion is the most the law allows", (await page.getByRole("button", { name: /^Max legal: \$3,456\.00/ }).count()) === 1);
+  check("the inflation number is honestly labeled as a sample, with where to find the real one", (await count(page, /This is a sample number, not a live lookup/)) > 0 && (await count(page, "U.S. Bureau of Labor Statistics")) > 0);
   check("the page gives the last day to send the notice", (await page.getByText(/To start on December 14, 2026, send the notice by/).count()) === 1);
   await page.locator("#start-date").fill("2020-01-01");
   check("a start date that is already too early is called out", (await page.getByText(/Too late for a January 1, 2020 start/).count()) === 1);
@@ -673,7 +678,7 @@ const chatText = (page) => page.getByRole("log", { name: "Messages" }).innerText
 
   // 12: plain words, no raw keys.
   const rentText = await out();
-  check("the rent page has no unexplained jargon", !/just cause|CPI change|REIT, a corporation/.test(rentText) && /large investment company/.test(rentText) && /rules about when a tenant can be asked to leave/.test(rentText), rentText.slice(0, 60));
+  check("the rent page has no unexplained jargon", !/just cause|CPI change|REIT, a corporation/.test(rentText) && /big investment company/.test(rentText) && /rules about when a tenant can be asked to leave/.test(rentText), rentText.slice(0, 60));
   check("no raw tool names on the owner pages", await (async () => {
     for (const path of ["/owner/request", "/owner/book", "/owner"]) {
       await page.goto(`${BASE}${path}`);
@@ -848,12 +853,12 @@ const chatText = (page) => page.getByRole("log", { name: "Messages" }).innerText
   check("settings links to the phone preview", true);
   check("the phone page says this is how the full product will look and nothing is sent", (await count(page, /In the full product, GoHome works over text message/)) === 1);
   const phone = page.getByRole("region", { name: /phone showing a text conversation/ });
-  check("a phone mockup is shown", (await phone.count()) === 1 && (await phone.getByText("9:41").count()) === 1 && (await phone.getByText("Text message").count()) === 1);
+  check("a phone mockup is shown", (await phone.count()) === 1 && (await phone.getByText("4:07 AM").count()) === 1 && (await phone.getByText("Text message").count()) === 1);
   await phone.getByRole("button", { name: "My water heater is leaking" }).click();
   await phone.getByText(/near an outlet/).waitFor(wait20);
-  check("the tenant's text and GoHome's safety question show as text bubbles", (await phone.getByText("water heater is leaking all over the garage").count()) === 1);
+  check("the tenant's text and GoHome's safety question show as text bubbles", (await phone.getByText("My water heater is leaking", { exact: true }).count()) >= 1);
   await phone.getByRole("button", { name: /^2\s+No$/ }).click();
-  await phone.getByText("Picture guide for your heater").waitFor(wait20);
+  await phone.getByText(/picture guide for your heater/i).waitFor(wait20);
   check("GoHome texts the safe steps with a picture guide", (await phone.getByText(/Two quick steps for your Hearthline HL-40G-NG/).count()) === 1);
   const real = await page.evaluate(() => JSON.parse(window.localStorage.getItem("gohome-v1") ?? "{}").agent?.timeline?.length ?? 0);
   check("the phone preview never touches the real conversation", real === 0, `${real}`);

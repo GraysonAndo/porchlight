@@ -26,6 +26,39 @@ export const BILLS: Bill[] = [
 /** Paid straight to the utility company, so it is shown for information and not payable here. */
 export const DIRECT_UTILITIES = "Gas and electric are paid directly to your utility company. They are not billed here.";
 
+/** The day each sample bill was due (the bills are for October 2026). */
+export const BILL_DUE_DATES: Record<PayKind, string> = { rent: "2026-10-01", utilities: "2026-10-31" };
+
+/** Whole calendar days from today to an ISO date. Negative when the date has passed. `now` is a parameter so this is testable. */
+export function daysUntil(iso: string, now: Date = new Date()): number {
+  const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(iso);
+  if (!m) return 0;
+  const due = Date.UTC(Number(m[1]), Number(m[2]) - 1, Number(m[3]));
+  const today = Date.UTC(now.getFullYear(), now.getMonth(), now.getDate());
+  return Math.round((due - today) / 86_400_000);
+}
+
+const MONTH_NAMES = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+
+export interface DueStatus {
+  overdue: boolean;
+  /** Short, for a badge: "Overdue", "Due today", "Due Oct 31" */
+  badge: string;
+  /** A sentence: "19 days late. It was due Oct 1." or "Due Oct 31, in 11 days." */
+  text: string;
+}
+
+/** Where a bill stands against its due date. Only a bill past its date is overdue. */
+export function dueStatus(kind: PayKind, now: Date = new Date()): DueStatus {
+  const iso = BILL_DUE_DATES[kind];
+  const days = daysUntil(iso, now);
+  const label = `${MONTH_NAMES[Number(iso.slice(5, 7)) - 1]} ${Number(iso.slice(8, 10))}`;
+  const plural = (n: number) => `${n} day${n === 1 ? "" : "s"}`;
+  if (days < 0) return { overdue: true, badge: "Overdue", text: `${plural(-days)} late. It was due ${label}.` };
+  if (days === 0) return { overdue: false, badge: "Due today", text: `Due today, ${label}.` };
+  return { overdue: false, badge: `Due ${label}`, text: `Due ${label}, in ${plural(days)}.` };
+}
+
 export const CARD_FEE_RATE = 0.029;
 export const CARD_FEE_FLAT_CENTS = 30;
 

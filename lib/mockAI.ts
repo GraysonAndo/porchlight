@@ -86,7 +86,8 @@ export function createMockAI(options: MockAIOptions = {}): AIProvider {
           "How long is the warranty on parts and on labor?",
         ],
         estimatedSavingsLow: saveable ? overTop : 0,
-        estimatedSavingsHigh: saveable ? Math.round(overTop * 2) : 0,
+        // From the top of the typical range down to the middle of it: the two targets the callout explains.
+        estimatedSavingsHigh: saveable ? Math.round(total.amount - (total.range.low + total.range.high) / 2) : 0,
       };
     },
 

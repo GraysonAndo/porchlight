@@ -55,8 +55,8 @@ export function useAgent() {
 /** The tenant reports the sample leak and answers everything, so an owner can see a finished case unfold. */
 export function sampleRepairEvents(): import("./types").Ev[] {
   return [
-    { type: "tenant.text", text: "water heater is leaking all over the garage" },
-    { type: "tenant.text", text: "2" },
-    { type: "tenant.text", text: "done" },
+    { type: "tenant.text", text: "water heater is leaking all over the garage", shown: "My water heater is leaking" },
+    { type: "tenant.text", text: "2", shown: "No" },
+    { type: "tenant.text", text: "done", shown: "Done" },
   ];
 }

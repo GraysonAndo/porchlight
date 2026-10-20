@@ -20,18 +20,18 @@ export function autopilotNext(w: World): AutoStep {
 
   switch (w.triage.stage) {
     case "idle":
-      if (w.timeline.length === 0) return { ev: { type: "tenant.text", text: "water heater is leaking all over the garage" } };
+      if (w.timeline.length === 0) return { ev: { type: "tenant.text", text: "water heater is leaking all over the garage", shown: "My water heater is leaking" } };
       break;
     case "asked_electrical":
-      return { ev: { type: "tenant.text", text: "2" } };
+      return { ev: { type: "tenant.text", text: "2", shown: "No" } };
     case "steps_given":
-      return { ev: { type: "tenant.text", text: "done" } };
+      return { ev: { type: "tenant.text", text: "done", shown: "Done" } };
     case "quotes_pending":
       return hasTimer ? { jump: true } : null;
     case "decision_sent":
       return ownerTap(w, "approve");
     case "booked":
-      if (!w.triage.tenantConfirmed) return { ev: { type: "tenant.text", text: "1" } };
+      if (!w.triage.tenantConfirmed) return { ev: { type: "tenant.text", text: "1", shown: "That works" } };
       return hasTimer ? { jump: true } : null;
     case "emergency":
       if (!w.triage.ownerAcked) return ownerTap(w, "ack");

@@ -205,3 +205,41 @@ describe("the notice matches the change", () => {
     expect(text).not.toContain("new rent will be");
   });
 });
+
+describe("an increase already given uses up part of the yearly room", () => {
+  it("is the same as before when there was no earlier increase", () => {
+    expect(maxNewRentFor(3200, 8, 0)).toBe(maxNewRentFor(3200, 8));
+  });
+
+  it("is lower after an earlier increase, measured from the rent a year ago", () => {
+    // Rent a year ago was 3200 / 1.03 = 3106.796, and 8% on that is 3355.33 after rounding down to the cent.
+    expect(maxNewRentFor(3200, 8, 3)).toBe(3355.33);
+    expect(maxNewRentFor(3200, 8, 3)).toBeLessThan(maxNewRentFor(3200, 8));
+  });
+
+  it("flows through calculateRent", () => {
+    const r = calculateRent({ ...base, increasesInLast12Months: 1, priorIncreasePercent: 3, proposedRent: 3360 });
+    expect(r.maxNewRent).toBe(3355.33);
+    expect(r.withinCap).toBe(false);
+    expect(r.tooManyIncreases).toBe(false);
+  });
+});
+
+describe("the letter uses the start date the owner picked", () => {
+  const input = { ownerName: "O", tenantName: "T", address: "A", currentRent: 3200, newRent: 3360, noticeDate: "2026-10-19", noticeDays: 30 };
+
+  it("shows the chosen start date when the notice is early enough", () => {
+    expect(buildNotice({ ...input, startDate: "2026-12-14" })).toContain("Starting December 14, 2026");
+  });
+
+  it("falls back to the earliest possible date when the chosen one is too soon", () => {
+    expect(buildNotice({ ...input, startDate: "2026-10-30" })).toContain("Starting November 18, 2026");
+  });
+
+  it("names the delivery method, the owner address, and the basis", () => {
+    const text = buildNotice({ ...input, serviceMethod: "first-class mail", ownerAddress: "PO Box 100", basis: "Within Civil Code section 1947.12." });
+    expect(text).toContain("Delivery: first-class mail");
+    expect(text).toContain("Owner mailing address: PO Box 100");
+    expect(text).toContain("Within Civil Code section 1947.12.");
+  });
+});

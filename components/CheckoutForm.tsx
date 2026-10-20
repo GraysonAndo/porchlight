@@ -12,6 +12,7 @@ import {
   accountValid,
   confirmationNumber,
   cvcValid,
+  dueStatus,
   expiryValid,
   feeCents,
   formatCardNumber,
@@ -179,6 +180,9 @@ export function CheckoutForm({ due, paidCount }: { due: PayKind[]; paidCount: nu
         <p className="text-sm text-ink-soft">
           Paid with {receipt[0]?.method === "card" ? "card" : "bank account"} ending in {receipt[0]?.last4}. A receipt was sent to your email, and your owner was notified.
         </p>
+        <button type="button" className="btn btn-secondary w-full" onClick={() => window.print()}>
+          Print this receipt
+        </button>
         <button type="button" className="btn btn-primary w-full" onClick={() => window.parent?.postMessage({ type: "gohome-checkout-done" }, window.location.origin)}>
           Done
         </button>
@@ -210,7 +214,7 @@ export function CheckoutForm({ due, paidCount }: { due: PayKind[]; paidCount: nu
             <span className="min-w-0 flex-1">
               <span className="block font-bold">{b.label}</span>
               <span className="block text-xs text-ink-soft">
-                {b.due}. {b.detail}
+                {dueStatus(b.kind).badge}. {b.detail}
               </span>
             </span>
             <span className="font-extrabold">{money(b.cents)}</span>
@@ -291,10 +295,12 @@ export function CheckoutForm({ due, paidCount }: { due: PayKind[]; paidCount: nu
         </div>
       </dl>
 
-      <button type="submit" className="btn btn-primary btn-lg w-full" disabled={busy}>
-        {busy ? "Processing..." : `Pay ${money(total)}`}
+      <button type="submit" className="btn btn-primary btn-lg w-full" disabled={busy || subtotal === 0}>
+        {busy ? "Processing..." : subtotal === 0 ? "Pick what to pay" : `Pay ${money(total)}`}
       </button>
-      <p className="text-center text-xs text-ink-soft">Sample payment: no real money moves, and card details are never saved.</p>
+      <p className="text-center text-xs text-ink-soft">
+        Sample payment: no real money moves, and {method === "card" ? "card details" : "your account and routing numbers"} are never saved.
+      </p>
     </form>
   );
 }

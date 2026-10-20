@@ -1,5 +1,6 @@
 "use client";
 
+import { PhoneField } from "@/components/PhoneField";
 import { ResetButton } from "@/components/ResetButton";
 import Link from "next/link";
 import { SwitchRow } from "@/components/Switch";
@@ -21,7 +22,7 @@ function Section({ id, title, children }: { id: string; title: string; children:
 export default function TenantSettingsPage() {
   const { state, actions } = useDemo();
   const method = state.payments.at(-1);
-  const saved = method ? `${method.method === "card" ? "card" : "bank account"} ending in ${method.last4}` : null;
+  const saved = method ? `${method.method === "card" ? "card" : "bank account"} ending in ${method.last4}` : state.prefs.tenantAutopayMethod;
 
   return (
     <div className="mx-auto max-w-2xl space-y-5">
@@ -31,8 +32,6 @@ export default function TenantSettingsPage() {
         <dl className="grid grid-cols-[7rem_1fr] gap-y-1.5 text-sm">
           <dt className="font-bold text-ink-soft">Name</dt>
           <dd>{PROPERTY.tenant}</dd>
-          <dt className="font-bold text-ink-soft">Phone</dt>
-          <dd>{PROPERTY.tenantPhone}</dd>
           <dt className="font-bold text-ink-soft">Email</dt>
           <dd>{PROPERTY.tenantEmail}</dd>
           <dt className="font-bold text-ink-soft">Home</dt>
@@ -40,6 +39,9 @@ export default function TenantSettingsPage() {
           <dt className="font-bold text-ink-soft">Owner</dt>
           <dd>{PROPERTY.owner}</dd>
         </dl>
+        <div className="mt-3">
+          <PhoneField party="tenant" />
+        </div>
       </Section>
 
       <Section id="notifications" title="Notifications">
@@ -63,12 +65,15 @@ export default function TenantSettingsPage() {
       <Section id="payments" title="Payments">
         <SwitchRow
           title="Autopay"
-          description={saved ? `Pays rent on the 1st with your ${saved}.` : "Make a payment first, and your payment method is saved for autopay."}
+          description={saved ? `Pays rent on the 1st with your ${saved}.` : "Turn this on to pay rent automatically on the 1st. You do not need to pay by hand first."}
           on={state.prefs.tenantAutopay && Boolean(saved)}
-          onChange={(v) => actions.setPref("tenantAutopay", v)}
-          disabled={!saved}
+          onChange={(v) => {
+            // With no payment made yet, a sample bank account stands in. In the full product the tenant adds their own.
+            if (v && !saved) actions.setPref("tenantAutopayMethod", "sample bank account ending in 6789");
+            actions.setPref("tenantAutopay", v);
+          }}
         />
-        <p className="hint">Card numbers are never saved here, only the last four digits. All payments are sample data.</p>
+        <p className="hint">Card and bank numbers are never saved here, only the last four digits. All payments are sample data.</p>
       </Section>
 
       <Section id="data" title="Your data">

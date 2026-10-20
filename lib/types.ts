@@ -175,6 +175,8 @@ export interface RentFormState {
   proposedRent: number;
   tenancy12Plus: boolean;
   increasesInLast12Months: number;
+  /** Total percent the rent went up over the last 12 months. Only matters when an increase was already given. */
+  priorIncreasePercent: number;
   singleFamilyOrCondo: boolean;
   notCorporateOwned: boolean;
   exemptionNoticeGiven: boolean;
@@ -218,6 +220,10 @@ export interface EquipmentEdit {
   model?: string;
   serial?: string;
   location?: string;
+  /** The year it was installed or made. Drives its age, the forecast, and the repair or replace rule. */
+  installYear?: number;
+  /** One plain line on what it is, such as "40 gallon, natural gas, tank type" */
+  summary?: string;
 }
 
 /** A rent notice the owner sent. Nothing is really mailed. */
@@ -234,8 +240,13 @@ export interface RentNoticeSent {
 export interface Prefs {
   tenantEmail: boolean;
   tenantAutopay: boolean;
+  /** A payment method set up for autopay before any manual payment, such as "bank account ending in 6789" */
+  tenantAutopayMethod: string | null;
   ownerEmail: boolean;
   ownerEmergencyCalls: boolean;
+  /** The numbers GoHome texts and calls. Each person can correct their own. */
+  ownerPhone: string;
+  tenantPhone: string;
 }
 
 export interface DemoState {
@@ -260,8 +271,12 @@ export interface DemoState {
   prefs: Prefs;
   /** The rent notice the owner sent from the rent page, or null */
   rentNotice: RentNoticeSent | null;
+  /** Every rent notice sent, oldest first, so the owner keeps a record of what went out and when */
+  rentNoticeLog: RentNoticeSent[];
   /** Corrections the owner made to the home record, by equipment id */
   equipmentEdits: Record<string, EquipmentEdit>;
+  /** The step each how-to guide was last on, so a reload or a call mid-guide picks up where the tenant left off */
+  guideProgress: Record<string, number>;
   /** GoHome's agent: every text, tool call, and record write, shared by the tenant and owner screens */
   agent: World;
   /** Whether each person gets GoHome's updates by text */

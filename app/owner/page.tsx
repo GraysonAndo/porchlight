@@ -125,13 +125,27 @@ export default function OwnerHomePage() {
         </div>
 
         <div className="space-y-3 lg:sticky lg:top-20">
-          <div role="tablist" aria-label="Activity or texts" className="grid grid-cols-2 gap-1 rounded-xl bg-cream-deep p-1">
+          <div
+            role="tablist"
+            aria-label="Activity or texts"
+            className="grid grid-cols-2 gap-1 rounded-xl bg-cream-deep p-1"
+            onKeyDown={(e) => {
+              // Arrow keys, Home and End move between the two tabs, as a tablist should.
+              if (!["ArrowLeft", "ArrowRight", "Home", "End"].includes(e.key)) return;
+              e.preventDefault();
+              const next = e.key === "Home" ? "activity" : e.key === "End" ? "texts" : tab === "activity" ? "texts" : "activity";
+              setTab(next);
+              e.currentTarget.querySelector<HTMLButtonElement>(`#owner-tab-${next}`)?.focus();
+            }}
+          >
             {(["activity", "texts"] as const).map((id) => (
               <button
                 key={id}
+                id={`owner-tab-${id}`}
                 type="button"
                 role="tab"
                 aria-selected={tab === id}
+                tabIndex={tab === id ? 0 : -1}
                 onClick={() => setTab(id)}
                 className={`min-h-11 rounded-lg px-3 text-sm font-bold ${tab === id ? "bg-white text-ink shadow-sm" : "text-ink-soft"}`}
               >

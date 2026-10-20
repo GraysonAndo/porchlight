@@ -61,7 +61,7 @@ export default function OwnerRecordPage() {
               <div className="flex flex-wrap items-start justify-between gap-2">
                 <div>
                   <p className="text-xl font-extrabold">{item.name}</p>
-                  <p className="font-bold text-brand">
+                  <p className="font-bold text-ink">
                     {item.brand} {item.model}
                   </p>
                 </div>
@@ -76,8 +76,8 @@ export default function OwnerRecordPage() {
                 <dd>{item.summary}</dd>
                 <dt className="font-bold text-ink-soft">Where</dt>
                 <dd>{item.location}</dd>
-                <dt className="font-bold text-ink-soft">Serial</dt>
-                <dd>{item.serial}</dd>
+                <dt className="font-bold text-ink-soft">{/^lot\b/i.test(item.serial) ? "Lot number" : "Serial"}</dt>
+                <dd>{item.serial.replace(/^lot\s*/i, "")}</dd>
                 <dt className="font-bold text-ink-soft">Installed</dt>
                 <dd>
                   {item.installYear} ({age === 0 ? "brand new" : `${age} years old`})

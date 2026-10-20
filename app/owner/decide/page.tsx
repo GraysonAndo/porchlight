@@ -1,9 +1,10 @@
 "use client";
 
+import Link from "next/link";
 import { CheckIcon } from "@/components/icons";
 import { PlainCodeNote } from "@/components/Agent";
 import { StepShell } from "@/components/StepShell";
-import { Badge, Callout, Card, PlaceholderNote } from "@/components/ui";
+import { Badge, Callout, Card, NumberField, PlaceholderNote } from "@/components/ui";
 import { decideRepairOrReplace } from "@/lib/decision";
 import { equipmentFor, heaterBeforeRepair } from "@/lib/equipment";
 import { usd, usdRange } from "@/lib/format";
@@ -11,18 +12,22 @@ import { ageOf } from "@/lib/life";
 import { PLAN } from "@/lib/plan";
 import { REPAIR_ESTIMATE, WATER_HEATER_JOB } from "@/lib/seed";
 import { useDemo } from "@/lib/store";
+import { useState } from "react";
 
 export default function DecidePage() {
   const { state } = useDemo();
   const record = heaterBeforeRepair(state);
-  const heater = equipmentFor(record)[0];
+  const heater = equipmentFor(record, state.equipmentEdits)[0];
+  // A repair price the owner was actually quoted can replace the sample one, to see if the advice changes.
+  const [repair, setRepair] = useState(REPAIR_ESTIMATE);
+  const [repairBad, setRepairBad] = useState(false);
 
   // Inputs for the rule. The failure mode comes from the triage on screen 2.
   const result = decideRepairOrReplace({
     item: heater.name,
     ageYears: ageOf(heater),
     typicalLifeYears: heater.typicalLifeYears,
-    repairCost: REPAIR_ESTIMATE,
+    repairCost: repairBad ? REPAIR_ESTIMATE : repair,
     replaceCost: PLAN.total,
     failureMode: "tank leak",
   });
@@ -83,6 +88,21 @@ export default function DecidePage() {
         </p>
       </Card>
 
+      <Card title="Try your own repair price">
+        <NumberField
+          id="repair-estimate"
+          label="Repair price you were quoted"
+          prefix="$"
+          step="any"
+          min={1}
+          value={repair}
+          onChange={(v) => setRepair(Math.round(v * 100) / 100)}
+          onEmptyChange={setRepairBad}
+          validate={(v) => (v <= 0 ? "Enter more than $0." : v > 50000 ? "That is more than $50,000. Check the number." : null)}
+          hint={<>Starts at the sample estimate of {usd(REPAIR_ESTIMATE)}. The three rules above update as you type.</>}
+        />
+      </Card>
+
       <Card title="Cost comparison">
         <div className="space-y-4">
           <div>
@@ -122,7 +142,15 @@ export default function DecidePage() {
       </Card>
 
       <Callout tone="info" title="You decide">
-        <p>GoHome recommends. The owner decides. You can still ask for a second opinion or a second quote.</p>
+        <p>GoHome recommends. The owner decides. Not sure about the numbers?</p>
+        <p className="mt-2 flex flex-wrap gap-x-5 gap-y-1 font-bold">
+          <Link href="/owner/quote" className="underline underline-offset-4">
+            Get a second quote (paste one you have)
+          </Link>
+          <Link href="/owner/record" className="underline underline-offset-4">
+            Correct the heater&apos;s age in the home record
+          </Link>
+        </p>
       </Callout>
     </StepShell>
   );

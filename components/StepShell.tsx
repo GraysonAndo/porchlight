@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import type { ReactNode } from "react";
 import { PAGE_TITLES, REPAIR_TABS } from "@/lib/steps";
+import { useDemo } from "@/lib/store";
 
 const STEP_PATHS: Record<string, string> = {
   "owner-request": "/owner/request",
@@ -20,6 +21,9 @@ export function StepShell({ stepId, children }: { stepId: string; children: Reac
   const pathname = usePathname();
   const path = STEP_PATHS[stepId] ?? "/owner";
   const isRepair = REPAIR_TABS.some((t) => t.href === path);
+  const { state, hydrated } = useDemo();
+  // Before any repair is reported these pages show a sample, and they say so instead of looking like the owner's own job.
+  const showingSample = isRepair && hydrated && state.agent.timeline.length === 0;
 
   return (
     <div className="mx-auto max-w-4xl">
@@ -45,6 +49,15 @@ export function StepShell({ stepId, children }: { stepId: string; children: Reac
         </div>
       )}
       <h1 className="text-3xl font-extrabold leading-tight sm:text-4xl">{PAGE_TITLES[path] ?? "GoHome"}</h1>
+      {showingSample && (
+        <p role="note" className="mt-3 rounded-xl bg-glow-tint px-4 py-3 font-bold">
+          No repair has been reported yet, so this page shows a sample of what GoHome prepares after your tenant reports a problem.{" "}
+          <Link href="/owner" className="underline underline-offset-4">
+            Go to the Inbox to start one
+          </Link>
+          .
+        </p>
+      )}
       <div className="reveal mt-5 space-y-5">{children}</div>
     </div>
   );

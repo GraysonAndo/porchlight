@@ -25,11 +25,18 @@ function lastMessage(w: World, party: "tenant" | "owner"): Msg | null {
   return null;
 }
 
+/** Cuts a long text at a word, so a preview never ends in half a word. */
+function clip(text: string, max: number): string {
+  if (text.length <= max) return text;
+  const cut = text.slice(0, max);
+  return `${cut.slice(0, Math.max(cut.lastIndexOf(" "), 1)).replace(/[\s,.;:]+$/, "")}...`;
+}
+
 function previewOf(w: World, party: "tenant" | "owner"): FlowPromptData["preview"] {
   const msg = lastMessage(w, party);
   if (!msg) return null;
   const text = msg.card ? `${msg.card.title}. ${msg.card.summary}` : msg.text;
-  return { who: party === "owner" ? "The owner sees" : "The tenant sees", text: text.replace(/\s+/g, " ").trim().slice(0, 240) };
+  return { who: party === "owner" ? "The owner sees" : "The tenant sees", text: clip(text.replace(/\s+/g, " ").trim(), 240) };
 }
 
 /** What to show this person right now, or null when there is nothing useful to say. */
@@ -64,7 +71,7 @@ export function flowPromptFor(role: PreviewRole, w: World): FlowPromptData | nul
         };
       case "booked":
         if (!w.triage.tenantConfirmed) {
-          return { key, title: "Your plumber is booked. Is the time good?", preview, cta: { label: "Confirm the time: That works", events: [{ type: "tenant.text", text: "1" }] } };
+          return { key, title: "Your plumber is booked. Is the time good?", preview, cta: { label: "Confirm the time: That works", events: [{ type: "tenant.text", text: "1", shown: "That works" }] } };
         }
         return { key, title: "Visit confirmed. Your owner knows.", preview, cta: { label: "Fast-forward: the plumber finishes", events: [{ type: "owner.markDone" }] } };
       case "done":
@@ -81,21 +88,21 @@ export function flowPromptFor(role: PreviewRole, w: World): FlowPromptData | nul
           key,
           title: "Nothing yet. A tenant can text GoHome any time.",
           preview: null,
-          cta: { label: "Act as the tenant: report a leaking water heater", events: [{ type: "tenant.text", text: LEAK }] },
+          cta: { label: "Act as the tenant: report a leaking water heater", events: [{ type: "tenant.text", text: LEAK, shown: "My water heater is leaking" }] },
         };
       }
       return null;
     case "asked_electrical":
-      return { key, title: "The tenant is answering a safety question", preview, cta: { label: "Act as the tenant: No, nothing electrical", events: [{ type: "tenant.text", text: "2" }] } };
+      return { key, title: "The tenant is answering a safety question", preview, cta: { label: "Act as the tenant: No, nothing electrical", events: [{ type: "tenant.text", text: "2", shown: "No" }] } };
     case "steps_given":
-      return { key, title: "The tenant is doing the safe steps", preview, cta: { label: "Act as the tenant: Done", events: [{ type: "tenant.text", text: "done" }] } };
+      return { key, title: "The tenant is doing the safe steps", preview, cta: { label: "Act as the tenant: Done", events: [{ type: "tenant.text", text: "done", shown: "Done" }] } };
     case "quotes_pending":
       return { key, title: "GoHome is collecting quotes. Your plan arrives in a moment.", preview, cta: null };
     case "decision_sent":
       return { key, title: "Meanwhile, your tenant is waiting", preview, cta: null };
     case "booked":
       if (!w.triage.tenantConfirmed) {
-        return { key, title: "Your tenant just got the visit time", preview, cta: { label: "Act as the tenant: That works", events: [{ type: "tenant.text", text: "1" }] } };
+        return { key, title: "Your tenant just got the visit time", preview, cta: { label: "Act as the tenant: That works", events: [{ type: "tenant.text", text: "1", shown: "That works" }] } };
       }
       return { key, title: "Your tenant confirmed the visit.", preview, cta: null };
     case "done":

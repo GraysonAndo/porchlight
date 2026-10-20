@@ -64,6 +64,7 @@ export const INITIAL_RECORD: Record<string, string> = {
   "heater.serial": "15C0412-X",
   "heater.size": "40 gallons",
   "heater.fuel": "Natural gas",
+  "heater.location": "Garage, against the north wall",
   "heater.made": "March 2015",
   "heater.age": "11 years",
   "heater.warranty": "Expired in 2021 (6 year tank warranty*)",
@@ -74,20 +75,21 @@ export const INITIAL_RECORD: Record<string, string> = {
   "lease.notice": "None",
 };
 
-export const RECORD_FIELDS: { key: string; label: string; group: "Water heater" | "Lease, Unit A" }[] = [
+export const RECORD_FIELDS: { key: string; label: string; group: "Water heater" | "Lease" }[] = [
   { key: "heater.brand", label: "Brand", group: "Water heater" },
   { key: "heater.model", label: "Model", group: "Water heater" },
   { key: "heater.serial", label: "Serial number", group: "Water heater" },
   { key: "heater.size", label: "Size", group: "Water heater" },
   { key: "heater.fuel", label: "Fuel", group: "Water heater" },
+  { key: "heater.location", label: "Where", group: "Water heater" },
   { key: "heater.made", label: "Made", group: "Water heater" },
   { key: "heater.age", label: "Age", group: "Water heater" },
   { key: "heater.warranty", label: "Warranty", group: "Water heater" },
   { key: "heater.source", label: "How we know", group: "Water heater" },
-  { key: "lease.rent", label: "Rent", group: "Lease, Unit A" },
-  { key: "lease.anniversary", label: "Lease anniversary", group: "Lease, Unit A" },
-  { key: "lease.last", label: "Last increase", group: "Lease, Unit A" },
-  { key: "lease.notice", label: "Rent notice", group: "Lease, Unit A" },
+  { key: "lease.rent", label: "Rent", group: "Lease" },
+  { key: "lease.anniversary", label: "Next lease anniversary", group: "Lease" },
+  { key: "lease.last", label: "Last increase", group: "Lease" },
+  { key: "lease.notice", label: "Rent notice", group: "Lease" },
 ];
 
 /** A sample notice date for the demo. Real use would take today's date. */
@@ -107,6 +109,15 @@ export function clockText(at: number): string {
   const time = `${h12}:${String(m).padStart(2, "0")} ${h24 < 12 ? "AM" : "PM"}`;
   if (day === 0) return time;
   return `${["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"][day % 7]} ${time}`;
+}
+
+/**
+ * The time to show beside an entry. Entries the person watched happen show the real time they appeared, so the thread
+ * always reads in order. The story clock (a 4 AM leak) is only used where there is no real time, such as the phone preview.
+ */
+export function entryTime(e: { at: number; revealAt?: number }): string {
+  if (e.revealAt === undefined) return clockText(e.at);
+  return new Date(e.revealAt).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" });
 }
 
 /** Do Not Disturb hours on the owner's phone. */
@@ -280,7 +291,7 @@ export function send(world: World, ev: Ev): World {
 function handle(w: World, ev: Ev): void {
   switch (ev.type) {
     case "tenant.text":
-      return onTenantText(w, ev.text);
+      return onTenantText(w, ev.text, ev.shown);
     case "tenant.photo":
       return onTenantPhoto(w, ev.photo);
     case "owner.tap":
@@ -339,6 +350,25 @@ function onRentPaid(w: World, paid: boolean, confirmation?: string): void {
 function onRecordEdit(w: World, patch: Record<string, string>): void {
   record(w, patch, "Corrected by the owner");
   tool(w, "chat", "update_house_record", "action", "Updated the home record", "The owner corrected a detail. GoHome uses the corrected record from now on, and the tenant's guides match it.");
+}
+
+/** The year the heater was made, as the home record has it now (the owner may have corrected it). */
+function heaterYear(w: World): number {
+  const made = recordAt(w.timeline, w.timeline.length).values["heater.made"] ?? "";
+  const year = /(\d{4})/.exec(made)?.[1];
+  return year ? Number(year) : 2015;
+}
+
+/** The message GoHome sends the vendor, written from the home record as it stands now, so the owner can read it first. */
+function vendorMessage(w: World, vendorName: string, total: number, limit: number, window: string): string {
+  const v = recordAt(w.timeline, w.timeline.length).values;
+  return [
+    `Hello ${vendorName},`,
+    `This is GoHome for ${PROPERTY.owner}. We would like to book you to replace the water heater at ${PROPERTY.address}.`,
+    `The unit now: ${v["heater.brand"] ?? ""} ${v["heater.model"] ?? ""}, serial ${v["heater.serial"] ?? ""}, ${v["heater.size"] ?? ""}, ${(v["heater.fuel"] ?? "").toLowerCase()}. It is in: ${v["heater.location"] ?? "the garage"}.`,
+    `Your quote: ${usd(total)}. Please call the owner before going over ${usd(limit)}.`,
+    `Visit: ${windowText(window)}. The tenant has been asked to be home.`,
+  ].join("\n");
 }
 
 /** The heater's brand and model as the home record has them now, for anything GoHome says about it. */
@@ -459,7 +489,7 @@ function emergencyPath(w: World, category: string, steps: string[], why: string)
   say(
     w,
     "tenant",
-    `This sounds like an emergency. Please do this now:\n${numbered(steps)}\nI'm calling your landlord right now. Reply here if anyone is hurt.`,
+    `This sounds like an emergency. Please do this now:\n${numbered(steps)}\nI'm calling your landlord right now. Once you are outside, call 911 if anyone is hurt, then reply here to tell me you are safe.`,
   );
   tool(
     w,
@@ -486,10 +516,15 @@ function emergencyPath(w: World, category: string, steps: string[], why: string)
   );
 }
 
-function onTenantText(w: World, raw: string): void {
+/** The words a quick reply shows in the chat: its label, without the number it is also known by. */
+export function shownFor(label: string): string {
+  return label.replace(/^\d\s+/, "").trim();
+}
+
+function onTenantText(w: World, raw: string, shown?: string): void {
   const text = raw.trim();
   if (!text) return;
-  hear(w, "tenant", text);
+  hear(w, "tenant", shown?.trim() || text);
   w.clock += 1;
 
   const triage = triageText(text);
@@ -507,10 +542,16 @@ function onTenantText(w: World, raw: string): void {
   }
 
   // "Please ask the owner" after an "I don't know".
-  if (/^please ask (sample owner|the owner|my landlord)/i.test(text)) return relayQuestion(w);
+  if (/^please ask (sample owner|the owner|my landlord)/i.test(text) || /^ask (sample owner|the owner|my landlord)$/i.test(text)) return relayQuestion(w);
 
   // A question about the home or the lease is answered from the data on file, not treated as a repair.
   if (QUESTION_STAGES.has(stage) && classifyTenantText(text) === "question") return answerQuestion(w, text);
+
+  // A different problem while a repair is open is its own request, not a reply to the open one.
+  if (OPEN_STAGES.has(stage) && !isHeaterJob(text, triage) && PROBLEM_TEXT.test(text) && OTHER_ITEM.test(text) && text.split(/\s+/).length >= 3) {
+    tool(w, "triage", "log_side_request", "code", `Logged a separate request: ${triage.category}`, `A different problem came in while the repair is open. Urgency: ${urgencyWord(triage.urgency)}, not an emergency. The repair already under way keeps its place.`);
+    return logOtherProblem(w, text, triage, true);
+  }
 
   switch (stage) {
     case "idle":
@@ -537,6 +578,11 @@ function onTenantText(w: World, raw: string): void {
   }
 }
 
+const OPEN_STAGES = new Set<string>(["asked_electrical", "steps_given", "quotes_pending", "decision_sent", "booked"]);
+const PROBLEM_TEXT = /\b(leak|leaks|leaking|broken|broke|not working|isn'?t working|won'?t|doesn'?t|stopped|clog|clogged|overflow|overflowing|flood|burst|smell|smoke|spark|noise|drip|dripping|stuck|cracked|no heat|no power|mold|mice|roach|pests?)\b/i;
+
+const OTHER_ITEM = /\b(toilet|sink|faucet|tap|shower|tub|bathtub|dishwasher|fridge|refrigerator|oven|stove|furnace|ac|a\/c|air conditioner|roof|window|door|lock|light|lights|outlet|disposal|washer|dryer|drain|ceiling|wall|fence|gate|garage door|thermostat)\b/i;
+
 const QUESTION_STAGES = new Set<string>(["idle", "closed", "done", "quotes_pending", "decision_sent", "booked"]);
 
 function answerQuestion(w: World, text: string): void {
@@ -561,7 +607,7 @@ function relayQuestion(w: World): void {
   let question = "";
   for (let i = w.timeline.length - 2; i >= 0; i--) {
     const e = w.timeline[i];
-    if (e.kind === "msg" && e.party === "tenant" && e.dir === "in" && e.text && !/^please ask/i.test(e.text)) {
+    if (e.kind === "msg" && e.party === "tenant" && e.dir === "in" && e.text && !/^(please ask|ask )/i.test(e.text)) {
       question = e.text;
       break;
     }
@@ -610,6 +656,14 @@ function startCase(w: World, text: string): void {
 
   // Any other, non-emergency problem: a short, honest triage and a heads-up.
   w.triage.stage = "closed";
+  logOtherProblem(w, text, triage, false);
+}
+
+/**
+ * A different problem, such as a toilet, reported while the heater repair is still open. It is logged as its own request
+ * and the heater case keeps its place, so the tenant never gets an answer meant for something else.
+ */
+function logOtherProblem(w: World, text: string, triage: ReturnType<typeof triageText>, separate: boolean): void {
   const steps = triage.safetySteps;
   if (steps.length > 0) {
     tool(w, "triage", "pick_safety_steps", "code", `Picked ${steps.length} safe step${steps.length === 1 ? "" : "s"} from the guide library`, "Steps come from a hand-checked library. The model never improvises a fix.");
@@ -619,7 +673,7 @@ function startCase(w: World, text: string): void {
   say(
     w,
     "tenant",
-    `Thanks. I logged this as ${triage.category} (${urgencyWord(triage.urgency)}). ${triage.summary}${steps.length > 0 ? `\n${numbered(steps)}` : ""}\nYour landlord has been told. I'll update you here.`,
+    `Thanks. I logged this as ${separate ? "a separate request: " : ""}${triage.category} (${urgencyWord(triage.urgency)}). ${triage.summary}${steps.length > 0 ? `\n${numbered(steps)}` : ""}\nYour landlord has been told.${separate ? " Your water heater repair is still on track." : ""} I'll update you here.`,
     { guide: guideForText(text) ?? undefined },
   );
   if (triage.alertOwnerNow) {
@@ -628,7 +682,7 @@ function startCase(w: World, text: string): void {
     say(w, "owner", `Urgent: ${triage.category} at ${PROPERTY.address}. The tenant has no fix steps. I called you. ${triage.summary}`);
   } else {
     tool(w, "triage", "notify_owner", "action", "Sent a silent heads-up to the owner", `Urgency is ${urgencyWord(triage.urgency)}, not an emergency, so there is no phone call. The owner can keep sleeping.`);
-    say(w, "owner", `${triage.category} request at ${PROPERTY.address} (${urgencyWord(triage.urgency)}). ${triage.summary} I'm handling it. Nothing needed from you.`, { silent: true });
+    say(w, "owner", `${triage.category} request at ${PROPERTY.address} (${urgencyWord(triage.urgency)}). ${triage.summary} I'm lining up next steps. Nothing needed from you yet.`, { silent: true });
   }
 }
 
@@ -660,8 +714,9 @@ function answerElectrical(w: World, text: string): void {
   }
 
   w.triage.stage = "steps_given";
-  const steps = seededHeaterTriage().safetySteps.slice(0, 2);
-  tool(w, "triage", "pick_safety_steps", "code", "Picked 2 safe steps from the guide library", "Steps come from a hand-checked library. The model never improvises a fix.");
+  const allSteps = seededHeaterTriage().safetySteps;
+  const steps = allSteps.slice(0, 2);
+  tool(w, "triage", "pick_safety_steps", "code", `Picked ${allSteps.length} safe steps from the guide library`, `The first 2 are texted now and the picture guide walks through all ${allSteps.length}. Steps come from a hand-checked library. The model never improvises a fix.`);
   say(
     w,
     "tenant",
@@ -678,7 +733,7 @@ function answerElectrical(w: World, text: string): void {
   say(
     w,
     "owner",
-    `Water heater leak at ${PROPERTY.address}. Tenant is safe, water and gas are being shut off. I'm handling it. Nothing needed from you.`,
+    `Water heater leak at ${PROPERTY.address}. The tenant has the steps to turn off the water to the heater and has not confirmed yet. Gas is left to a licensed plumber. I'm lining up quotes. Nothing needed from you yet.`,
     { silent: true },
   );
 }
@@ -710,10 +765,11 @@ function onTenantPhoto(w: World, photo: PhotoKind): void {
 /** Work out the facts from the home record, check vendors, and ask for quotes. */
 function dispatch(w: World): void {
   const heater = EQUIPMENT[0];
-  const age = ageOf({ installYear: 2015 });
+  const year = heaterYear(w);
+  const age = ageOf({ installYear: year });
   const pct = Math.round((age / heater.typicalLifeYears) * 100);
 
-  tool(w, "triage", "compute_age_warranty", "code", "Worked out age and warranty", `Made 2015, so ${age} years old, ${pct}% of a typical life of ${heater.typicalLifeYears}*. Tank warranty (6 years*) expired in 2021. *Placeholder numbers.`);
+  tool(w, "triage", "compute_age_warranty", "code", "Worked out age and warranty", `Made ${year}, so ${age} years old, ${pct}% of a typical life of ${heater.typicalLifeYears}*. Tank warranty (6 years*) expired in 2021. *Placeholder numbers.`);
   tool(
     w,
     "triage",
@@ -731,7 +787,7 @@ function dispatch(w: World): void {
     "Standing permission: GoHome may request quotes. It may not book, negotiate, or spend without a tap. Sent the address, photos, and the house record.",
   );
 
-  say(w, "tenant", "All set. Your landlord is being told. You don't need to call anyone. I'll text you the plumber's name and time. Go back to sleep, I'm watching this.");
+  say(w, "tenant", "All set. Your landlord has been told. You don't need to call anyone. I'll text you the plumber's name and time. Go back to sleep, I'm watching this.");
   say(
     w,
     "owner",
@@ -757,7 +813,7 @@ function quotesArrive(w: World): void {
   }
   tool(w, "quote", "recommend_vendor", "code", `Picked ${PLAN.vendorName}`, `${PLAN.reasons.join(" ")} Limit ${usd(PLAN.notToExceed)} (quote plus 10%).`);
 
-  const age = ageOf({ installYear: 2015 });
+  const age = ageOf({ installYear: heaterYear(w) });
   const decision = decideRepairOrReplace({
     item: "Water heater",
     ageYears: age,
@@ -789,6 +845,7 @@ function quotesArrive(w: World): void {
         ],
         note: `Your limit is the quote plus 10%: ${usd(PLAN.total)} becomes ${usd(PLAN.notToExceed)}. The plumber must call you before going over it. Nothing is spent until you tap.`,
       },
+      attachment: { title: `Message GoHome will send to ${shortName(PLAN.vendorName)}`, body: vendorMessage(w, PLAN.vendorName, PLAN.total, PLAN.notToExceed, ACCESS_WINDOWS[0]) },
       actions: [
         { id: "approve", label: "Approve" },
         { id: "others", label: "Other quotes" },
@@ -864,7 +921,7 @@ function triageOwnerAction(w: World, action: string): void {
     w,
     "contractor",
     `Booking confirmed: ${vendor.name}, ${windowText(pick.accessWindow)}, ${PROPERTY.address}. Quoted ${usd(vendor.total)}. Not-to-exceed ${usd(pick.notToExceed)}. Please call the owner before going over.`,
-    { attachment: { title: "Booking confirmation", body: `Job: replace the water heater\nVendor: ${vendor.name}\nVisit: ${pick.accessWindow}\nQuote: ${usd(vendor.total)}\nNot to exceed: ${usd(pick.notToExceed)}` } },
+    { attachment: { title: "Message sent to the vendor", body: vendorMessage(w, vendor.name, vendor.total, pick.notToExceed, pick.accessWindow) } },
   );
   say(
     w,
@@ -1011,7 +1068,7 @@ function auditMessage(w: World, quote: VendorQuote, draft: string, intro: string
       },
       attachment: { title: `Draft reply to ${quote.vendorName}`, body: draft },
       actions: [
-        { id: "qsend", label: "👍 Send it" },
+        { id: "qsend", label: "Send it" },
         { id: "qedit", label: "Edit" },
         { id: "qskip", label: "Skip" },
       ],
@@ -1052,7 +1109,7 @@ function redraft(w: World, note: string): void {
   say(w, "owner", "Updated. Here is the new draft (attached). Nothing is sent until you say so.", {
     attachment: { title: `Draft reply to ${quote.vendorName}`, body: draft },
     actions: [
-      { id: "qsend", label: "👍 Send it" },
+      { id: "qsend", label: "Send it" },
       { id: "qedit", label: "Edit" },
       { id: "qskip", label: "Skip" },
     ],
@@ -1123,7 +1180,7 @@ function onContractorCounter(w: World, total: number): void {
       `${SAMPLE_VENDOR} came back at ${usd(total)}, down ${usd(w.quote.total - total)}. That is inside the typical range of ${usdRange(range.low, range.high)}*. Accept?`,
       {
         actions: [
-          { id: "qaccept", label: "👍 Accept" },
+          { id: "qaccept", label: "Accept" },
           { id: "qhold", label: "Hold" },
         ],
       },
@@ -1152,7 +1209,7 @@ function onLeaseCheck(w: World): void {
   runDue(w, nextNineAm(w.clock));
   const proposed = 3360;
   const result = calculateRent({ ...DEFAULT_RENT_FORM, proposedRent: proposed });
-  tool(w, "sentinel", "scan_leases", "code", "Checked lease dates", "Unit A: lease anniversary December 14, 2026 (62 days). Last increase 14 months ago. 0 increases in the last 12 months.");
+  tool(w, "sentinel", "scan_leases", "code", "Checked lease dates", "1200 Example Court: lease anniversary December 14, 2026. Last increase 14 months ago. 0 increases in the last 12 months.");
   tool(w, "sentinel", "fetch_cpi", "code", "Looked up local CPI", "Local CPI change 3.0% (placeholder: the owner should confirm the current figure for the area).");
   tool(
     w,
@@ -1176,11 +1233,11 @@ function onLeaseCheck(w: World): void {
   say(
     w,
     "owner",
-    `Unit A's lease anniversary is in 62 days.\nMax legal increase today: ${result.capPercent.toFixed(1)}% (${usd(DEFAULT_RENT_FORM.currentRent)} to ${usdCents(result.maxNewRent)}). Cap = the lesser of 5% plus local CPI, or 10%.\nNotice period: ${result.noticeDays} days (90 if over 10%).\nDraft notice is ready (attached). DRAFT, NOT LEGAL ADVICE: local rules, like San Jose's, can be stricter.`,
+    `Your lease anniversary at 1200 Example Court is December 14, 2026.\nMax legal increase today: ${result.capPercent.toFixed(1)}% (${usd(DEFAULT_RENT_FORM.currentRent)} to ${usdCents(result.maxNewRent)}). Cap = the lesser of 5% plus local CPI, or 10%.\nNotice period: ${result.noticeDays} days (90 if over 10%).\nDraft notice is ready (attached). DRAFT, NOT LEGAL ADVICE: local rules, like San Jose's, can be stricter.`,
     {
       card: {
         kind: "lease",
-        title: "You can raise rent on Unit A",
+        title: "You can raise the rent at 1200 Example Court",
         summary: "The lease anniversary is coming up. GoHome worked out the legal maximum and drafted the notice.",
         facts: [
           { label: "Legal maximum", value: `${result.capPercent.toFixed(1)}% (${usdCents(result.maxNewRent)})` },

@@ -6,6 +6,8 @@ import {
   accountValid,
   confirmationNumber,
   cvcValid,
+  daysUntil,
+  dueStatus,
   expiryValid,
   feeCents,
   formatCardNumber,
@@ -95,5 +97,28 @@ describe("confirmation numbers", () => {
   it("count up from the number of earlier payments", () => {
     expect(confirmationNumber(0)).toBe("GH-100042");
     expect(confirmationNumber(2)).toBe("GH-100044");
+  });
+});
+
+describe("when a bill is due", () => {
+  it("counts whole calendar days", () => {
+    expect(daysUntil("2026-10-31", new Date(2026, 9, 20, 22, 0))).toBe(11);
+    expect(daysUntil("2026-10-01", new Date(2026, 9, 19, 1, 0))).toBe(-18);
+    expect(daysUntil("2026-10-19", new Date(2026, 9, 19, 23, 59))).toBe(0);
+  });
+
+  it("calls only a bill past its date overdue", () => {
+    const rent = dueStatus("rent", new Date(2026, 9, 19));
+    expect(rent.overdue).toBe(true);
+    expect(rent.badge).toBe("Overdue");
+    expect(rent.text).toBe("18 days late. It was due Oct 1.");
+    const utilities = dueStatus("utilities", new Date(2026, 9, 20));
+    expect(utilities.overdue).toBe(false);
+    expect(utilities.badge).toBe("Due Oct 31");
+    expect(utilities.text).toBe("Due Oct 31, in 11 days.");
+  });
+
+  it("says due today on the day", () => {
+    expect(dueStatus("utilities", new Date(2026, 9, 31)).badge).toBe("Due today");
   });
 });

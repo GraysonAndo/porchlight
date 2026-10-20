@@ -88,7 +88,7 @@ export type Entry = Msg | ToolCall | RecordWrite;
 // ---------- Events ----------
 
 export type Ev =
-  | { type: "tenant.text"; text: string }
+  | { type: "tenant.text"; text: string; /** What the chat shows, when a quick reply sends a code such as "1" */ shown?: string }
   | { type: "tenant.photo"; photo: PhotoKind }
   | { type: "owner.tap"; msgId: string; action: string }
   | { type: "owner.text"; text: string }

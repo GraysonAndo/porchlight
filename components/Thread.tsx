@@ -13,7 +13,7 @@ interface ThreadProps {
   msgs: Msg[];
   typing: boolean;
   placeholder: string;
-  onSend: (text: string) => void;
+  onSend: (text: string, shown?: string) => void;
   onPhoto?: (kind: PhotoKind) => void;
   /** Show action buttons under messages (the owner's cards usually take them instead) */
   onTap?: (msgId: string, action: string) => void;
@@ -41,7 +41,7 @@ export function Thread({ party, msgs, typing, placeholder, onSend, onPhoto, onTa
           <p className="text-xs font-bold text-ink-soft">{via === "text" ? "Updates here, and by text in the full product" : "Updates show here (text updates are off)"}</p>
         </div>
       </div>
-      <div ref={box} className={`${heightClass} overflow-y-auto bg-cream p-3`}>
+      <div ref={box} className={`${heightClass} overflow-y-auto bg-cream p-3`} tabIndex={0} aria-label="Messages, scrollable">
         <div role="log" aria-live="polite" aria-label="Messages" className="space-y-3">
           {msgs.length === 0 && !typing && <p className="mt-16 px-4 text-center font-bold text-ink-soft">{empty}</p>}
           {msgs.map((m) => (

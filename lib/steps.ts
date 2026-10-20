@@ -49,7 +49,7 @@ export const PAGE_TITLES: Record<string, string> = {
   "/owner/book": "Booking",
   "/owner/record": "Home record",
   "/owner/forecast": "5-year forecast",
-  "/owner/rent": "Rent increase",
+  "/owner/rent": "Rent change",
   "/pricing": "Pricing",
   "/about": "Help and FAQ",
   "/feedback": "Feedback notes",

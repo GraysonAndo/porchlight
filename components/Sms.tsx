@@ -7,7 +7,7 @@ import { useState } from "react";
 import { GuideButton } from "./GuideViewer";
 import { LogoMark } from "./Logo";
 import { CameraIcon, CheckIcon, MoonIcon, PhoneCallIcon } from "./icons";
-import { clockText } from "@/lib/agents/engine";
+import { entryTime, shownFor } from "@/lib/agents/engine";
 import type { Msg, MsgAction, Party, PhotoKind } from "@/lib/agents/types";
 
 const PHOTO_SRC: Record<PhotoKind, string> = {
@@ -17,6 +17,21 @@ const PHOTO_SRC: Record<PhotoKind, string> = {
 const PHOTO_ALT: Record<PhotoKind, string> = {
   leak: "Photo sent by the tenant: a water heater leaking at the base, with a puddle on the garage floor",
 };
+
+const PHONE = /(1-\d{3}-\d{3}-\d{4}|\b911\b)/g;
+
+/** Phone numbers in a message become tap-to-call links, so an emergency number is one tap away. */
+function withCallLinks(text: string): React.ReactNode[] {
+  return text.split(PHONE).map((part, i) =>
+    i % 2 === 1 ? (
+      <a key={i} href={`tel:${part.replace(/-/g, "")}`} className="font-extrabold underline">
+        {part}
+      </a>
+    ) : (
+      part
+    ),
+  );
+}
 
 export function Typing() {
   return (
@@ -55,7 +70,7 @@ export function Bubble({ msg, perspective, via }: { msg: Msg; perspective: Party
         </p>
         <p className="mt-1">{msg.text}</p>
         <p className="mt-1 text-xs font-bold opacity-70">Rings through Do Not Disturb</p>
-        <p className="mt-1 text-right text-[11px] font-bold opacity-60">{clockText(msg.at)}</p>
+        <p className="mt-1 text-right text-[11px] font-bold opacity-60">{entryTime(msg)}</p>
       </div>
     );
   }
@@ -76,7 +91,7 @@ export function Bubble({ msg, perspective, via }: { msg: Msg; perspective: Party
           // eslint-disable-next-line @next/next/no-img-element
           <img src={PHOTO_SRC[msg.photo]} alt={PHOTO_ALT[msg.photo]} className="mb-1 w-44 rounded-lg border border-ink/20" />
         )}
-        {msg.text && <p className="whitespace-pre-line">{msg.text}</p>}
+        {msg.text && <p className="whitespace-pre-line">{withCallLinks(msg.text)}</p>}
         {msg.attachment && <Attachment title={msg.attachment.title} body={msg.attachment.body} />}
         {msg.guide && (
           <div className="mt-2">
@@ -91,7 +106,7 @@ export function Bubble({ msg, perspective, via }: { msg: Msg; perspective: Party
           )}
           {mine && <span>Delivered</span>}
           {!mine && via && <span>{via === "text" ? "Text (sample)" : "In app only"}</span>}
-          <span>{clockText(msg.at)}</span>
+          <span>{entryTime(msg)}</span>
         </p>
       </div>
     </div>
@@ -126,13 +141,15 @@ export interface ComposerProps {
   party: "tenant" | "owner";
   last: Msg | undefined;
   placeholder: string;
-  onSend: (text: string) => void;
+  onSend: (text: string, shown?: string) => void;
   onPhoto?: (kind: PhotoKind) => void;
   suggestions?: { label: string; text: string }[];
   /** Words for the photo menu, for example "Photo of the label" */
   photoLabels?: [PhotoKind, string][];
   className?: string;
 }
+
+const MAX_MESSAGE = 1000;
 
 const DEFAULT_PHOTOS: [PhotoKind, string][] = [["leak", "Photo of the problem"]];
 
@@ -156,12 +173,12 @@ export function Composer({ party, last, placeholder, onSend, onPhoto, suggestion
       {(chips.length > 0 || (suggestions && suggestions.length > 0)) && (
         <div className="mb-2 flex flex-wrap gap-1.5" role="group" aria-label="Quick replies">
           {chips.map((c) => (
-            <button key={c.id} type="button" className="btn btn-secondary !min-h-11 !px-3 text-sm" onClick={() => onSend(c.text ?? c.label)}>
+            <button key={c.id} type="button" className="btn btn-secondary !min-h-11 !px-3 text-sm" onClick={() => onSend(c.text ?? c.label, shownFor(c.label))}>
               {c.label}
             </button>
           ))}
           {(suggestions ?? []).map((s) => (
-            <button key={s.label} type="button" className="btn btn-secondary !min-h-11 !px-3 text-left text-sm" onClick={() => onSend(s.text)}>
+            <button key={s.label} type="button" className="btn btn-secondary !min-h-11 !px-3 text-left text-sm" onClick={() => onSend(s.text, s.label)}>
               {s.label}
             </button>
           ))}
@@ -200,12 +217,17 @@ export function Composer({ party, last, placeholder, onSend, onPhoto, suggestion
           value={draft}
           onChange={(e) => setDraft(e.target.value)}
           autoComplete="off"
-          maxLength={500}
+          maxLength={MAX_MESSAGE}
         />
         <button type="submit" className="btn btn-primary !min-h-11 !px-4 text-sm" disabled={!draft.trim()}>
           Send
         </button>
       </form>
+      {draft.length >= MAX_MESSAGE * 0.8 && (
+        <p role="status" className={`mt-1 text-right text-xs font-bold ${draft.length >= MAX_MESSAGE ? "text-urgent" : "text-ink-soft"}`}>
+          {draft.length} of {MAX_MESSAGE} characters{draft.length >= MAX_MESSAGE ? ". That is the longest a message can be, so send this and add the rest in a second message." : ""}
+        </p>
+      )}
     </div>
   );
 }

@@ -12,8 +12,8 @@ const jakarta = Plus_Jakarta_Sans({
   display: "swap",
 });
 
+// The title is set per page in the Shell, so each tab says where it is.
 export const metadata: Metadata = {
-  title: "GoHome: your home, made easy",
   description:
     "GoHome keeps a record of everything in your rental and handles repairs for you. Tenants get step-by-step help. Owners just tap Approve.",
 };

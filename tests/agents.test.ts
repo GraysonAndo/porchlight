@@ -413,3 +413,46 @@ describe("the house record", () => {
     expect(recordAt(w.timeline, 3).values["heater.serial"]).toBe("15C0412-X");
   });
 });
+
+describe("final defect list: chat behavior", () => {
+  const LEAK_EV: Ev = { type: "tenant.text", text: "water heater is leaking all over the garage" };
+  const texts = (w: World, party: "tenant" | "owner", dir: "in" | "out") =>
+    w.timeline.filter((e): e is Msg => e.kind === "msg" && e.party === party && e.dir === dir).map((m) => m.text);
+
+  it("the owner is never told the tenant already shut things off", () => {
+    const w = run(createWorld(), [LEAK_EV, { type: "tenant.text", text: "2" }]);
+    const owner = texts(w, "owner", "out").join("\n");
+    expect(owner).not.toMatch(/water and gas are being shut off|Tenant is safe/i);
+    expect(owner).toMatch(/has not confirmed|lining up/i);
+  });
+
+  it("the gas answer does not ask for a reply before the tenant is outside", () => {
+    const w = send(createWorld(), { type: "tenant.text", text: "I smell gas near the water heater" });
+    const reply = texts(w, "tenant", "out").join("\n");
+    expect(reply).toMatch(/1-800-743-5000/);
+    expect(reply).toMatch(/Once you are outside/);
+    expect(reply).not.toMatch(/Reply here if anyone is hurt/);
+  });
+
+  it("a quick reply shows its label in the chat while the engine still reads its code", () => {
+    const w = run(createWorld(), [LEAK_EV, { type: "tenant.text", text: "2", shown: "No" }]);
+    expect(texts(w, "tenant", "in")).toContain("No");
+    expect(w.triage.stage).toBe("steps_given");
+  });
+
+  it("a different problem while a repair is open is its own request", () => {
+    const w = run(createWorld(), [LEAK_EV, { type: "tenant.text", text: "2" }, { type: "tenant.text", text: "done" }]);
+    expect(w.triage.stage).toBe("quotes_pending");
+    const after = send(w, { type: "tenant.text", text: "The sink in the kitchen is clogged and backing up" });
+    const last = texts(after, "tenant", "out").at(-1) ?? "";
+    expect(last).toMatch(/separate request/i);
+    expect(last).toMatch(/water heater repair is still on track/i);
+    expect(after.triage.stage).toBe("quotes_pending");
+  });
+
+  it("a plain reply to the open repair is not treated as a new problem", () => {
+    const w = run(createWorld(), [LEAK_EV, { type: "tenant.text", text: "2" }]);
+    const after = send(w, { type: "tenant.text", text: "done" });
+    expect(texts(after, "tenant", "out").at(-1) ?? "").not.toMatch(/separate request/i);
+  });
+});
