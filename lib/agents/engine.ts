@@ -294,7 +294,9 @@ function handle(w: World, ev: Ev): void {
     case "cron.lease":
       return onLeaseCheck(w);
     case "rent.paid":
-      return onRentPaid(w, ev.paid);
+      return onRentPaid(w, ev.paid, ev.confirmation);
+    case "utilities.paid":
+      return onUtilitiesPaid(w, ev.amount, ev.confirmation);
     case "owner.markDone":
       return onMarkDone(w);
     case "owner.choose":
@@ -319,13 +321,23 @@ function onTimer(w: World, id: TimerId): void {
 }
 
 /** Rent marked paid: both people get a text. Marking it unpaid again sends nothing. */
-function onRentPaid(w: World, paid: boolean): void {
+function onRentPaid(w: World, paid: boolean, confirmation?: string): void {
   if (w.rentPaid === paid) return;
   w.rentPaid = paid;
   if (!paid) return;
-  tool(w, "chat", "record_rent_payment", "action", "Rent marked paid", `${RENT_MONTH}: ${usd(PROPERTY.rent)}. Nothing was charged.`);
-  say(w, "tenant", `Thanks! Your ${RENT_MONTH} rent of ${usd(PROPERTY.rent)} is marked paid.`);
-  say(w, "owner", `${PROPERTY.tenant} paid ${RENT_MONTH} rent: ${usd(PROPERTY.rent)}.`, { silent: true });
+  const ref = confirmation ? ` Confirmation ${confirmation}.` : "";
+  tool(w, "chat", "record_rent_payment", "action", confirmation ? "Rent received" : "Rent marked paid", `${RENT_MONTH}: ${usd(PROPERTY.rent)}.${ref}`);
+  say(w, "tenant", confirmation ? `Thanks! Your ${RENT_MONTH} rent of ${usd(PROPERTY.rent)} was received.${ref}` : `Thanks! Your ${RENT_MONTH} rent of ${usd(PROPERTY.rent)} is marked paid.`);
+  say(w, "owner", `${PROPERTY.tenant} paid ${RENT_MONTH} rent: ${usd(PROPERTY.rent)}.${ref}`, { silent: true });
+}
+
+/** Utilities paid by the tenant: both people get a text. */
+function onUtilitiesPaid(w: World, amount: string, confirmation: string): void {
+  if (w.utilitiesPaid) return;
+  w.utilitiesPaid = true;
+  tool(w, "chat", "record_utility_payment", "action", "Utilities paid", `Water and trash, ${amount}. Confirmation ${confirmation}.`);
+  say(w, "tenant", `Thanks! Your water and trash payment of ${amount} was received. Confirmation ${confirmation}.`);
+  say(w, "owner", `${PROPERTY.tenant} paid water and trash: ${amount} (confirmation ${confirmation}).`, { silent: true });
 }
 
 /** The owner taps "Mark done": the booked job finishes now instead of at its scheduled time. */

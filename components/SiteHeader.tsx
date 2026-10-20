@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { GearIcon } from "./icons";
 import { Logo } from "./Logo";
 import { OWNER_NAV, TENANT_NAV, isActive, roleForPath } from "@/lib/steps";
 import { PROPERTY } from "@/lib/seed";
@@ -40,6 +41,14 @@ export function SiteHeader() {
               <span className="block font-bold">{name}</span>
               <span className="block text-ink-soft">{role === "owner" ? "Owner" : "Tenant"}</span>
             </span>
+            <Link
+              href={`/${role}/settings`}
+              aria-label="Settings"
+              aria-current={pathname === `/${role}/settings` ? "page" : undefined}
+              className={`inline-flex h-11 w-11 items-center justify-center rounded-lg ${pathname === `/${role}/settings` ? "bg-brand-tint text-brand" : "text-ink-soft hover:bg-cream-deep hover:text-ink"}`}
+            >
+              <GearIcon size={24} />
+            </Link>
             <Link href="/" className="btn btn-secondary !min-h-10 !px-3 text-sm">
               Switch
             </Link>
@@ -61,7 +70,7 @@ export function MobileTabs() {
       aria-label={`${role === "owner" ? "Owner" : "Tenant"} tabs`}
       className="fixed inset-x-0 bottom-0 z-30 border-t border-line bg-white md:hidden"
     >
-      <ul className={`mx-auto grid max-w-md ${nav.length === 2 ? "grid-cols-2" : "grid-cols-4"}`}>
+      <ul className={`mx-auto grid max-w-md ${nav.length === 2 ? "grid-cols-2" : nav.length === 3 ? "grid-cols-3" : "grid-cols-4"}`}>
         {nav.map((item) => {
           const active = isActive(pathname, item);
           return (

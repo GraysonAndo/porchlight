@@ -93,7 +93,8 @@ export type Ev =
   | { type: "contractor.quote" }
   | { type: "contractor.counter"; total: number }
   | { type: "cron.lease" }
-  | { type: "rent.paid"; paid: boolean }
+  | { type: "rent.paid"; paid: boolean; confirmation?: string }
+  | { type: "utilities.paid"; amount: string; confirmation: string }
   | { type: "owner.markDone" }
   | { type: "owner.choose"; vendorId: string; notToExceed: number; accessWindow: string }
   | { type: "timer"; id: TimerId };
@@ -149,6 +150,8 @@ export interface World {
   };
   /** Whether this month's rent was marked paid (demo) */
   rentPaid: boolean;
+  /** Whether this month's utilities were paid */
+  utilitiesPaid?: boolean;
   /** The vendor, limit, and time the owner picked by hand instead of GoHome's plan */
   choice: { vendorId: string; notToExceed: number; accessWindow: string } | null;
 }

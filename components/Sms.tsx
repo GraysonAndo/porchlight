@@ -200,6 +200,7 @@ export function Composer({ party, last, placeholder, onSend, onPhoto, suggestion
           value={draft}
           onChange={(e) => setDraft(e.target.value)}
           autoComplete="off"
+          maxLength={500}
         />
         <button type="submit" className="btn btn-primary !min-h-11 !px-4 text-sm" disabled={!draft.trim()}>
           Send

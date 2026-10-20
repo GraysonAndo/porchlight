@@ -118,6 +118,30 @@ async function run(browser, vp) {
   await page.goto(`${BASE}/tenant/home`);
   await page.getByText("What is in your home").waitFor();
   await snap(page, vp, "15-tenant-my-home");
+  // ---------- Tenant: paying rent and utilities in the embedded checkout ----------
+  await page.goto(`${BASE}/tenant/pay`);
+  const checkout = page.frameLocator('iframe[title="Secure checkout"]');
+  await checkout.getByText("Secure checkout").waitFor(W);
+  await snap(page, vp, "15b-tenant-pay");
+  await checkout.getByRole("button", { name: /^Pay \$/ }).click();
+  await page.waitForTimeout(300);
+  await snap(page, vp, "15c-tenant-pay-errors");
+  await checkout.getByRole("button", { name: "Use the sample card" }).click();
+  await checkout.getByRole("button", { name: /^Pay \$/ }).click();
+  await checkout.getByText("Payment received").waitFor(W);
+  await snap(page, vp, "15d-tenant-pay-receipt");
+  await checkout.getByRole("button", { name: "Done" }).click();
+  await page.waitForTimeout(500);
+
+  // ---------- Settings, both sides ----------
+  await page.goto(`${BASE}/tenant/settings`);
+  await snap(page, vp, "15e-tenant-settings");
+  await page.goto(`${BASE}/owner/settings`);
+  await snap(page, vp, "15f-owner-settings");
+  await page.goto(`${BASE}/owner`);
+  await page.waitForTimeout(800);
+  await snap(page, vp, "15g-owner-inbox-with-payment");
+
   await page.goto(`${BASE}/tenant/guides/furnace-no-heat`);
   await page.getByText("Step 1 of 4").waitFor();
   await snap(page, vp, "16-tenant-guide-furnace");
@@ -176,11 +200,30 @@ async function run(browser, vp) {
   await page.getByText(/I don't know whether pets are allowed/).waitFor(W);
   await snap(page, vp, "30-tenant-question-answered");
 
+  // ---------- Live preview prompts ----------
+  await resetApp(page);
+  await page.goto(`${BASE}/owner`);
+  await page.getByText(/A tenant can text GoHome any time/).waitFor(W);
+  await snap(page, vp, "27b-owner-live-preview-start");
+  await page.getByRole("button", { name: /Act as the tenant: report a leaking water heater/ }).click();
+  await page.getByRole("button", { name: /Act as the tenant: No, nothing electrical/ }).waitFor(W);
+  await snap(page, vp, "27c-owner-live-preview-tenant-question");
+  await page.getByRole("button", { name: /Act as the tenant: No, nothing electrical/ }).click();
+  await page.getByRole("button", { name: /Act as the tenant: Done/ }).click();
+  await page.getByRole("button", { name: "Approve", exact: true }).waitFor(W);
+  await page.waitForTimeout(800);
+  await snap(page, vp, "27d-owner-live-preview-approval");
+  await page.goto(`${BASE}/tenant`);
+  await page.getByRole("button", { name: /Act as the owner: Approve/ }).waitFor(W);
+  await snap(page, vp, "27e-tenant-live-preview-owner-plan");
+
   // ---------- Pricing, about, 404, feedback ----------
   await page.goto(`${BASE}/pricing`);
   await page.getByRole("button", { name: "I would pick Plus" }).click();
   await snap(page, vp, "31-pricing");
   await page.goto(`${BASE}/about`);
+  await page.locator("#team").waitFor();
+  await snap(page, vp, "32a-about-team");
   await page.getByText("What counts as an emergency?").click();
   await snap(page, vp, "32-about-and-faq");
   await page.goto(`${BASE}/nope`);

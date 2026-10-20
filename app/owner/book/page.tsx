@@ -14,7 +14,7 @@ import { useAsyncResult } from "@/lib/hooks";
 import { bookingEvents } from "@/lib/agentLog";
 import { PLAN } from "@/lib/plan";
 import { verdictFor } from "@/lib/quote";
-import { ACCESS_WINDOWS, PROPERTY, VENDORS, WATER_HEATER_JOB, type Vendor } from "@/lib/seed";
+import { ACCESS_WINDOWS, PROPERTY, QUOTES, VENDORS, WATER_HEATER_JOB, type Vendor } from "@/lib/seed";
 import { useDemo } from "@/lib/store";
 import { useJobStatus } from "@/lib/useJobStatus";
 import type { Approval } from "@/lib/types";
@@ -84,6 +84,7 @@ function ApproveBody() {
         notToExceed,
         accessWindow,
         licenseShown: vendor.license !== null,
+        hasPermitLine: QUOTES.find((q) => q.vendorId === vendor.id)?.lines.some((l) => l.id === "permit") ?? false,
       }),
       ai.draftTenantMessage({
         tenantName: PROPERTY.tenant,
@@ -305,13 +306,17 @@ function ApproveBody() {
               prefix="$"
               step={1}
               min={vendor.total}
-              invalid={notToExceed < vendor.total}
+              invalid={notToExceed < vendor.total || notToExceed > vendor.total * 2}
               value={notToExceed}
-              onChange={(v) => setNteEdit({ vendorId: vendor.id, value: v })}
+              onChange={(v) => setNteEdit({ vendorId: vendor.id, value: Math.round(v) })}
               hint={
                 notToExceed < vendor.total ? (
                   <span role="alert" className="font-bold text-urgent">
                     The limit cannot be lower than the quote ({usd(vendor.total)}).
+                  </span>
+                ) : notToExceed > vendor.total * 2 ? (
+                  <span role="alert" className="font-bold text-urgent">
+                    A limit of more than double the quote ({usd(vendor.total * 2)}) is too high to protect you. Pick a lower one.
                   </span>
                 ) : (
                   `Starts at 10% above the quote (${usd(vendor.total)}). The vendor must call you before going over.`
@@ -387,7 +392,7 @@ function ApproveBody() {
         <button
           type="button"
           className="btn btn-primary btn-lg w-full"
-          disabled={!vendor || drafts.loading || notToExceed < vendor.total}
+          disabled={!vendor || drafts.loading || notToExceed < vendor.total || notToExceed > vendor.total * 2}
           onClick={send}
         >
           Approve and send

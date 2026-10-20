@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { PlaceholderNote } from "@/components/ui";
+import { TeamSection } from "@/components/TeamSection";
 
 const FAQ: { q: string; a: string }[] = [
   {
@@ -40,6 +41,8 @@ export default function AboutPage() {
         </p>
       </div>
 
+      <TeamSection />
+
       <section id="price-ranges" className="card scroll-mt-4 space-y-2" aria-labelledby="price-heading">
         <h2 id="price-heading" className="font-display text-2xl font-extrabold">
           How our price ranges work
@@ -77,13 +80,13 @@ export default function AboutPage() {
           Contact
         </h2>
         <p>
-          GoHome is built by a student team for UCSB TMP 122. The easiest way to reach us is the &quot;Leave
-          feedback&quot; button on any page. You can also email{" "}
+          GoHome is built by a student team for UCSB TMP 122. The easiest way to reach us is the &quot;Send
+          feedback&quot; link at the bottom of any page. You can also email{" "}
           <span className="font-bold">hello@gohome.example</span> (a placeholder address).
         </p>
         <p>
           <Link href="/pricing" className="font-bold underline underline-offset-4">
-            See the pricing test
+            See pricing
           </Link>
         </p>
       </section>

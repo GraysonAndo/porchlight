@@ -5,7 +5,6 @@ import { AgentPanel } from "@/components/AgentPanel";
 import { ApprovalCard } from "@/components/ApprovalCard";
 import { JobStatusTracker } from "@/components/JobStatusTracker";
 import { RentCard } from "@/components/RentCard";
-import { TextUpdatesToggle } from "@/components/TextUpdates";
 import { Thread } from "@/components/Thread";
 import { CheckIcon, PlayIcon } from "@/components/icons";
 import { sampleRepairEvents, useAgent } from "@/lib/agents/useAgent";
@@ -111,8 +110,7 @@ export default function OwnerHomePage() {
             </p>
           )}
 
-          <RentCard audience="owner" />
-          <TextUpdatesToggle party="owner" />
+          <RentCard />
           <p className="text-sm text-ink-soft">
             Want the details behind a repair? Open any approval and tap &quot;See the details&quot;, or check the{" "}
             <Link href="/owner/record" className="font-bold underline underline-offset-4">

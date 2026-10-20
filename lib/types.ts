@@ -105,6 +105,8 @@ export interface VendorMessageInput {
   notToExceed: number;
   accessWindow: string;
   licenseShown: boolean;
+  /** True when the quote already has a permit line, so the message does not ask about it */
+  hasPermitLine?: boolean;
 }
 
 export interface TenantMessageInput {
@@ -194,6 +196,30 @@ export interface FeedbackNote {
   timestamp: string;
 }
 
+/** A payment the tenant made. Only the last four digits and a confirmation number are ever kept. */
+export interface Payment {
+  id: string;
+  /** What it paid: "rent" or "utilities" */
+  kind: "rent" | "utilities";
+  label: string;
+  /** Cents, not including the fee */
+  cents: number;
+  /** Card fee in cents (0 for a bank transfer) */
+  feeCents: number;
+  method: "card" | "bank";
+  last4: string;
+  paidAt: string;
+  confirmation: string;
+}
+
+/** Settings for each side. */
+export interface Prefs {
+  tenantEmail: boolean;
+  tenantAutopay: boolean;
+  ownerEmail: boolean;
+  ownerEmergencyCalls: boolean;
+}
+
 export interface DemoState {
   role: Role | null;
   request: RepairRequest | null;
@@ -211,6 +237,9 @@ export interface DemoState {
   jobCompletedAt: string | null;
   /** When rent for the current month was marked paid (demo only, nothing is charged), or null */
   rentPaidAt: string | null;
+  /** Payments the tenant made, newest last */
+  payments: Payment[];
+  prefs: Prefs;
   /** GoHome's agent: every text, tool call, and record write, shared by the tenant and owner screens */
   agent: World;
   /** Whether each person gets GoHome's updates by text */

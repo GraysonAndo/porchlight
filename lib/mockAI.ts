@@ -79,9 +79,10 @@ export function createMockAI(options: MockAIOptions = {}): AIProvider {
         marketLow: total.range.low,
         marketHigh: total.range.high,
         flaggedLines,
+        // Only ask what the quote does not already answer: a permit line, or labor hours, means no question about them.
         questionsToAsk: [
-          "How many labor hours are in the estimate, and what is the hourly rate?",
-          "Is the permit already included in the total, or is it extra?",
+          ...(input.quote.lines.some((l) => l.id === "labor" && /hrs?/i.test(l.label)) ? [] : ["How many labor hours are in the estimate, and what is the hourly rate?"]),
+          ...(input.quote.lines.some((l) => l.id === "permit") ? [] : ["Is a permit needed, and is it included in the total or extra?"]),
           "How long is the warranty on parts and on labor?",
         ],
         estimatedSavingsLow: saveable ? overTop : 0,
@@ -104,7 +105,7 @@ export function createMockAI(options: MockAIOptions = {}): AIProvider {
         "Before we confirm, please send:",
         "1. Your contractor license number",
         "2. The warranty length on parts and on labor",
-        "3. Whether the permit is included in the total",
+        ...(input.hasPermitLine !== true ? ["3. Whether the permit is included in the total"] : []),
       ];
       if (!input.licenseShown) {
         lines.push("", "Your quote did not show a license number. I need that before I can book.");

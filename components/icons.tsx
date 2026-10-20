@@ -24,6 +24,7 @@ import {
   Moon,
   Package,
   Pause,
+  Gear,
   PhoneCall,
   Play,
   Robot,
@@ -76,6 +77,7 @@ export const PhoneCallIcon = wrap(PhoneCall);
 export const MobileIcon = wrap(DeviceMobile);
 export const PlayIcon = wrap(Play);
 export const PauseIcon = wrap(Pause);
+export const GearIcon = wrap(Gear);
 export const BackIcon = wrap(SkipBack);
 export const ForwardIcon = wrap(SkipForward);
 export const RestartIcon = wrap(ArrowCounterClockwise);

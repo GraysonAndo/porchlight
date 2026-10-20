@@ -1,20 +1,22 @@
 "use client";
 
 import Link from "next/link";
-import { RentCard } from "@/components/RentCard";
-import { TextUpdatesToggle } from "@/components/TextUpdates";
 import { Badge } from "@/components/ui";
 import { currentHeater, equipmentFor } from "@/lib/equipment";
 import { guidesForEquipment, homeWideGuides } from "@/lib/homeGuides";
 import { PROPERTY } from "@/lib/seed";
 import { LEASE_ANNIVERSARY } from "@/lib/houseQa";
 import { usd } from "@/lib/format";
+import { BILLS, money } from "@/lib/payments";
 import { useDemo } from "@/lib/store";
 
 export default function TenantHomePage() {
   const { state } = useDemo();
   const equipment = equipmentFor(currentHeater(state));
   const wide = homeWideGuides();
+  const paidKinds = new Set(state.payments.map((p) => p.kind));
+  if (state.rentPaidAt) paidKinds.add("rent");
+  const dueCents = BILLS.filter((b) => !paidKinds.has(b.kind)).reduce((sum, b) => sum + b.cents, 0);
 
   return (
     <div className="mx-auto max-w-4xl space-y-8">
@@ -109,15 +111,15 @@ export default function TenantHomePage() {
               Ask GoHome in the chat if you have questions about your lease
             </Badge>
           </div>
-          <RentCard audience="tenant" />
+          <div className="card flex flex-col gap-2">
+            <p className="font-extrabold">Rent and utilities</p>
+            <p className="text-3xl font-extrabold">{money(dueCents)}</p>
+            <p className="text-sm text-ink-soft">{dueCents > 0 ? "due this month" : "You are all paid up."}</p>
+            <Link href="/tenant/pay" className="btn btn-primary mt-auto">
+              {dueCents > 0 ? "Pay now" : "See payments"}
+            </Link>
+          </div>
         </div>
-      </section>
-
-      <section aria-labelledby="notify-heading" className="space-y-3">
-        <h2 id="notify-heading" className="text-2xl font-extrabold">
-          Notifications
-        </h2>
-        <TextUpdatesToggle party="tenant" />
       </section>
     </div>
   );

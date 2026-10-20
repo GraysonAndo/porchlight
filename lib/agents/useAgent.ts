@@ -46,6 +46,7 @@ export function useAgent() {
     tools: visible.filter((e): e is ToolCall => e.kind === "tool"),
     record: recordAt(world.timeline, world.timeline.length),
     send: actions.agentSend,
+    sendMany: actions.agentSendMany,
     advance: actions.agentAdvance,
     textUpdates: state.textUpdates,
   };
