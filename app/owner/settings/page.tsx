@@ -62,9 +62,35 @@ export default function OwnerSettingsPage() {
       </Section>
 
       <Section id="approvals" title="What GoHome may do without asking">
+        <div className="mb-4 rounded-xl bg-cream p-4">
+          <label htmlFor="auto-approve" className="label">
+            Book repairs on its own when the quote is at or under
+          </label>
+          <div className="flex items-center gap-3">
+            <input
+              id="auto-approve"
+              type="range"
+              min={0}
+              max={3000}
+              step={50}
+              value={state.prefs.ownerAutoApprove}
+              onChange={(e) => actions.setPref("ownerAutoApprove", Number(e.target.value))}
+              className="h-11 flex-1 accent-[var(--color-brand)]"
+              aria-valuetext={state.prefs.ownerAutoApprove === 0 ? "Always ask me" : `Up to $${state.prefs.ownerAutoApprove}`}
+            />
+            <output htmlFor="auto-approve" className="w-28 shrink-0 text-right text-lg font-extrabold">
+              {state.prefs.ownerAutoApprove === 0 ? "Always ask" : `$${state.prefs.ownerAutoApprove.toLocaleString("en-US")}`}
+            </output>
+          </div>
+          <p className="hint">
+            {state.prefs.ownerAutoApprove === 0
+              ? "Every booking waits for your tap. Move the slider to let small repairs through."
+              : `A repair quoted at ${`$${state.prefs.ownerAutoApprove.toLocaleString("en-US")}`} or less is booked for you, and you see it in the activity feed. Anything over that still waits for your tap. Emergencies always ring you.`}
+          </p>
+        </div>
         <ul className="space-y-2 text-sm">
           <li>
-            <strong>Asks you first:</strong> booking a plumber, spending any money, and sending a message to a vendor for you.
+            <strong>Asks you first:</strong> booking a plumber over your limit above, spending any money beyond it, and sending a message to a vendor for you.
           </li>
           <li>
             <strong>Does on its own:</strong> asking vendors for quotes, checking each quote against typical prices, and texting your tenant safety steps and updates.

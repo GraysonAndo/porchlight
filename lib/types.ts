@@ -135,7 +135,7 @@ export interface EquipmentItem {
   brand: string;
   model: string;
   serial: string;
-  /** Where in the home it is, for guides ("Garage, against the north wall") */
+  /** Where in the home it is, for guides ("Garage, to the left of the garage door") */
   location: string;
   /** One plain line on what it is ("40 gallon, natural gas, tank type") */
   summary: string;
@@ -143,6 +143,8 @@ export interface EquipmentItem {
   typicalLifeYears: number;
   replaceLow: number;
   replaceHigh: number;
+  /** A recurring chore for the owner, shown on the record, such as testing the alarms */
+  reminder?: string;
 }
 
 export interface RepairRequest {
@@ -247,6 +249,8 @@ export interface Prefs {
   /** The numbers GoHome texts and calls. Each person can correct their own. */
   ownerPhone: string;
   tenantPhone: string;
+  /** GoHome books a repair on its own when the quote is at or under this many dollars. 0 means it always asks. */
+  ownerAutoApprove: number;
 }
 
 export interface DemoState {
@@ -277,6 +281,8 @@ export interface DemoState {
   equipmentEdits: Record<string, EquipmentEdit>;
   /** The step each how-to guide was last on, so a reload or a call mid-guide picks up where the tenant left off */
   guideProgress: Record<string, number>;
+  /** Equipment the owner added by photographing its data plate, so the record, guides, and forecast include it */
+  extraEquipment: EquipmentItem[];
   /** GoHome's agent: every text, tool call, and record write, shared by the tenant and owner screens */
   agent: World;
   /** Whether each person gets GoHome's updates by text */

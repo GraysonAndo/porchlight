@@ -3,6 +3,7 @@
 // can never disagree with the screen next to it. The "Watch it work" story in
 // lib/scenario.ts uses the same tool names and the same rules.
 
+import { guideById } from "./homeGuides";
 import { monthYear } from "./format";
 import { urgencyWord } from "./triage";
 import { SAMPLE_PHOTO_PATH } from "./seed";
@@ -85,8 +86,12 @@ export function triageEvents({ request, triage, record }: TriageEventsInput): Ag
       clock: T2,
       tool: "pick_safety_steps",
       engine: "code",
-      title: `Picked ${triage.safetySteps.length} safe step${triage.safetySteps.length === 1 ? "" : "s"} from the guide library`,
-      detail: "Steps come from a hand-checked library. The model never improvises a fix.",
+      title: isHeaterJob(request.description, triage)
+        ? "Picked 2 safe steps and a picture guide"
+        : `Picked ${triage.safetySteps.length} safe step${triage.safetySteps.length === 1 ? "" : "s"} from the guide library`,
+      detail: isHeaterJob(request.description, triage)
+        ? `The 2 steps are texted now, and the picture guide (${guideById("heater-water-off")?.steps.length ?? 0} steps) covers the rest. Steps come from a hand-checked library. The model never improvises a fix.`
+        : "Steps come from a hand-checked library. The model never improvises a fix.",
     });
   } else {
     events.push({
@@ -118,7 +123,7 @@ export function triageEvents({ request, triage, record }: TriageEventsInput): Ag
       tool: "notify_owner",
       engine: "action",
       title: "Sent a silent heads-up to the owner",
-      detail: `Urgency is ${urgencyWord(triage.urgency)}, not an emergency, so there is no phone call. The owner can keep sleeping.`,
+      detail: `Urgency is ${urgencyWord(triage.urgency)}, not an emergency, so there is no phone call. The owner gets a quiet text instead.`,
     });
   }
 

@@ -24,8 +24,8 @@ export default function TenantPage() {
   return (
     <div className="space-y-4">
       <div>
-        <h1 className="text-3xl font-extrabold leading-tight sm:text-4xl">Help</h1>
-        <p className="mt-1 text-lg text-ink-soft">
+        <h1 className="text-2xl font-extrabold leading-tight sm:text-3xl">Help</h1>
+        <p className="mt-1 text-ink-soft">
           How can we help? Tell GoHome what is going on. It has your home on file, gives you safe steps, and handles the rest.{" "}
           <Link href="/tenant/texts" className="font-bold text-brand underline underline-offset-4">
             See how it will feel by text
@@ -33,7 +33,7 @@ export default function TenantPage() {
         </p>
       </div>
 
-      {requests.length > 0 && (
+      {requests.length > 1 && (
         <section aria-labelledby="requests-heading" className="card !p-4">
           <h2 id="requests-heading" className="text-lg font-extrabold">
             Your requests
@@ -90,7 +90,7 @@ export default function TenantPage() {
             suggestions={msgs.length === 0 ? STARTERS : undefined}
             via={via}
             empty="Tap one of the buttons below, or type what is going on. A photo helps."
-            heightClass="h-[26rem] lg:h-[34rem]"
+            heightClass="h-[clamp(13rem,calc(100dvh-34rem),34rem)]"
           />
         </div>
         <div className={view === "activity" ? "" : "hidden lg:block"}>

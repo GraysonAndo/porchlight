@@ -29,7 +29,7 @@ export default function DecidePage() {
     typicalLifeYears: heater.typicalLifeYears,
     repairCost: repairBad ? REPAIR_ESTIMATE : repair,
     replaceCost: PLAN.total,
-    failureMode: "tank leak",
+    failureMode: state.request && state.request.photos.length === 0 ? "unknown leak" : "tank leak",
   });
 
   const replace = result.recommendation === "replace";
@@ -136,9 +136,6 @@ export default function DecidePage() {
             </p>
           </div>
         </div>
-        <p className="mt-3">
-          <PlaceholderNote /> <span className="text-sm text-ink-soft">(repair estimate, quote, and typical range)</span>
-        </p>
       </Card>
 
       <Callout tone="info" title="You decide">

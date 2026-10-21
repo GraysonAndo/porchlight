@@ -65,7 +65,7 @@ async function run(browser, vp) {
   await page.getByText(/near an outlet/).waitFor(W);
   await page.waitForTimeout(1500);
   await snap(page, vp, "03-tenant-safety-question");
-  await page.getByRole("button", { name: /^2\s+No$/ }).click();
+  await page.getByRole("button", { name: /^No$/ }).click();
   await page.getByRole("button", { name: "Show me how" }).first().waitFor(W);
   await page.waitForTimeout(2500);
   await snap(page, vp, "04-tenant-quick-steps");
@@ -104,11 +104,11 @@ async function run(browser, vp) {
   await page.goto(`${BASE}/tenant`);
   await page.getByText(/Good news: Willow Glen/).waitFor(W);
   await snap(page, vp, "12-tenant-booked");
-  await page.getByRole("button", { name: /^1\s+That works$/ }).click();
+  await page.getByRole("button", { name: /^That works$/ }).click();
   await page.getByText(/see you then/).waitFor(W);
   await page.goto(`${BASE}/owner`);
   await page.getByRole("button", { name: "Mark done" }).click();
-  await page.getByText("All done", { exact: true }).waitFor(W);
+  await page.getByText(/Done: the new water heater is in your home record/).waitFor(W);
   await snap(page, vp, "13-owner-inbox-done");
   await page.goto(`${BASE}/tenant`);
   await page.getByText(/All fixed/).waitFor(W);
@@ -190,7 +190,7 @@ async function run(browser, vp) {
 
   await resetApp(page);
   await page.goto(`${BASE}/owner`);
-  await page.getByText("All quiet").first().waitFor();
+  await page.getByText(/needs your attention/).first().waitFor();
   await snap(page, vp, "29-owner-inbox-empty");
   await page.goto(`${BASE}/tenant`);
   await page.getByRole("button", { name: "How much is my rent?" }).click();
@@ -221,7 +221,7 @@ async function run(browser, vp) {
   await resetApp(page);
   await page.goto(`${BASE}/owner/record`);
   await page.getByRole("button", { name: "Edit details" }).first().click();
-  await page.getByLabel("Model").waitFor();
+  await page.getByLabel("Model", { exact: true }).waitFor();
   await snap(page, vp, "27f-owner-record-edit");
   await page.goto(`${BASE}/owner/rent`);
   await page.getByText("From your lease").waitFor();
@@ -232,7 +232,7 @@ async function run(browser, vp) {
   await page.goto(`${BASE}/tenant/texts`);
   await page.getByRole("region", { name: /phone showing a text conversation/ }).getByRole("button", { name: "My water heater is leaking" }).click();
   await page.getByRole("region", { name: /phone showing a text conversation/ }).getByText(/near an outlet/).waitFor(W);
-  await page.getByRole("region", { name: /phone showing a text conversation/ }).getByRole("button", { name: /^2\s+No$/ }).click();
+  await page.getByRole("region", { name: /phone showing a text conversation/ }).getByRole("button", { name: /^No$/ }).click();
   await page.getByText(/picture guide for your heater/i).waitFor(W);
   await page.waitForTimeout(500);
   await snap(page, vp, "27i-tenant-text-thread-phone");

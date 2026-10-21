@@ -53,8 +53,8 @@ const LIFE_COLORS: Record<LifeTone, string> = {
 };
 
 /**
- * Age against typical life. The bar runs to 125% of typical life so an item
- * that is past its life visibly overflows the "typical life" tick.
+ * Age against typical life. The whole bar is the typical life, so a full bar means the item has reached it. Past that the
+ * bar stays full and the number of years over is said in words, instead of a tick that has to be explained.
  */
 export function LifespanBar({
   ageYears,
@@ -67,24 +67,22 @@ export function LifespanBar({
   tone: LifeTone;
   compact?: boolean;
 }) {
-  const scaleMax = typicalLifeYears * 1.25;
-  const fill = Math.min(100, (ageYears / scaleMax) * 100);
-  const lifeTick = (typicalLifeYears / scaleMax) * 100;
+  const fill = Math.min(100, (ageYears / Math.max(typicalLifeYears, 1)) * 100);
+  const over = ageYears - typicalLifeYears;
 
   return (
     <div
       role="img"
-      aria-label={`Age ${ageYears} years against a typical life of ${typicalLifeYears} years`}
+      aria-label={`Age ${ageYears} years against a typical life of ${typicalLifeYears} years${over > 0 ? `, ${over} ${over === 1 ? "year" : "years"} past it` : ""}`}
     >
-      <div className={`relative rounded-full bg-cream-deep ${compact ? "h-2.5" : "h-4"}`}>
+      <div className={`relative overflow-hidden rounded-full bg-cream-deep ${compact ? "h-2.5" : "h-4"}`}>
         <div className={`bar-grow h-full rounded-full ${LIFE_COLORS[tone]}`} style={{ width: `${fill}%` }} />
-        <div className="absolute -top-1 -bottom-1 w-0.5 bg-ink" style={{ left: `${lifeTick}%` }} />
       </div>
       {!compact && (
-        <div className="relative mt-1 h-5 text-xs font-bold text-ink-soft">
-          <span className="absolute left-0">New</span>
-          <span className="absolute -translate-x-1/2 whitespace-nowrap" style={{ left: `${lifeTick}%` }}>
-            Typical life: {typicalLifeYears} yrs
+        <div className="mt-1 flex justify-between text-xs font-bold text-ink-soft">
+          <span>New</span>
+          <span>
+            {over > 0 ? `${over} ${over === 1 ? "year" : "years"} past its typical life of ${typicalLifeYears}` : `Typical life: ${typicalLifeYears} years`}
           </span>
         </div>
       )}

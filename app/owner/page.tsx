@@ -4,11 +4,13 @@ import { useState } from "react";
 import { AgentPanel } from "@/components/AgentPanel";
 import { ApprovalCard } from "@/components/ApprovalCard";
 import { JobStatusTracker } from "@/components/JobStatusTracker";
+import { LateRentCard } from "@/components/LateRentCard";
 import { RentCard } from "@/components/RentCard";
 import { Thread } from "@/components/Thread";
 import { CheckIcon, PlayIcon } from "@/components/icons";
 import { sampleRepairEvents, useAgent } from "@/lib/agents/useAgent";
 import { usd } from "@/lib/format";
+import { dueStatus } from "@/lib/payments";
 import { PROPERTY, VENDORS } from "@/lib/seed";
 import { useDemo } from "@/lib/store";
 import { useJobStatus } from "@/lib/useJobStatus";
@@ -32,17 +34,24 @@ export default function OwnerHomePage() {
   const vendor = state.approval ? VENDORS.find((v) => v.id === state.approval?.vendorId) : null;
   const saved = agent.world.stats.saved;
 
+  // Late rent is money owed to the owner, so it is counted and shown first.
+  const rentPaid = state.rentPaidAt !== null || state.payments.some((p) => p.kind === "rent");
+  const lateRent = !rentPaid && dueStatus("rent").overdue;
+  const needs = open.length + (lateRent ? 1 : 0);
+  const emergencies = open.filter((m) => m.card?.kind === "emergency");
+  const approvals = open.filter((m) => m.card?.kind !== "emergency");
+
   const headline =
-    open.length > 0
-      ? `${open.length === 1 ? "1 thing needs" : `${open.length} things need`} your OK`
+    needs > 0
+      ? `${needs === 1 ? "1 thing needs" : `${needs} things need`} your attention`
       : msgs.length === 0
         ? "All quiet"
         : status === "done"
           ? "All done"
           : "You're all caught up";
   const sub =
-    open.length > 0
-      ? "GoHome already did the work. Check it over, then tap Approve."
+    needs > 0
+      ? "GoHome already did the work. Late rent is first, then anything to approve."
       : msgs.length === 0
         ? "GoHome only reaches out when something needs you."
         : status === "booked" || status === "approved"
@@ -71,6 +80,7 @@ export default function OwnerHomePage() {
               <div className="mt-5 rounded-xl bg-white p-4 text-ink">
                 <p className="mb-3 font-extrabold">Water heater repair</p>
                 <JobStatusTracker status={status} />
+                {status === "done" && <p className="mt-3 font-bold text-good-ink">Done: the new water heater is in your home record.</p>}
                 {saved > 0 && (
                   <p className="mt-3 inline-block rounded-full bg-good px-3 py-1 text-sm font-extrabold text-white">{usd(saved)} saved on this repair</p>
                 )}
@@ -85,7 +95,11 @@ export default function OwnerHomePage() {
             )}
           </div>
 
-          {open.map((m) => (
+          {emergencies.map((m) => (
+            <ApprovalCard key={m.id} msg={m} onTap={(msgId, action) => agent.send({ type: "owner.tap", msgId, action })} />
+          ))}
+          <LateRentCard />
+          {approvals.map((m) => (
             <ApprovalCard key={m.id} msg={m} onTap={(msgId, action) => agent.send({ type: "owner.tap", msgId, action })} />
           ))}
 

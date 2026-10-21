@@ -96,7 +96,7 @@ describe("loop 1: the 4 AM triage and dispatch", () => {
     expect(clockText(START_CLOCK)).toBe("4:07 AM");
     expect(w.triage.stage).toBe("asked_electrical");
     expect(textFor(w, "tenant")).toMatch(/near an outlet/);
-    expect(toolNames(w)).toEqual(["emergency_rules", "lookup_house_record"]);
+    expect(toolNames(w)).toEqual(["open_case", "lookup_house_record"]);
   });
 
   it("sends the owner a silent heads-up, not a call, for an urgent leak", () => {
@@ -142,7 +142,9 @@ describe("loop 1: the 4 AM triage and dispatch", () => {
   it("never asks for a label photo: the heater is already in the house record", () => {
     const w = run(createWorld(), [LEAK, { type: "tenant.text", text: "2" }, { type: "tenant.text", text: "done" }]);
     expect(w.triage.stage).toBe("quotes_pending");
-    expect(textFor(w, "tenant")).not.toMatch(/sticker|label|photo/i);
+    // It may ask for a photo of the drip (so the plumber comes prepared), but never of a label: the record already has it.
+    expect(textFor(w, "tenant")).not.toMatch(/sticker|label/i);
+    expect(textFor(w, "tenant")).toMatch(/photo of where it is dripping/i);
     expect(toolNames(w)).not.toContain("request_label_photo");
     expect(recordAt(w.timeline, w.timeline.length).values["heater.model"]).toBe("HL-40G-NG");
   });
@@ -204,8 +206,8 @@ describe("the decision card and the approval gate", () => {
     expect(card.text).toContain("$2,450");
     expect(card.text).toContain("$2,695");
     expect(card.text).toContain("$400");
-    expect(card.text).toMatch(/Bayside Plumbing\s+\$2,850\s+slightly high/);
-    expect(card.text).toMatch(/A1 Rapid\s+\$2,100.*no license shown, no permit line/);
+    expect(card.text).toMatch(/Bayside Plumbing and Heating\s+\$2,850\s+slightly high/);
+    expect(card.text).toMatch(/A1 Rapid Plumbing\s+\$2,100.*no license shown, no permit line/);
     expect(card.actions?.map((a) => a.id)).toEqual(["approve", "others", "call"]);
     expect(clockText(card.at)).toMatch(/^5:\d\d AM$/);
   });
@@ -454,5 +456,58 @@ describe("final defect list: chat behavior", () => {
     const w = run(createWorld(), [LEAK_EV, { type: "tenant.text", text: "2" }]);
     const after = send(w, { type: "tenant.text", text: "done" });
     expect(texts(after, "tenant", "out").at(-1) ?? "").not.toMatch(/separate request/i);
+  });
+});
+
+describe("review round 8: the safety question comes first", () => {
+  const LEAK_EV: Ev = { type: "tenant.text", text: "water heater is leaking all over the garage" };
+  const tools = (w: World) => w.timeline.filter((e) => e.kind === "tool").map((e) => (e.kind === "tool" ? e.tool : ""));
+
+  it("does not log 'not an emergency' before the tenant answers", () => {
+    const w = send(createWorld(), LEAK_EV);
+    expect(tools(w)).not.toContain("emergency_rules");
+  });
+
+  it("logs it after a No, and an emergency after a Yes", () => {
+    expect(tools(run(createWorld(), [LEAK_EV, { type: "tenant.text", text: "2" }]))).toContain("emergency_rules");
+    const yes = run(createWorld(), [LEAK_EV, { type: "tenant.text", text: "1" }]);
+    expect(yes.triage.stage).toBe("emergency");
+  });
+
+  it("the owner log and the guide agree on the steps", () => {
+    const w = run(createWorld(), [LEAK_EV, { type: "tenant.text", text: "2" }]);
+    const pick = w.timeline.find((e) => e.kind === "tool" && e.tool === "pick_safety_steps");
+    expect(pick && pick.kind === "tool" ? pick.detail : "").toMatch(/picture guide \(6 steps\)/);
+  });
+
+  it("buttons read as words, not text codes", () => {
+    const w = send(createWorld(), LEAK_EV);
+    const last = [...w.timeline].reverse().find((e) => e.kind === "msg" && e.dir === "out") as Msg;
+    expect(last.actions?.map((a) => a.label)).toEqual(["Yes", "No"]);
+    const steps = run(createWorld(), [LEAK_EV, { type: "tenant.text", text: "2" }]);
+    const msg = [...steps.timeline].reverse().find((e) => e.kind === "msg" && e.dir === "out" && e.party === "tenant") as Msg;
+    expect(msg.actions?.map((a) => a.label)).toEqual(["Done", "Help"]);
+  });
+
+  it("nothing in the copy assumes it is night", () => {
+    const w = autoplay();
+    const all = w.timeline.filter((e): e is Msg => e.kind === "msg").map((m) => m.text).join("\n");
+    expect(all).not.toMatch(/go back to sleep|keep sleeping/i);
+  });
+
+  it("the plan does not claim a photo that was never sent, and asks where the leak is", () => {
+    const w = autoplay();
+    const tools2 = w.timeline.filter((e) => e.kind === "tool");
+    const req = tools2.find((e) => e.kind === "tool" && e.tool === "request_quotes");
+    expect(req && req.kind === "tool" ? req.detail : "").not.toMatch(/photos/);
+    const dec = tools2.findIndex((e) => e.kind === "tool" && e.tool === "decide_repair_replace");
+    const pick = tools2.findIndex((e) => e.kind === "tool" && e.tool === "recommend_vendor");
+    expect(dec).toBeGreaterThanOrEqual(0);
+    expect(dec).toBeLessThan(pick);
+  });
+
+  it("with a photo, the tank is known to be leaking", () => {
+    const w = run(createWorld(), [{ type: "tenant.photo", photo: "leak" }]);
+    expect(w.timeline.some((e) => e.kind === "msg" && e.photo === "leak")).toBe(true);
   });
 });

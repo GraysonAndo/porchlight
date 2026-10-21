@@ -14,9 +14,19 @@ const ALWAYS_ON = {
   owner: ["Equipment age and warranty, all 6 items", "Lease dates and California rent rules", "Quotes checked against typical prices"],
 };
 
-export function AgentPanel({ audience, className = "", heightClass = "h-[26rem] lg:h-[34rem]" }: { audience: "tenant" | "owner"; className?: string; heightClass?: string }) {
+export function AgentPanel({ audience, className = "", heightClass = "h-[clamp(13rem,calc(100dvh-34rem),34rem)]" }: { audience: "tenant" | "owner"; className?: string; heightClass?: string }) {
   const agent = useAgent();
   const items = activityFor(audience, agent.visible);
+  // Steps are grouped by job, in the order each job started. Only the latest job is open, so finished ones fold away.
+  const groups: { job: string; items: typeof items }[] = [];
+  for (const it of items) {
+    const g = groups.find((x) => x.job === it.job);
+    if (g) g.items.push(it);
+    else groups.push({ job: it.job, items: [it] });
+  }
+  // The job with the newest step goes last, so it is the one left open.
+  const lastJob = items.length > 0 ? items[items.length - 1].job : null;
+  if (lastJob) groups.sort((a, b) => Number(a.job === lastJob) - Number(b.job === lastJob));
   const working = agent.pending || agent.waiting;
   const box = useRef<HTMLDivElement>(null);
 
@@ -62,31 +72,41 @@ export function AgentPanel({ audience, className = "", heightClass = "h-[26rem] 
             </ul>
           </div>
         ) : (
-          <ol className="space-y-3">
-            {items.map((item) => (
-              <li key={item.id} className="reveal flex gap-3">
-                <span className="mt-0.5 inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-good text-white">
-                  <CheckIcon size={14} />
-                </span>
-                <div className="min-w-0 flex-1">
-                  <p className="font-bold leading-snug">{item.title}</p>
-                  {item.detail && <p className="mt-0.5 text-sm text-ink-soft">{item.detail}</p>}
-                  <p className="mt-1 flex flex-wrap items-center gap-2 text-xs font-bold text-ink-soft">
-                    {item.engine && <EngineChip engine={item.engine} />}
-                    <span>{item.clock}</span>
-                  </p>
-                </div>
-              </li>
+          <div className="space-y-3">
+            {groups.map((g, gi) => (
+              <details key={g.job} open={gi === groups.length - 1 || audience === "tenant"} className="rounded-xl border border-line">
+                <summary className="flex min-h-11 cursor-pointer items-center justify-between gap-2 px-3 font-extrabold">
+                  <span>{g.job}</span>
+                  <span className="text-xs font-bold text-ink-soft">{g.items.length} {g.items.length === 1 ? "step" : "steps"}{gi < groups.length - 1 ? ", finished" : ""}</span>
+                </summary>
+                <ol className="space-y-3 px-3 pb-3">
+                  {g.items.map((item) => (
+                    <li key={item.id} className="reveal flex gap-3">
+                      <span className="mt-0.5 inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-good text-white">
+                        <CheckIcon size={14} />
+                      </span>
+                      <div className="min-w-0 flex-1">
+                        <p className="font-bold leading-snug">{item.title}</p>
+                        {item.detail && <p className="mt-0.5 text-sm text-ink-soft">{item.detail}</p>}
+                        <p className="mt-1 flex flex-wrap items-center gap-2 text-xs font-bold text-ink-soft">
+                          {item.engine && <EngineChip engine={item.engine} />}
+                          <span>{item.clock}</span>
+                        </p>
+                      </div>
+                    </li>
+                  ))}
+                </ol>
+              </details>
             ))}
             {working && (
-              <li className="flex items-center gap-3 text-sm font-bold text-ink-soft" aria-label="GoHome is working">
+              <p className="flex items-center gap-3 text-sm font-bold text-ink-soft" aria-label="GoHome is working">
                 <span className="inline-flex h-6 w-6 shrink-0 items-center justify-center">
                   <span className="think-dot !h-2.5 !w-2.5" />
                 </span>
                 {agent.pending ? "Working on the next step..." : audience === "tenant" ? "Finding the right plumber for you..." : "Waiting for plumbers to send quotes..."}
-              </li>
+              </p>
             )}
-          </ol>
+          </div>
         )}
       </div>
     </section>

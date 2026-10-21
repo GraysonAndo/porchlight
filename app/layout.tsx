@@ -5,6 +5,7 @@ import { StoreProvider } from "@/lib/store";
 import { Shell } from "@/components/Shell";
 import { ResetOnQuery } from "@/components/ResetOnQuery";
 import { AgentDriver } from "@/components/AgentDriver";
+import { StoryPlayer } from "@/components/StoryPlayer";
 
 const jakarta = Plus_Jakarta_Sans({
   variable: "--font-jakarta",
@@ -32,6 +33,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           <Shell>{children}</Shell>
           <ResetOnQuery />
           <AgentDriver />
+          <StoryPlayer />
         </StoreProvider>
       </body>
     </html>

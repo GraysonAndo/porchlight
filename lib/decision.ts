@@ -1,7 +1,8 @@
 // Repair vs replace. Plain rules, no AI. The same rules are shown on screen
 // ("How we decided") so the owner can see exactly why.
 
-export type FailureMode = "tank leak" | "other";
+/** "unknown leak" is a leak with no sign yet of where the water comes from, so the tank is not assumed to be the cause. */
+export type FailureMode = "tank leak" | "unknown leak" | "other";
 
 export interface DecisionInput {
   item: string;
@@ -76,9 +77,13 @@ export function decideRepairOrReplace(input: DecisionInput): DecisionResult {
     },
     {
       id: "tank-leak",
-      rule: "Replace if the tank itself is leaking. A leaking tank cannot be repaired.",
+      rule: "Replace if the tank itself is leaking. A leaking tank cannot be repaired. A leak from a valve or fitting can be.",
       triggered: leakTriggered,
-      detail: leakTriggered ? "The tank is leaking." : "The tank is not leaking.",
+      detail: leakTriggered
+        ? "The tank is leaking."
+        : failureMode === "unknown leak"
+          ? "Not confirmed. The leak could be the tank, or just a valve or fitting, which can be a cheap fix. A photo or the plumber will show which."
+          : "The tank is not leaking.",
     },
   ];
 

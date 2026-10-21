@@ -27,9 +27,9 @@ function defaultNotToExceed(vendor: Vendor): number {
 
 function Timeline({ approval, vendor }: { approval: Approval; vendor: Vendor }) {
   const items = [
-    { title: "Vendor notified", detail: `${vendor.name} got the booking message.`, time: "Today, 9:02 AM (sample)" },
-    { title: "Tenant notified", detail: `${PROPERTY.tenant} got the access window.`, time: "Today, 9:03 AM (sample)" },
-    { title: "Visit scheduled", detail: approval.accessWindow, time: "Confirmed (sample)" },
+    { title: "Vendor notified", detail: `${vendor.name} got the booking message.`, time: "Today, 9:02 AM" },
+    { title: "Tenant notified", detail: `${PROPERTY.tenant} got the access window.`, time: "Today, 9:03 AM" },
+    { title: "Visit scheduled", detail: approval.accessWindow, time: "Confirmed" },
   ];
   return (
     <ol className="space-y-0">

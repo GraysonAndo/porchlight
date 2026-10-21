@@ -1,6 +1,7 @@
 "use client";
 
 import { LifespanBar } from "@/components/Bars";
+import { DataPlateDemo } from "@/components/DataPlateDemo";
 import { EquipmentEditor } from "@/components/EquipmentEditor";
 import { StepShell } from "@/components/StepShell";
 import { CheckIcon } from "@/components/icons";
@@ -85,10 +86,16 @@ export default function OwnerRecordPage() {
                 <dt className="font-bold text-ink-soft">Replace</dt>
                 <dd>{usdRange(item.replaceLow, item.replaceHigh)}</dd>
               </dl>
+              {item.reminder && (
+                <p className="rounded-xl bg-glow-tint p-2 text-sm font-bold">
+                  Reminder: {item.reminder}
+                </p>
+              )}
               <div>
                 <LifespanBar ageYears={age} typicalLifeYears={item.typicalLifeYears} tone={s.tone} compact />
                 <p className="mt-1 text-xs text-ink-soft">
                   {age === 0 ? "New" : `${age} of ${item.typicalLifeYears} typical years`} ({s.percentOfLife}% of life)
+                  {age > item.typicalLifeYears ? `. ${age - item.typicalLifeYears} ${age - item.typicalLifeYears === 1 ? "year" : "years"} past its typical life.` : ""}
                 </p>
               </div>
               {editing === item.id ? (
@@ -127,6 +134,7 @@ export default function OwnerRecordPage() {
           );
         })}
       </ul>
+      <DataPlateDemo />
       <p>
         <PlaceholderNote /> <span className="text-sm text-ink-soft">(typical life and replace cost)</span>
       </p>

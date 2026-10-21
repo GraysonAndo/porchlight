@@ -49,7 +49,7 @@ import type {
   World,
 } from "./types";
 
-import { guideForText } from "../homeGuides";
+import { guideById, guideForText } from "../homeGuides";
 import { START_CLOCK, createWorld } from "./world";
 
 export { START_CLOCK, createWorld };
@@ -64,14 +64,14 @@ export const INITIAL_RECORD: Record<string, string> = {
   "heater.serial": "15C0412-X",
   "heater.size": "40 gallons",
   "heater.fuel": "Natural gas",
-  "heater.location": "Garage, against the north wall",
+  "heater.location": "Garage, to the left of the garage door",
   "heater.made": "March 2015",
   "heater.age": "11 years",
   "heater.warranty": "Expired in 2021 (6 year tank warranty*)",
-  "heater.source": "Recorded at move-in from the data plate and the home inspection (sample)",
+  "heater.source": "Recorded at move-in from the data plate and the home inspection",
   "lease.rent": `${usd(PROPERTY.rent)} per month`,
   "lease.anniversary": "December 14, 2026",
-  "lease.last": "14 months ago",
+  "lease.last": "December 2024, about 22 months ago",
   "lease.notice": "None",
 };
 
@@ -117,7 +117,14 @@ export function clockText(at: number): string {
  */
 export function entryTime(e: { at: number; revealAt?: number }): string {
   if (e.revealAt === undefined) return clockText(e.at);
-  return new Date(e.revealAt).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" });
+  const when = new Date(e.revealAt);
+  const time = when.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" });
+  // Something from an earlier day says so, so a 9:37 PM from last night never sits unlabeled next to a 9:06 AM.
+  const today = new Date();
+  const startOf = (d: Date) => new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime();
+  const daysAgo = Math.round((startOf(today) - startOf(when)) / 86_400_000);
+  if (daysAgo <= 0) return time;
+  return `${daysAgo === 1 ? "Yesterday" : when.toLocaleDateString("en-US", { month: "short", day: "numeric" })} ${time}`;
 }
 
 /** Do Not Disturb hours on the owner's phone. */
@@ -219,8 +226,9 @@ const VERDICT_WORDS: Record<Verdict, string> = {
   low: "low",
 };
 
+/** The vendor's full name. A shortened one ("Willow Glen") reads like a place, not a company. */
 function shortName(name: string): string {
-  return name.split(" ").slice(0, 2).join(" ");
+  return name;
 }
 
 /** "a permit" becomes "permit", so it reads "no permit line". */
@@ -306,6 +314,8 @@ function handle(w: World, ev: Ev): void {
       return onLeaseCheck(w);
     case "rent.paid":
       return onRentPaid(w, ev.paid, ev.confirmation);
+    case "rent.remind":
+      return onRentRemind(w, ev.daysLate);
     case "record.edit":
       return onRecordEdit(w, ev.patch);
     case "rent.notice":
@@ -314,6 +324,8 @@ function handle(w: World, ev: Ev): void {
       return onUtilitiesPaid(w, ev.amount, ev.confirmation);
     case "owner.markDone":
       return onMarkDone(w);
+    case "owner.autoApprove":
+      return onAutoApprove(w, ev.limit);
     case "owner.choose":
       w.choice = { vendorId: ev.vendorId, notToExceed: ev.notToExceed, accessWindow: ev.accessWindow };
       return;
@@ -346,10 +358,25 @@ function onRentPaid(w: World, paid: boolean, confirmation?: string): void {
   say(w, "owner", `${PROPERTY.tenant} paid ${RENT_MONTH} rent: ${usd(PROPERTY.rent)}.${ref}`, { silent: true });
 }
 
+/** The owner sends a late rent reminder: the tenant is texted what is owed and the late fee from the lease. */
+function onRentRemind(w: World, daysLate: number): void {
+  if (w.rentPaid || w.rentReminded) return;
+  w.rentReminded = true;
+  const fee = daysLate > PROPERTY.graceDays ? ` Your lease adds a ${usd(PROPERTY.lateFee)} late fee after a ${PROPERTY.graceDays}-day grace period, so that fee applies now.` : "";
+  tool(w, "chat", "remind_rent", "action", "Sent a late rent reminder", `${RENT_MONTH} rent of ${usd(PROPERTY.rent)} is ${daysLate} day${daysLate === 1 ? "" : "s"} late. The late fee comes from the lease: ${usd(PROPERTY.lateFee)} after ${PROPERTY.graceDays} days of grace.`);
+  say(w, "tenant", `Friendly reminder: your ${RENT_MONTH} rent of ${usd(PROPERTY.rent)} was due on the 1st and is ${daysLate} day${daysLate === 1 ? "" : "s"} late.${fee} You can pay in about a minute on the Pay page.`);
+  say(w, "owner", `Reminder sent to ${PROPERTY.tenant}: ${RENT_MONTH} rent, ${usd(PROPERTY.rent)}, ${daysLate} days late${daysLate > PROPERTY.graceDays ? `, plus the ${usd(PROPERTY.lateFee)} late fee from the lease` : ""}.`, { silent: true });
+}
+
 /** The owner corrected a detail in the home record. The record changes, and everything GoHome says from now on uses it. */
 function onRecordEdit(w: World, patch: Record<string, string>): void {
   record(w, patch, "Corrected by the owner");
   tool(w, "chat", "update_house_record", "action", "Updated the home record", "The owner corrected a detail. GoHome uses the corrected record from now on, and the tenant's guides match it.");
+}
+
+/** Whether the tenant has sent a photo of the problem. */
+function hasTenantPhoto(w: World): boolean {
+  return w.timeline.some((e) => e.kind === "msg" && e.party === "tenant" && e.dir === "in" && e.photo !== undefined);
 }
 
 /** The year the heater was made, as the home record has it now (the owner may have corrected it). */
@@ -404,6 +431,18 @@ function onMarkDone(w: World): void {
   if (w.triage.stage !== "booked") return;
   const job = w.pending.find((p) => p.id === "job_done");
   runDue(w, job ? job.at : w.clock + 1);
+}
+
+/** The owner's own rule: a repair at or under their limit is approved for them. The decision card is closed and the booking runs. */
+function onAutoApprove(w: World, limit: number): void {
+  const open = openOwnerMessage(w);
+  if (!open || open.card?.kind !== "decision") return;
+  const pick = w.choice ?? { vendorId: PLAN.vendorId, notToExceed: PLAN.notToExceed, accessWindow: ACCESS_WINDOWS[0] };
+  const vendor = VENDORS.find((v) => v.id === pick.vendorId) ?? VENDORS[0];
+  if (vendor.total > limit) return;
+  open.usedAction = "approve";
+  tool(w, "gate", "auto_approve", "action", "Approved on its own, under your limit", `${vendor.name} at ${usd(vendor.total)} is at or under the ${usd(limit)} you allow GoHome to approve without asking. The spending limit of ${usd(pick.notToExceed)} still applies.`);
+  onOwnerTapResolved(w, "approve");
 }
 
 function onOwnerTap(w: World, msgId: string, action: string): void {
@@ -532,6 +571,7 @@ function onTenantText(w: World, raw: string, shown?: string): void {
 
   // A new emergency interrupts anything else.
   if (stage !== "emergency" && triage.urgency === "emergency") {
+    tool(w, "triage", "open_case", "code", "Opened a case", "Started a case from the tenant's text.");
     emergencyPath(
       w,
       triage.category,
@@ -619,14 +659,18 @@ function relayQuestion(w: World): void {
 
 function startCase(w: World, text: string): void {
   const triage = triageText(text);
-  tool(
-    w,
-    "triage",
-    "emergency_rules",
-    "code",
-    "Checked the emergency rules",
-    `No gas smell, fire, sparks, or flooding. Urgency: ${urgencyWord(triage.urgency)}, not an emergency.`,
-  );
+  tool(w, "triage", "open_case", "code", "Opened a case", "Started a case from the tenant's text. The emergency rules are checked as soon as the safety question is answered.");
+
+  if (!isHeaterJob(text, triage)) {
+    tool(
+      w,
+      "triage",
+      "emergency_rules",
+      "code",
+      "Checked the emergency rules",
+      `No gas smell, fire, sparks, or flooding. Urgency: ${urgencyWord(triage.urgency)}, not an emergency.`,
+    );
+  }
 
   if (isHeaterJob(text, triage)) {
     w.triage.stage = "asked_electrical";
@@ -643,11 +687,11 @@ function startCase(w: World, text: string): void {
     say(
       w,
       "tenant",
-      `Hi, this is GoHome for ${PROPERTY.address}. I'm on it, and I already have your water heater on file (${heaterLabel(w)}). Safety first: is the water near an outlet, or is anything electrical in the puddle?\nReply 1 = yes, 2 = no`,
+      `Hi, this is GoHome for ${PROPERTY.address}. I'm on it, and I already have your water heater on file (${heaterLabel(w)}). Safety first: is the water near an outlet, or is anything electrical in the puddle?\nTap Yes or No.`,
       {
         actions: [
-          { id: "1", label: "1  Yes", text: "1" },
-          { id: "2", label: "2  No", text: "2" },
+          { id: "1", label: "Yes", text: "1" },
+          { id: "2", label: "No", text: "2" },
         ],
       },
     );
@@ -681,7 +725,7 @@ function logOtherProblem(w: World, text: string, triage: ReturnType<typeof triag
     say(w, "owner", `GoHome is calling about ${triage.category.toLowerCase()} at ${PROPERTY.address}.`, { channel: "call" });
     say(w, "owner", `Urgent: ${triage.category} at ${PROPERTY.address}. The tenant has no fix steps. I called you. ${triage.summary}`);
   } else {
-    tool(w, "triage", "notify_owner", "action", "Sent a silent heads-up to the owner", `Urgency is ${urgencyWord(triage.urgency)}, not an emergency, so there is no phone call. The owner can keep sleeping.`);
+    tool(w, "triage", "notify_owner", "action", "Sent a silent heads-up to the owner", `Urgency is ${urgencyWord(triage.urgency)}, not an emergency, so there is no phone call. The owner gets a quiet text instead.`);
     say(w, "owner", `${triage.category} request at ${PROPERTY.address} (${urgencyWord(triage.urgency)}). ${triage.summary} I'm lining up next steps. Nothing needed from you yet.`, { silent: true });
   }
 }
@@ -690,10 +734,10 @@ function answerElectrical(w: World, text: string): void {
   const yes = /^\s*1\b|\b(yes|outlet|plug|electric|spark|wet wire)\b/i.test(text) && !NO.test(text);
   const no = NO.test(text);
   if (!yes && !no) {
-    say(w, "tenant", "Quick check so I give you the right steps: is the water near an outlet or anything electrical? Reply 1 for yes or 2 for no.", {
+    say(w, "tenant", "Quick check so I give you the right steps: is the water near an outlet or anything electrical? Tap Yes or No.", {
       actions: [
-        { id: "1", label: "1  Yes", text: "1" },
-        { id: "2", label: "2  No", text: "2" },
+        { id: "1", label: "Yes", text: "1" },
+        { id: "2", label: "No", text: "2" },
       ],
     });
     return;
@@ -716,20 +760,24 @@ function answerElectrical(w: World, text: string): void {
   w.triage.stage = "steps_given";
   const allSteps = seededHeaterTriage().safetySteps;
   const steps = allSteps.slice(0, 2);
-  tool(w, "triage", "pick_safety_steps", "code", `Picked ${allSteps.length} safe steps from the guide library`, `The first 2 are texted now and the picture guide walks through all ${allSteps.length}. Steps come from a hand-checked library. The model never improvises a fix.`);
+  const guideSteps = guideById("heater-water-off")?.steps.length ?? 0;
+  // The safety answer is in, so now the rules can be logged: this is not an emergency.
+  tool(w, "triage", "emergency_rules", "code", "Checked the emergency rules", "The tenant said the water is not near anything electrical, and there is no gas smell. Urgency: soon, not an emergency.");
+  tool(w, "triage", "pick_safety_steps", "code", "Picked 2 safe steps and a picture guide", `The 2 steps are texted now, and the picture guide (${guideSteps} steps) covers the rest. Steps come from a hand-checked library. The model never improvises a fix.`);
+  const photoAsk = hasTenantPhoto(w) ? "" : "\nA photo of where it is dripping helps the plumber. Tap the camera button to send one.";
   say(
     w,
     "tenant",
-    `Good. Two quick steps for your ${heaterLabel(w)}:\n${numbered(steps)}\nNot sure how? Tap Show me how for a picture guide made for your exact heater, or reply HELP. Don't touch the heater if you're standing in water, and never touch the gas valve. If you smell gas, leave and call 911. Reply DONE when you're finished.`,
+    `Good. Two quick steps for your ${heaterLabel(w)}:\n${numbered(steps)}\nNot sure how? Tap Show me how for a picture guide made for your exact heater, or tap Help. Don't touch the heater if you're standing in water, and never touch the gas valve. If you smell gas, leave and call 911. Tap Done when you're finished.${photoAsk}`,
     {
       guide: "heater-water-off",
       actions: [
         { id: "done", label: "Done", text: "done" },
-        { id: "help", label: "HELP", text: "help" },
+        { id: "help", label: "Help", text: "help" },
       ],
     },
   );
-  tool(w, "triage", "notify_owner", "action", "Sent a silent heads-up to the owner", "Urgency is soon, not an emergency, so there is no phone call. The owner can keep sleeping.");
+  tool(w, "triage", "notify_owner", "action", "Sent a silent heads-up to the owner", "Urgency is soon, not an emergency, so there is no phone call. The owner gets a quiet text instead.");
   say(
     w,
     "owner",
@@ -784,10 +832,10 @@ function dispatch(w: World): void {
     "request_quotes",
     "action",
     "Asked 3 vendors for itemized quotes",
-    "Standing permission: GoHome may request quotes. It may not book, negotiate, or spend without a tap. Sent the address, photos, and the house record.",
+    `Standing permission: GoHome may request quotes. It may not book, negotiate, or spend without a tap. Sent the address and the house record${hasTenantPhoto(w) ? ", plus the tenant's photo" : ""}.`,
   );
 
-  say(w, "tenant", "All set. Your landlord has been told. You don't need to call anyone. I'll text you the plumber's name and time. Go back to sleep, I'm watching this.");
+  say(w, "tenant", "All set. Your landlord has been told. You don't need to call anyone. I'll text you the plumber's name and time. I'm watching this and will keep you posted.");
   say(
     w,
     "owner",
@@ -811,8 +859,6 @@ function quotesArrive(w: World): void {
       `${usd(c.quote.total)} against a typical ${usdRange(WATER_HEATER_JOB.marketTotal.low, WATER_HEATER_JOB.marketTotal.high)}*.${c.license ? "" : " No license number shown."}${c.missingLines.length > 0 ? ` No ${missingText(c.missingLines)} line.` : ""}`,
     );
   }
-  tool(w, "quote", "recommend_vendor", "code", `Picked ${PLAN.vendorName}`, `${PLAN.reasons.join(" ")} Limit ${usd(PLAN.notToExceed)} (quote plus 10%).`);
-
   const age = ageOf({ installYear: heaterYear(w) });
   const decision = decideRepairOrReplace({
     item: "Water heater",
@@ -820,9 +866,11 @@ function quotesArrive(w: World): void {
     typicalLifeYears: EQUIPMENT[0].typicalLifeYears,
     repairCost: REPAIR_ESTIMATE,
     replaceCost: PLAN.total,
-    failureMode: "tank leak",
+    failureMode: hasTenantPhoto(w) ? "tank leak" : "unknown leak",
   });
   tool(w, "quote", "decide_repair_replace", "code", `Rule says: ${decision.recommendation}`, decision.reasons.join(" "));
+  tool(w, "quote", "recommend_vendor", "code", `Picked ${PLAN.vendorName}`, `${PLAN.reasons.join(" ")} Limit ${usd(PLAN.notToExceed)} (quote plus 10%).`);
+
 
   const lines = COLLECTED.map(
     (c) =>
@@ -836,7 +884,7 @@ function quotesArrive(w: World): void {
       card: {
         kind: "decision",
         title: `Replace the water heater with ${shortName(PLAN.vendorName)}`,
-        summary: `The heater is ${age} years old and the tank is leaking, so it cannot be repaired. GoHome checked 3 quotes and picked the best one for you.`,
+        summary: `The heater is ${age} years old, past its typical life. ${hasTenantPhoto(w) ? "The photo shows water at the base of the tank, so it cannot be repaired." : "Your tenant has not said where the water comes from, so the plumber checks for a cheap fix first, like a valve or a fitting."} GoHome checked 3 quotes and picked the best one for you.`,
         facts: [
           { label: "Price", value: `${usd(PLAN.total)}, a fair price`, tone: "good" },
           { label: "Spending limit", value: `${usd(PLAN.notToExceed)} (quote plus 10%)` },
@@ -849,12 +897,12 @@ function quotesArrive(w: World): void {
       actions: [
         { id: "approve", label: "Approve" },
         { id: "others", label: "Other quotes" },
-        { id: "call", label: "Call me" },
+        { id: "call", label: "Talk it through with me" },
       ],
     },
   );
   w.triage.stage = "decision_sent";
-  say(w, "tenant", "Update: your landlord is choosing a plumber now. I'll text you the moment one is booked.");
+  say(w, "tenant", "Update: your landlord is choosing a plumber now. A plumber can usually come tomorrow morning, between 9 and 11. I'll ask you to confirm the time before anything is booked.");
   later(w, 45, "owner_nudge");
 }
 
@@ -864,7 +912,7 @@ function ownerNudge(w: World): void {
   say(w, "owner", "Reminder: the water heater decision is still waiting. The leak is contained, the tenant is safe, and the quotes are held for 24 hours.", {
     actions: [
       { id: "approve", label: "Approve" },
-      { id: "call", label: "Call me" },
+      { id: "call", label: "Talk it through with me" },
     ],
   });
   say(w, "owner", "GoHome is calling about the water heater decision.", { channel: "call" });
@@ -892,7 +940,7 @@ function triageOwnerAction(w: World, action: string): void {
     say(w, "owner", lines.join("\n"), {
       actions: [
         { id: "approve", label: `Approve ${shortName(PLAN.vendorName)}` },
-        { id: "call", label: "Call me" },
+        { id: "call", label: "Talk it through with me" },
       ],
     });
     return;
@@ -926,11 +974,11 @@ function triageOwnerAction(w: World, action: string): void {
   say(
     w,
     "tenant",
-    `Good news: ${vendor.name} is booked for ${windowText(pick.accessWindow)}. Please be home or leave access. Reply 1 if that works, 2 for another time.`,
+    `Good news: ${vendor.name} is booked for ${windowText(pick.accessWindow)}. Please be home or leave access. Tap That works, or Another time.`,
     {
       actions: [
-        { id: "1", label: "1  That works", text: "1" },
-        { id: "2", label: "2  Another time", text: "2" },
+        { id: "1", label: "That works", text: "1" },
+        { id: "2", label: "Another time", text: "2" },
       ],
     },
   );
@@ -957,10 +1005,10 @@ function confirmTime(w: World, text: string): void {
     say(w, "owner", "Your tenant needs a different time for the plumber. Reply with a new window and I'll offer it.", { silent: true });
     return;
   }
-  say(w, "tenant", "Reply 1 if the plumber's time works, or 2 if you need another time.", {
+  say(w, "tenant", "Does the plumber's time work? Tap That works, or Another time.", {
     actions: [
-      { id: "1", label: "1  That works", text: "1" },
-      { id: "2", label: "2  Another time", text: "2" },
+      { id: "1", label: "That works", text: "1" },
+      { id: "2", label: "Another time", text: "2" },
     ],
   });
 }
@@ -981,7 +1029,7 @@ function jobDone(w: World): void {
       "heater.made": "September 2026",
       "heater.age": "Brand new",
       "heater.warranty": "New 6 year tank warranty*",
-      "heater.source": "Added automatically by the installer (sample)",
+      "heater.source": "Added automatically by the installer",
     },
     "Old water heater marked replaced. New heater registered by the installer.",
   );
@@ -1055,16 +1103,17 @@ function auditMessage(w: World, quote: VendorQuote, draft: string, intro: string
     {
       card: {
         kind: "quote",
-        title: `${shortName(quote.vendorName)} quote is ${VERDICT_WORDS[cmp.total.verdict]}`,
+        title: `${quote.vendorName} quote is ${VERDICT_WORDS[cmp.total.verdict]}`,
         summary:
           cmp.total.verdict === "fair"
-            ? "The price is inside the typical range. A reply is drafted if you want to confirm the details."
-            : "GoHome wrote a polite reply asking for a better price. It is ready to send.",
+            ? "A quote that came in on its own, separate from your repair quotes. The price is inside the typical range, and a reply is drafted if you want to confirm the details."
+            : "A quote that came in on its own, separate from your repair quotes. GoHome wrote a polite reply asking for a better price. It is ready to send.",
         facts: [
           { label: "Their price", value: usd(quote.total), tone: cmp.total.verdict === "fair" ? "good" : "caution" },
           { label: "Typical range", value: usdRange(cmp.total.range.low, cmp.total.range.high) },
           ...(hourly ? [{ label: "Labor", value: hourly.replace(/^Labor /, ""), tone: "caution" as const }] : []),
         ],
+        note: `Tap Send it and the drafted reply is emailed to ${quote.vendorName}, word for word. Nothing goes out before that.`,
       },
       attachment: { title: `Draft reply to ${quote.vendorName}`, body: draft },
       actions: [
@@ -1106,7 +1155,19 @@ function redraft(w: World, note: string): void {
   const draft = pushbackDraft(note);
   tool(w, "quote", "draft_pushback", "ai", "Redrafted with the owner's note", `Applied: "${note}".`);
   w.quote.draft = draft;
-  say(w, "owner", "Updated. Here is the new draft (attached). Nothing is sent until you say so.", {
+  const cmp = compareQuote(quote, WATER_HEATER_JOB);
+  say(w, "owner", `Updated. New draft reply to ${quote.vendorName} (attached). Nothing is sent until you say so.`, {
+    card: {
+      kind: "quote",
+      title: `Counter-offer to ${quote.vendorName}`,
+      summary: `Redrafted with your note: "${note}". It asks them to come down from ${usd(quote.total)}.`,
+      facts: [
+        { label: "Their price", value: usd(quote.total), tone: "caution" },
+        { label: "Typical range", value: usdRange(cmp.total.range.low, cmp.total.range.high) },
+        { label: "Goes to", value: quote.vendorName },
+      ],
+      note: "Tap Send it and this exact message is emailed to them. Nothing goes out before that.",
+    },
     attachment: { title: `Draft reply to ${quote.vendorName}`, body: draft },
     actions: [
       { id: "qsend", label: "Send it" },
@@ -1209,7 +1270,7 @@ function onLeaseCheck(w: World): void {
   runDue(w, nextNineAm(w.clock));
   const proposed = 3360;
   const result = calculateRent({ ...DEFAULT_RENT_FORM, proposedRent: proposed });
-  tool(w, "sentinel", "scan_leases", "code", "Checked lease dates", "1200 Example Court: lease anniversary December 14, 2026. Last increase 14 months ago. 0 increases in the last 12 months.");
+  tool(w, "sentinel", "scan_leases", "code", "Checked lease dates", "1200 Example Court: lease anniversary December 14, 2026. Last increase December 2024, about 22 months ago. 0 increases in the last 12 months.");
   tool(w, "sentinel", "fetch_cpi", "code", "Looked up local CPI", "Local CPI change 3.0% (placeholder: the owner should confirm the current figure for the area).");
   tool(
     w,
@@ -1217,7 +1278,7 @@ function onLeaseCheck(w: World): void {
     "ab1482_calc",
     "code",
     `Max legal increase: ${result.capPercent.toFixed(1)}%`,
-    `Cap is the lesser of 5% plus local CPI, or 10%. ${usdCents(DEFAULT_RENT_FORM.currentRent)} to a maximum of ${usdCents(result.maxNewRent)}, rounded down to the cent. Notice: 30 days, or 90 if over 10%. Not exempt.`,
+    `Cap is the lesser of 5% plus local CPI, or 10%. ${usdCents(DEFAULT_RENT_FORM.currentRent)} to a maximum of ${usdCents(result.maxNewRent)}, rounded down to the cent. Notice: 30 days, or 90 if over 10%. Not exempt as things stand: this is a single family home with an individual owner, so the written exemption notice is the one step that could change that.`,
   );
   const notice = buildNotice({
     ownerName: PROPERTY.owner,
@@ -1244,7 +1305,9 @@ function onLeaseCheck(w: World): void {
           { label: "Suggested", value: `5% (${usd(3360)})`, tone: "good" },
           { label: "Notice period", value: `${result.noticeDays} days` },
           { label: "Sent by", value: "Certified mail, with proof" },
+          ...(w.rentPaid ? [] : [{ label: "Heads up", value: `${RENT_MONTH} rent has not come in yet`, tone: "caution" as const }]),
         ],
+        note: `Tap an amount and the notice is mailed with proof of service, and ${PROPERTY.tenant} is told. Nothing is mailed before that.`,
       },
       attachment: { title: "Draft rent notice", body: notice },
       actions: [
