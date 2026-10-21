@@ -6,6 +6,7 @@
 
 import {
   ArrowCounterClockwise,
+  ArrowUp,
   Bell,
   CalendarCheck,
   Calculator,
@@ -66,6 +67,7 @@ export const SparkIcon = wrap(Sparkle);
 export const PeopleIcon = wrap(UsersThree);
 export const BellIcon = wrap(Bell);
 export const ClockIcon = wrap(Clock);
+export const ArrowUpIcon = wrap(ArrowUp);
 export const CalendarIcon = wrap(CalendarCheck);
 export const BoxIcon = wrap(Package);
 export const RobotIcon = wrap(Robot);

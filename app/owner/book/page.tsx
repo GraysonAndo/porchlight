@@ -158,7 +158,7 @@ function ApproveBody() {
           {state.jobCompletedAt ? (
             <Callout tone="good" title="✓ House record updated automatically" role="status">
               <p>
-                The installer finished the job. The new water heater (Hearthline HL-40G-NG, serial 26J0007-A, 40 gallons,
+                The installer finished the job. The new water heater (Hearthline HL-40G-NX, serial 26J0007-A, 40 gallons,
                 natural gas) was added to your house record with its install date. The old heater was marked replaced and
                 the 5-year forecast was updated. Nobody had to type anything.
               </p>

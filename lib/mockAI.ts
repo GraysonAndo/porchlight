@@ -32,7 +32,9 @@ export function createMockAI(options: MockAIOptions = {}): AIProvider {
 
   const think = () =>
     new Promise<void>((resolve) => {
-      const ms = minDelay + Math.random() * Math.max(0, maxDelay - minDelay);
+      // Tests can set window.__gohomeAiDelayMs to make the AI slow, to check the timeout and Retry paths.
+      const forced = typeof window !== "undefined" ? (window as unknown as { __gohomeAiDelayMs?: number }).__gohomeAiDelayMs : undefined;
+      const ms = forced ?? minDelay + Math.random() * Math.max(0, maxDelay - minDelay);
       setTimeout(resolve, ms);
     });
 

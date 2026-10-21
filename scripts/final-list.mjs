@@ -71,7 +71,7 @@ const chatText = (page) => page.getByRole("log", { name: "Messages" }).innerText
   await page.locator("#edit-water-heater-serial").fill("15C0412-Z");
   await page.locator("#edit-water-heater-location").fill("Garage, against the south wall");
   await page.locator("#edit-water-heater-year").fill("2012");
-  await card.getByRole("button", { name: "Save" }).click();
+  await page.locator("dialog[open]").getByRole("button", { name: "Save" }).click();
   await page.reload();
   const text = await page.locator("main").innerText();
   check("a corrected serial survives a reload with its badge", /15C0412-Z/.test(text) && /Corrected by you/.test(text));
@@ -194,6 +194,8 @@ const chatText = (page) => page.getByRole("log", { name: "Messages" }).innerText
   await resetApp(page);
   await page.goto(`${BASE}/owner/rent`);
   const verdict = () => page.locator("[role=status].sticky").innerText();
+  check("before the inflation figure is confirmed the verdict asks for it, and Send is disabled", /Confirm your area's inflation figure first/.test(await verdict()) && (await page.getByRole("button", { name: /Send notice/ }).isDisabled()));
+  await page.getByLabel(/I checked this inflation figure for my area/).check();
   check("the verdict is one big banner: OK to send", /OK to send/.test(await verdict()));
   await page.locator("#proposed-rent").fill("3500");
   check("over the limit says do not send, and by how much", /Do not send: over the limit by/.test(await verdict()));
@@ -258,7 +260,7 @@ const chatText = (page) => page.getByRole("log", { name: "Messages" }).innerText
   await page.goto(`${BASE}/pricing`);
   check("each page has its own tab title", (await page.title()) === "Pricing | GoHome");
   await page.getByText("10 units").click();
-  check("pricing shows the whole portfolio", (await page.getByText("$80 a month for 10 units ($960 a year)").count()) === 1);
+  check("pricing shows the whole portfolio", (await page.getByText("$80 a month for 10 units").count()) === 1 && (await page.getByText("$960 a year").count()) === 1);
   await page.getByRole("button", { name: "I would pick Plus" }).click();
   check("the pick is confirmed next to the tier", (await page.locator("li.card", { hasText: "Plus" }).getByText("Saved on this device").count()) === 1);
   await page.goto(`${BASE}/owner/settings`);
@@ -368,6 +370,11 @@ const chatText = (page) => page.getByRole("log", { name: "Messages" }).innerText
   // Rent page: the recommended raise is the primary button, and the exemption is explained.
   await resetApp(page);
   await page.goto(`${BASE}/owner/rent`);
+  check("no recommended raise is shown while the inflation figure is unconfirmed and rent is late", (await page.getByRole("button", { name: /^Recommended:/ }).count()) === 0);
+  await page.getByLabel(/I checked this inflation figure for my area/).check();
+  await page.goto(`${BASE}/owner`);
+  await page.getByRole("button", { name: "Mark rent as paid" }).first().click();
+  await page.goto(`${BASE}/owner/rent`);
   check("the recommended raise is first", (await page.getByRole("button", { name: /^Recommended: \$3,360\.00/ }).count()) === 1);
   check("the exemption chance is spelled out", (await page.getByText("You could be exempt from the yearly limit").count()) === 1);
   await page.getByRole("button", { name: "Draft the exemption notice" }).click();
@@ -398,14 +405,19 @@ const chatText = (page) => page.getByRole("log", { name: "Messages" }).innerText
   await page.getByRole("button", { name: "Snap the data plate" }).click();
   await page.getByRole("button", { name: "Add to my home record" }).waitFor(wait20);
   await page.getByRole("button", { name: "Add to my home record" }).click();
-  await page.getByText(/Clothes washer added from its data plate/).waitFor(wait20);
+  check("the data plate will not save until the place is given and the reading is confirmed", (await page.getByText(/Say where it is/).count()) === 1 && (await page.getByText(/Check the reading against the plate first/).count()) === 1);
+  await page.locator("#plate-where").fill("Laundry closet");
+  await page.getByLabel(/I checked the brand, model, serial number, and year/).check();
+  await page.getByRole("button", { name: "Add to my home record" }).click();
+  await page.getByText(/Added from its data plate/).waitFor(wait20);
   check("a snapped data plate adds equipment to the record", (await page.getByText("Brightwell BW-WA7").count()) >= 1);
   await page.goto(`${BASE}/tenant/home`);
   check("and to the tenant's My home", (await page.getByText("Clothes washer").count()) >= 1);
   await page.goto(`${BASE}/owner/forecast`);
   check("and to the forecast", (await page.locator("tbody th", { hasText: "Clothes washer" }).count()) >= 1);
 
-  // Adjustable autonomy.
+  // Adjustable autonomy. Start clean, because rent was marked paid above and that already put a message in the inbox.
+  await resetApp(page);
   await page.goto(`${BASE}/owner/settings`);
   await page.locator("#auto-approve").fill("3000");
   await page.goto(`${BASE}/owner`);

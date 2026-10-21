@@ -170,7 +170,7 @@ export function PhoneThread() {
                 <div className={`max-w-[85%] rounded-2xl px-3 py-2 text-sm ${m.dir === "in" ? "rounded-br-sm bg-brand text-white" : "rounded-bl-sm bg-white shadow-sm"}`}>
                   <p className="whitespace-pre-line">{m.text}</p>
                   {m.guide && <p className="mt-1.5 rounded-lg bg-brand-tint px-2 py-1 text-xs font-extrabold text-brand">Show me how: picture guide for your heater</p>}
-                  <p className={`mt-1 text-right text-[11px] font-bold ${m.dir === "in" ? "text-white/80" : "text-ink-soft"}`}>{clockText(m.at)}</p>
+                  <p className={`mt-1 text-right text-xs font-bold ${m.dir === "in" ? "text-white/80" : "text-ink-soft"}`}>{clockText(m.at)}</p>
                 </div>
               </div>
             ))}

@@ -22,6 +22,7 @@ const base: RentInputs = {
   singleFamilyOrCondo: true,
   notCorporateOwned: true,
   exemptionNoticeGiven: false,
+  leaseHasExemptionWording: true,
   buildingUnder15Years: false,
 };
 
@@ -241,5 +242,13 @@ describe("the letter uses the start date the owner picked", () => {
     expect(text).toContain("Delivery: first-class mail");
     expect(text).toContain("Owner mailing address: PO Box 100");
     expect(text).toContain("Within Civil Code section 1947.12.");
+  });
+});
+
+describe("the home exemption needs the notice and the lease wording", () => {
+  it("needs both", () => {
+    expect(calculateRent({ ...base, exemptionNoticeGiven: true, leaseHasExemptionWording: false }).mayBeExempt).toBe(false);
+    expect(calculateRent({ ...base, exemptionNoticeGiven: false, leaseHasExemptionWording: true }).mayBeExempt).toBe(false);
+    expect(calculateRent({ ...base, exemptionNoticeGiven: true, leaseHasExemptionWording: true }).mayBeExempt).toBe(true);
   });
 });

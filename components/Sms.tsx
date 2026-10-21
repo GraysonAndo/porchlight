@@ -24,9 +24,20 @@ const PHONE = /(1-\d{3}-\d{3}-\d{4}|\b911\b)/g;
 function withCallLinks(text: string): React.ReactNode[] {
   return text.split(PHONE).map((part, i) =>
     i % 2 === 1 ? (
-      <a key={i} href={`tel:${part.replace(/-/g, "")}`} className="font-extrabold underline">
-        {part}
-      </a>
+      part === "911" ? (
+        <a
+          key={i}
+          href="tel:911"
+          aria-label="Call 911"
+          className="mx-0.5 inline-flex min-h-11 min-w-11 items-center justify-center rounded-lg bg-urgent px-3 font-extrabold text-white no-underline"
+        >
+          911
+        </a>
+      ) : (
+        <a key={i} href={`tel:${part.replace(/-/g, "")}`} className="inline-flex min-h-11 items-center font-extrabold underline">
+          {part}
+        </a>
+      )
     ) : (
       part
     ),
@@ -70,7 +81,7 @@ export function Bubble({ msg, perspective, via }: { msg: Msg; perspective: Party
         </p>
         <p className="mt-1">{msg.text}</p>
         <p className="mt-1 text-xs font-bold opacity-70">Rings through Do Not Disturb</p>
-        <p className="mt-1 text-right text-[11px] font-bold opacity-60">{entryTime(msg)}</p>
+        <p className="mt-1 text-right text-xs font-bold opacity-60">{entryTime(msg)}</p>
       </div>
     );
   }
@@ -98,7 +109,7 @@ export function Bubble({ msg, perspective, via }: { msg: Msg; perspective: Party
             <GuideButton guideId={msg.guide} />
           </div>
         )}
-        <p className="mt-1 flex items-center justify-end gap-1.5 text-[11px] font-bold opacity-60">
+        <p className="mt-1 flex items-center justify-end gap-1.5 text-xs font-bold opacity-60">
           {msg.silent && (
             <span className="inline-flex items-center gap-1">
               <MoonIcon size={12} /> Delivered silently

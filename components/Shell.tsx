@@ -5,7 +5,7 @@ import type { ReactNode } from "react";
 import { MobileTabs, SiteHeader } from "./SiteHeader";
 import { SiteFooter } from "./SiteFooter";
 import { FlowPrompt } from "./FlowPrompt";
-import { PAGE_TITLES } from "@/lib/steps";
+import { PAGE_DESCRIPTIONS, PAGE_TITLES } from "@/lib/steps";
 
 /** The frame around every page: a header (the role's own, or the public one), the page, and one footer. */
 export function Shell({ children }: { children: ReactNode }) {
@@ -17,7 +17,22 @@ export function Shell({ children }: { children: ReactNode }) {
   const title = clean === "/" ? "GoHome: your home, made easy" : `${name ?? "Page not found"} | GoHome`;
   // The embedded checkout sits inside another page, so it has no frame of its own.
   if (pathname === "/checkout") return <main id="main">{children}</main>;
-  const heading = <title>{title}</title>;
+  const description = clean.startsWith("/tenant/guides/")
+    ? "A short step-by-step guide with a picture on every step. Sample content."
+    : (PAGE_DESCRIPTIONS[clean] ?? "This page does not exist. Go back to the GoHome welcome page.");
+  const heading = (
+    <>
+      <title>{title}</title>
+      <meta name="description" content={description} />
+      <meta property="og:site_name" content="GoHome" />
+      <meta property="og:title" content={title} />
+      <meta property="og:description" content={description} />
+      <meta property="og:type" content="website" />
+      <meta name="twitter:card" content="summary" />
+      <meta name="twitter:title" content={title} />
+      <meta name="twitter:description" content={description} />
+    </>
+  );
   // The welcome page has the same header and footer as every other page, with its own full-width content.
   if (pathname === "/") {
     return (

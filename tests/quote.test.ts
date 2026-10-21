@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { compareQuote, percentOverTop, rangeBarScale, verdictFor } from "../lib/quote";
-import { BAYSIDE_QUOTE, WATER_HEATER_JOB } from "../lib/seed";
+import { compareQuote, nearTopLines, normalizeQuote, percentOverTop, rangeBarScale, rangePosition, verdictFor } from "../lib/quote";
+import { A1_QUOTE, BAYSIDE_QUOTE, WATER_HEATER_JOB, WILLOW_QUOTE } from "../lib/seed";
 
 const range = { low: 1600, high: 2600 };
 
@@ -113,5 +113,35 @@ describe("the price table is consistent with itself", () => {
     expect(flagged("bayside")).toEqual(["labor"]);
     expect(flagged("willow-glen")).toEqual([]);
     expect(flagged("a1-rapid")).toEqual([]);
+  });
+});
+
+describe("comparable scope", () => {
+  const item = WATER_HEATER_JOB;
+
+  it("adds a typical permit to a quote that leaves one out, and keeps the original", () => {
+    const n = normalizeQuote(A1_QUOTE, item);
+    expect(n.original).toBe(2100);
+    expect(n.adjustments.map((a) => [a.id, a.amount])).toEqual([["permit", 125]]);
+    expect(n.adjusted).toBe(2225);
+  });
+
+  it("changes nothing for a quote that lists everything", () => {
+    const n = normalizeQuote(WILLOW_QUOTE, item);
+    expect(n.adjustments).toEqual([]);
+    expect(n.adjusted).toBe(WILLOW_QUOTE.total);
+  });
+
+  it("finds where a total sits in its range", () => {
+    expect(rangePosition(2450, item.marketTotal)).toBeCloseTo(0.85, 5);
+    expect(rangePosition(1600, item.marketTotal)).toBe(0);
+    expect(rangePosition(2700, item.marketTotal)).toBeGreaterThan(1);
+  });
+
+  it("flags lines at or near the top of their range", () => {
+    const ids = nearTopLines(WILLOW_QUOTE, item).map((l) => l.id);
+    expect(ids).toContain("labor");
+    expect(ids).toContain("permit");
+    expect(ids).not.toContain("seismic");
   });
 });

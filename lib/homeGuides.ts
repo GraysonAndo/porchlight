@@ -74,7 +74,7 @@ function build(equipment: EquipmentItem[]): HomeGuide[] {
         {
           part: "tank",
           caption: `Your ${itemName(heater)} is ${inWhere(heater)}.`,
-          text: `Go to your water heater. It is the tall ${heater.summary.split(",")[0]} tank ${inWhere(heater)}. If the floor around it is wet, step carefully and wear shoes with good grip.`,
+          text: `Go to your water heater. It is the tall ${heater.summary.split(",")[0]} tank ${inWhere(heater)}. If the floor around it is wet, wear dry, rubber-soled shoes and stay out of standing water. If water is covering the floor around the heater, do not go in. Tell GoHome.`,
           warn: "If the water is near an outlet or anything plugged in, stay away and tell GoHome. That is an emergency.",
         },
         {
@@ -86,7 +86,7 @@ function build(equipment: EquipmentItem[]): HomeGuide[] {
           part: "cold-valve",
           state: "closed",
           caption: "Handle across the pipe means closed.",
-          text: "Turn the handle a quarter turn so it crosses the pipe, making a T. (Along the pipe is open. Across it is closed.) If it is a round wheel, turn it to the right until it stops. That stops new water from filling the tank.",
+          text: "Turn the handle a quarter turn so it sits at a right angle to the pipe, making a T. (Along the pipe is open. Across it is closed.) If it is a round wheel, turn it to the right until it stops. That stops new water from filling the tank.",
         },
         {
           part: "pan",

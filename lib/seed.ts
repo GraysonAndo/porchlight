@@ -75,7 +75,7 @@ export const OLD_HEATER_RECORD: WaterHeaterRecord = {
 /** The replacement heater, added to the record automatically when the plumber finishes. */
 export const NEW_HEATER_RECORD: WaterHeaterRecord = {
   manufacturer: "Hearthline",
-  model: "HL-40G-NG",
+  model: "HL-40G-NX",
   serial: "26J0007-A",
   capacityGallons: 40,
   fuelType: "Natural gas",
@@ -150,32 +150,46 @@ export const A1_QUOTE: VendorQuote = {
 /** The three quotes GoHome collected from vendors. */
 export const QUOTES: VendorQuote[] = [BAYSIDE_QUOTE, WILLOW_QUOTE, A1_QUOTE];
 
+/** What a quote says about the job beyond its price. Null means the vendor did not say. */
+export interface VendorDetails {
+  availability: string | null;
+  partsWarranty: string | null;
+  laborWarranty: string | null;
+  unitSize: string | null;
+  fuel: string | null;
+  validFor: string | null;
+}
+
 export interface Vendor {
   id: string;
   name: string;
   total: number;
-  /** null means the vendor did not show a license number */
+  /** null means the vendor did not show a license number. Sample numbers are fictional and have not been checked. */
   license: string | null;
   warning: string | null;
   itemized: boolean;
+  details: VendorDetails;
 }
 
+/** Sample vendors. Their names, license numbers, and commitments are fictional and have not been verified. */
 export const VENDORS: Vendor[] = [
   {
     id: "bayside",
     name: "Bayside Plumbing and Heating",
     total: 2850,
-    license: "CSLB #000000",
+    license: "CSLB #0000002 (fictional, not verified)",
     warning: null,
     itemized: true,
+    details: { availability: "Tomorrow, 1:00 to 3:00 PM", partsWarranty: "6 years", laborWarranty: "2 years", unitSize: "40 gallon", fuel: "Natural gas", validFor: "30 days" },
   },
   {
     id: "willow-glen",
     name: "Willow Glen Water Heater Co.",
     total: 2450,
-    license: "CSLB #000000",
+    license: "CSLB #0000001 (fictional, not verified)",
     warning: null,
     itemized: true,
+    details: { availability: "Tomorrow, 9:00 to 11:00 AM", partsWarranty: "6 years", laborWarranty: "1 year", unitSize: "40 gallon", fuel: "Natural gas", validFor: "14 days" },
   },
   {
     id: "a1-rapid",
@@ -184,6 +198,7 @@ export const VENDORS: Vendor[] = [
     license: null,
     warning: "License number not shown. Ask before booking.",
     itemized: true,
+    details: { availability: "In 2 days, 9:00 to 11:00 AM", partsWarranty: null, laborWarranty: null, unitSize: null, fuel: null, validFor: null },
   },
 ];
 
@@ -220,6 +235,8 @@ export const DEFAULT_RENT_FORM: RentFormState = {
   singleFamilyOrCondo: true,
   notCorporateOwned: true,
   exemptionNoticeGiven: false,
+  leaseExemptionWording: false,
+  cpiConfirmed: false,
   buildingUnder15Years: false,
 };
 

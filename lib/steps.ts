@@ -29,8 +29,8 @@ export const OWNER_NAV: NavItem[] = [
 /** The pages that make up one repair, shown as tabs on the repair detail screens (owner only). */
 export const REPAIR_TABS: NavItem[] = [
   { href: "/owner/request", label: "Request" },
-  { href: "/owner/quote", label: "Quotes" },
   { href: "/owner/decide", label: "Decision" },
+  { href: "/owner/quote", label: "Quotes" },
   { href: "/owner/book", label: "Booking" },
 ];
 
@@ -51,8 +51,30 @@ export const PAGE_TITLES: Record<string, string> = {
   "/owner/forecast": "5-year forecast",
   "/owner/rent": "Rent change",
   "/pricing": "Pricing",
-  "/about": "Help and FAQ",
+  "/about": "About",
   "/feedback": "Feedback notes",
+};
+
+/** One sentence per page for search results and link previews. Sample data only, so none of it promises a real service. */
+export const PAGE_DESCRIPTIONS: Record<string, string> = {
+  "/": "GoHome is a clickable prototype of an AI property manager for owners of 1 to 10 rentals in California. Tenants get step-by-step help. Owners tap Approve.",
+  "/tenant": "Tell GoHome what is wrong. It knows your exact equipment, gives picture steps, and tells your owner only when it has to.",
+  "/tenant/home": "Everything in your rental in one place: equipment, picture guides, your lease basics, and what you owe.",
+  "/tenant/pay": "Pay the sample rent and utilities. Nothing is really charged.",
+  "/tenant/settings": "Choose how GoHome contacts you. Sample settings, nothing is really sent.",
+  "/tenant/texts": "See how GoHome works by text message in the full product. Sample messages only.",
+  "/owner": "Your approval inbox. GoHome gathers quotes, checks prices, and sets a limit. You tap Approve.",
+  "/owner/request": "A repair request as the owner sees it, with the photo, the triage, and what GoHome did next.",
+  "/owner/quote": "Compare sample vendor quotes line by line against a placeholder price range.",
+  "/owner/decide": "A repair or replace decision with the cost and age behind it. Sample numbers.",
+  "/owner/book": "Book the plumber and see the job added to your home record. Sample data.",
+  "/owner/record": "A record of every item in the rental with brand, model, serial, age, and where it is.",
+  "/owner/forecast": "A 5-year forecast of what is likely to need replacing and what to set aside. Placeholder estimates.",
+  "/owner/rent": "Check a California rent increase against the AB 1482 cap and draft a notice. Draft, not legal advice.",
+  "/owner/settings": "Choose how GoHome contacts you and how much it may approve on its own. Sample settings.",
+  "/pricing": "Three sample price tiers per unit per month. Illustrative placeholders, not a real offer.",
+  "/about": "What GoHome is, who built it, answers to common questions, and how to get in touch.",
+  "/feedback": "Notes saved from the Send feedback link. They stay in this browser.",
 };
 
 /** A readable screen name for the feedback notes. */

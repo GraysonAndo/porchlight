@@ -264,8 +264,11 @@ export default function ForecastPage() {
 
       <Callout tone="neutral" title="About these numbers">
         <p>
-          Costs and lifespans are rough placeholders. Real homes vary a lot. A real version
-          would use local prices and the condition of each item.
+          Real homes vary a lot. A real version would use local prices and the condition of each item.
+        </p>
+        <p className="mt-2">
+          <strong>Not included:</strong> this plan only covers replacing the items in your home record. It leaves out everyday repairs, tenant turnover and
+          cleaning, vacancies, insurance, and taxes, and it cannot predict a sudden failure such as a burst pipe. Keep some extra set aside for those.
         </p>
       </Callout>
     </StepShell>

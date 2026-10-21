@@ -4,6 +4,7 @@
 // Money math runs in whole cents so results never drift by a penny.
 
 import { addDays, longDate, usdCents } from "./format";
+import type { RentFormState } from "./types";
 
 export const BASE_CAP_PERCENT = 5;
 export const MAX_CAP_PERCENT = 10;
@@ -52,6 +53,8 @@ export interface RentInputs {
   notCorporateOwned: boolean;
   /** Tenant was given the required written exemption notice */
   exemptionNoticeGiven: boolean;
+  /** The lease itself contains the required exemption wording */
+  leaseHasExemptionWording: boolean;
   buildingUnder15Years: boolean;
 }
 
@@ -99,12 +102,12 @@ export function noticeDaysFor(currentRent: number, proposedRent: number): 30 | 9
 
 export function exemptionFor(inputs: RentInputs): { mayBeExempt: boolean; reason: string | null } {
   const houseExemption =
-    inputs.singleFamilyOrCondo && inputs.notCorporateOwned && inputs.exemptionNoticeGiven;
+    inputs.singleFamilyOrCondo && inputs.notCorporateOwned && inputs.exemptionNoticeGiven && inputs.leaseHasExemptionWording;
   if (houseExemption) {
     return {
       mayBeExempt: true,
       reason:
-        "A single family home or condo, not owned by a large investment company or a corporation, where the tenant was given the written exemption notice.",
+        "A single family home or condo, not owned by a large investment company or a corporation, where the tenant was given the written exemption notice and the lease has the exemption wording.",
     };
   }
   if (inputs.buildingUnder15Years) {
@@ -240,4 +243,21 @@ export function buildExemptionNotice(input: { ownerName: string; tenantName: str
     "",
     "DRAFT, NOT LEGAL ADVICE. For a tenancy that began after July 1, 2020, the law asks for this notice to be in the lease itself. Check the exact wording and timing with an attorney before relying on it.",
   ].join("\n");
+}
+
+/** The rent form as the inputs for the calculation. */
+export function rentInputsFromForm(form: RentFormState): RentInputs {
+  return {
+    currentRent: form.currentRent,
+    cpiPercent: form.cpiPercent,
+    proposedRent: form.proposedRent,
+    tenancy12Plus: form.tenancy12Plus,
+    increasesInLast12Months: form.increasesInLast12Months,
+    priorIncreasePercent: form.increasesInLast12Months > 0 ? form.priorIncreasePercent : 0,
+    singleFamilyOrCondo: form.singleFamilyOrCondo,
+    notCorporateOwned: form.notCorporateOwned,
+    exemptionNoticeGiven: form.exemptionNoticeGiven,
+    leaseHasExemptionWording: form.leaseExemptionWording,
+    buildingUnder15Years: form.buildingUnder15Years,
+  };
 }

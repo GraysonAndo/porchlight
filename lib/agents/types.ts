@@ -97,6 +97,7 @@ export type Ev =
   | { type: "cron.lease" }
   | { type: "rent.paid"; paid: boolean; confirmation?: string }
   | { type: "rent.remind"; daysLate: number }
+  | { type: "rent.cpi"; confirmed: boolean }
   | { type: "utilities.paid"; amount: string; confirmation: string }
   | { type: "record.edit"; patch: Record<string, string> }
   | { type: "rent.notice"; kind: "increase" | "decrease"; from: string; to: string; effective: string }
@@ -156,6 +157,8 @@ export interface World {
   };
   /** Whether this month's rent was marked paid (demo) */
   rentPaid: boolean;
+  /** Whether the owner confirmed the local inflation figure for the rent cap. Until then no dollar maximum is offered for mailing. */
+  cpiConfirmed?: boolean;
   /** Whether a late rent reminder was sent for this month */
   rentReminded?: boolean;
   /** Whether this month's utilities were paid */

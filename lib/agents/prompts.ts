@@ -111,7 +111,7 @@ export function flowPromptFor(role: PreviewRole, w: World): FlowPromptData | nul
         return { key, title: "What else could come in?", preview: null, cta: { label: "Act as a contractor: send a quote", events: [{ type: "contractor.quote" }] } };
       }
       if (w.sentinel.stage === "idle") {
-        return { key, title: "GoHome also watches your lease dates.", preview: null, cta: { label: "Run the Monday lease check", events: [{ type: "cron.lease" }] } };
+        return { key, title: "GoHome also watches your lease dates.", preview: null, cta: { label: w.rentPaid && w.cpiConfirmed ? "Run the Monday lease check" : "Settle the rent, confirm the inflation figure, then run the lease check", events: [...(w.rentPaid ? [] : [{ type: "rent.paid", paid: true } as const]), ...(w.cpiConfirmed ? [] : [{ type: "rent.cpi", confirmed: true } as const]), { type: "cron.lease" }] } };
       }
       return null;
     default:

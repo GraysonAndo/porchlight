@@ -5,15 +5,15 @@ import { DataPlateDemo } from "@/components/DataPlateDemo";
 import { EquipmentEditor } from "@/components/EquipmentEditor";
 import { StepShell } from "@/components/StepShell";
 import { CheckIcon } from "@/components/icons";
-import { Badge, Callout, Card, PlaceholderNote } from "@/components/ui";
+import { Badge, Card, PlaceholderNote } from "@/components/ui";
 import { heaterBeforeRepair } from "@/lib/equipment";
-import { monthYear, usdRange } from "@/lib/format";
+import { longDate, monthYear, usd, usdRange } from "@/lib/format";
 import { guidesForEquipment } from "@/lib/homeGuides";
 import { ageOf, lifeStage } from "@/lib/life";
-import { PROPERTY } from "@/lib/seed";
+import { PROPERTY, VENDORS } from "@/lib/seed";
 import { useDemo } from "@/lib/store";
 import { useEquipment } from "@/lib/useEquipment";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 export default function OwnerRecordPage() {
   const { state, actions } = useDemo();
@@ -22,6 +22,16 @@ export default function OwnerRecordPage() {
   const replaced = state.jobCompletedAt !== null;
   const old = heaterBeforeRepair(state);
   const equipment = useEquipment();
+  const doneVendor = state.approval ? VENDORS.find((v) => v.id === state.approval?.vendorId) : undefined;
+  const dialogRef = useRef<HTMLDialogElement>(null);
+  const editingItem = equipment.find((e) => e.id === editing);
+  // The editor opens in its own panel, so the card it belongs to does not stretch.
+  useEffect(() => {
+    const d = dialogRef.current;
+    if (!d) return;
+    if (editing && !d.open) d.showModal();
+    if (!editing && d.open) d.close();
+  }, [editing]);
 
   return (
     <StepShell stepId="owner-record">
@@ -30,18 +40,19 @@ export default function OwnerRecordPage() {
         need to replace.
       </p>
 
-      <Callout tone="info" title="Already filled in for you">
-        <p>
-          Brand, model, and serial number were recorded at move-in from each data plate, and new equipment is added automatically when an
-          installer finishes a job. If something was misread, tap Edit on that item to correct it.
-        </p>
-      </Callout>
+      <p className="rounded-xl bg-cream px-4 py-2 text-sm text-ink-soft">
+        Already filled in for you: brand, model, and serial number were recorded at move-in from each data plate, and new equipment is added automatically
+        when an installer finishes a job. If something was misread, tap Edit details on that item.
+      </p>
 
       {replaced && (
         <Card title="History">
           <p className="flex items-start gap-2">
             <CheckIcon size={22} />
             <span>
+              <strong>Replaced{state.jobCompletedAt ? ` on ${longDate(state.jobCompletedAt.slice(0, 10))}` : ""}</strong>
+              {doneVendor ? ` by ${doneVendor.name}` : ""}
+              {doneVendor ? ` for ${usd(doneVendor.total)}` : ""}.{" "}
               {old
                 ? `The old water heater (${old.manufacturer} ${old.model}, serial ${old.serial}, made ${monthYear(old.manufactureDate)})`
                 : "The old water heater"}{" "}
@@ -67,9 +78,8 @@ export default function OwnerRecordPage() {
                   </p>
                 </div>
                 <span className="flex flex-wrap gap-1.5">
-                  {item.id === "water-heater" && replaced && <Badge tone="good">New, added automatically</Badge>}
                   {corrected && <Badge tone="info">Corrected by you</Badge>}
-                  <Badge tone={s.tone}>{s.label}</Badge>
+                  {item.id === "water-heater" && replaced ? <Badge tone="good">New, added automatically</Badge> : <Badge tone={s.tone}>{s.label}</Badge>}
                 </span>
               </div>
               <dl className="grid grid-cols-[6.5rem_1fr] gap-y-1 text-sm">
@@ -94,31 +104,13 @@ export default function OwnerRecordPage() {
               <div>
                 <LifespanBar ageYears={age} typicalLifeYears={item.typicalLifeYears} tone={s.tone} compact />
                 <p className="mt-1 text-xs text-ink-soft">
-                  {age === 0 ? "New" : `${age} of ${item.typicalLifeYears} typical years`} ({s.percentOfLife}% of life)
+                  {age === 0 ? `New, about ${item.typicalLifeYears} years of life left` : `${age} of ${item.typicalLifeYears} typical years (${s.percentOfLife}% of life)`}
                   {age > item.typicalLifeYears ? `. ${age - item.typicalLifeYears} ${age - item.typicalLifeYears === 1 ? "year" : "years"} past its typical life.` : ""}
                 </p>
               </div>
-              {editing === item.id ? (
-                <EquipmentEditor
-                  item={item}
-                  corrected={corrected}
-                  onCancel={() => setEditing(null)}
-                  onReset={() => {
-                    actions.saveEquipmentEdit(item.id, null);
-                    setEditing(null);
-                    setSaved(`${item.name}: the recorded details are back.`);
-                  }}
-                  onSave={(edit) => {
-                    actions.saveEquipmentEdit(item.id, edit);
-                    setEditing(null);
-                    setSaved(`${item.name} updated. Your tenant now sees the corrected details and guides.`);
-                  }}
-                />
-              ) : (
-                <button type="button" className="btn btn-secondary !min-h-10 text-sm" onClick={() => { setEditing(item.id); setSaved(null); }}>
-                  Edit details
-                </button>
-              )}
+              <button type="button" className="btn btn-secondary !min-h-10 text-sm" onClick={() => { setEditing(item.id); setSaved(null); }}>
+                Edit details
+              </button>
               {saved?.startsWith(item.name) && (
                 <p role="status" className="text-sm font-bold text-good-ink">
                   {saved}
@@ -135,6 +127,36 @@ export default function OwnerRecordPage() {
         })}
       </ul>
       <DataPlateDemo />
+
+      <dialog
+        ref={dialogRef}
+        aria-labelledby="edit-dialog-title"
+        onClose={() => setEditing(null)}
+        className="m-auto w-full max-w-lg rounded-2xl bg-white p-0 text-ink shadow-2xl backdrop:bg-ink/50"
+      >
+        {editingItem && (
+          <div className="p-5">
+            <h2 id="edit-dialog-title" className="mb-3 text-xl font-extrabold">
+              Edit the {editingItem.name} details
+            </h2>
+            <EquipmentEditor
+              item={editingItem}
+              corrected={Boolean(state.equipmentEdits[editingItem.id])}
+              onCancel={() => setEditing(null)}
+              onReset={() => {
+                actions.saveEquipmentEdit(editingItem.id, null);
+                setEditing(null);
+                setSaved(`${editingItem.name}: the recorded details are back.`);
+              }}
+              onSave={(edit) => {
+                actions.saveEquipmentEdit(editingItem.id, edit);
+                setEditing(null);
+                setSaved(`${editingItem.name} updated. Your tenant now sees the corrected details and guides.`);
+              }}
+            />
+          </div>
+        )}
+      </dialog>
       <p>
         <PlaceholderNote /> <span className="text-sm text-ink-soft">(typical life and replace cost)</span>
       </p>

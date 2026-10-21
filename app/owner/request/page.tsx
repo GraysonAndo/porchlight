@@ -19,7 +19,7 @@ import { useTriage } from "@/lib/useTriage";
 
 export default function OwnerRequestPage() {
   const { state } = useDemo();
-  const { request, triage } = useTriage();
+  const { request, triage, stuck, retry, plainRules } = useTriage();
   const status = useJobStatus();
   const heaterRecord = heaterBeforeRepair(state);
   const heater = equipmentFor(heaterRecord, state.equipmentEdits)[0];
@@ -59,7 +59,21 @@ export default function OwnerRequestPage() {
       </Card>
 
       {!triage ? (
-        <Thinking message="Reading the tenant's report and photo..." />
+        stuck ? (
+          <Callout tone="caution" title="Reading the report is taking longer than expected" role="alert">
+            <p>You can try again, or continue with the plain-rules reading. It is built from fixed rules, not AI, so it is fast but less detailed.</p>
+            <div className="mt-3 flex flex-wrap gap-2">
+              <button type="button" className="btn btn-primary" onClick={retry}>
+                Retry
+              </button>
+              <button type="button" className="btn btn-secondary" onClick={plainRules}>
+                Use the plain-rules reading
+              </button>
+            </div>
+          </Callout>
+        ) : (
+          <Thinking message="Reading the tenant's report and photo..." />
+        )
       ) : (
         <>
           <UrgencyHero triage={triage} audience="owner" />

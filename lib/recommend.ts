@@ -5,7 +5,7 @@
 // automatically, because it may leave things out. A missing license is skipped
 // with the reason shown. If nothing passes, fall back to the cheapest fair one.
 
-import { compareQuote } from "./quote";
+import { normalizeQuote, verdictFor, type NormalizedQuote } from "./quote";
 import type { QuoteItem, Verdict, VendorQuote } from "./types";
 
 export interface Candidate {
@@ -17,7 +17,10 @@ export interface Candidate {
 }
 
 export interface CheckedCandidate extends Candidate {
+  /** The verdict on the adjusted total, so a quote that leaves out standard work is not judged against ones that include it */
   verdict: Verdict;
+  /** The quote as quoted, what it leaves out at typical prices, and the adjusted total used to compare it */
+  normalized: NormalizedQuote;
   /** Standard lines the quote does not list, such as a permit */
   missingLines: string[];
 }
@@ -30,8 +33,10 @@ export interface Recommendation {
   notToExceed: number;
   reasons: string[];
   skipped: { vendorId: string; vendorName: string; reason: string }[];
-  /** Highest total minus the recommended total */
+  /** Highest total minus the recommended total, both on comparable scope */
   savedVsHighest: number;
+  /** Plain sentences on how every other quote compares, including why a cheaper one was not picked */
+  comparisons: string[];
 }
 
 const LINE_NAMES: Record<string, string> = {
@@ -53,11 +58,15 @@ export function missingLines(quote: VendorQuote, item: QuoteItem): string[] {
 }
 
 export function checkCandidates(candidates: Candidate[], item: QuoteItem): CheckedCandidate[] {
-  return candidates.map((c) => ({
-    ...c,
-    verdict: compareQuote(c.quote, item).total.verdict,
-    missingLines: missingLines(c.quote, item),
-  }));
+  return candidates.map((c) => {
+    const normalized = normalizeQuote(c.quote, item);
+    return {
+      ...c,
+      normalized,
+      verdict: verdictFor(normalized.adjusted, item.marketTotal),
+      missingLines: missingLines(c.quote, item),
+    };
+  });
 }
 
 export function recommendQuote(checked: CheckedCandidate[]): Recommendation | null {
@@ -84,14 +93,14 @@ export function recommendQuote(checked: CheckedCandidate[]): Recommendation | nu
       : checked.filter((c) => c.verdict === "fair").length > 0
         ? checked.filter((c) => c.verdict === "fair")
         : checked;
-  const best = [...pool].sort((a, b) => a.quote.total - b.quote.total)[0];
-  const highest = Math.max(...checked.map((c) => c.quote.total));
+  const best = [...pool].sort((a, b) => a.normalized.adjusted - b.normalized.adjusted)[0];
+  const highest = Math.max(...checked.map((c) => c.normalized.adjusted));
 
   const reasons = [`The cheapest quote that is a fair price from a vendor that shows a license (${best.license ?? "none shown"}).`];
   if (best.verdict === "fair") reasons.push("The total is inside the typical range.");
-  const others = checked.filter((c) => c.vendorId !== best.vendorId && c.quote.total > best.quote.total);
+  const others = checked.filter((c) => c.vendorId !== best.vendorId && c.normalized.adjusted > best.normalized.adjusted);
   if (others.length > 0) {
-    const saved = highest - best.quote.total;
+    const saved = highest - best.normalized.adjusted;
     if (saved > 0) reasons.push(`It costs $${saved.toLocaleString("en-US")} less than the highest quote.`);
   }
   if (best.missingLines.length > 0) reasons.push(`Ask whether ${best.missingLines.join(" and ")} is included.`);
@@ -103,6 +112,30 @@ export function recommendQuote(checked: CheckedCandidate[]): Recommendation | nu
     notToExceed: Math.round(best.quote.total * 1.1),
     reasons,
     skipped: skipped.filter((s) => s.vendorId !== best.vendorId),
-    savedVsHighest: highest - best.quote.total,
+    savedVsHighest: highest - best.normalized.adjusted,
+    comparisons: compareToBest(checked, best),
   };
+}
+
+const money = (n: number) => `$${Math.abs(n).toLocaleString("en-US")}`;
+
+/** One sentence per other quote: how it compares with the pick, and why a cheaper one was not the pick. */
+function compareToBest(checked: CheckedCandidate[], best: CheckedCandidate): string[] {
+  const out: string[] = [];
+  for (const c of checked) {
+    if (c.vendorId === best.vendorId) continue;
+    const paper = best.quote.total - c.quote.total;
+    const comparable = best.normalized.adjusted - c.normalized.adjusted;
+    if (paper > 0) {
+      const why: string[] = [];
+      if (c.normalized.adjustments.length > 0) {
+        why.push(`it leaves out ${c.missingLines.join(" and ")}, and with ${c.normalized.adjustments.length === 1 ? "that" : "those"} added at typical prices it is ${money(c.normalized.adjusted)}, which is ${money(comparable)} ${comparable >= 0 ? "less" : "more"} than the pick`);
+      }
+      if (c.license === null) why.push("it shows no license number");
+      out.push(`${c.vendorName} is ${money(paper)} cheaper on paper (${money(c.quote.total)}), but ${why.length > 0 ? why.join(", and ") : "it is not a fair price for the same work"}.`);
+    } else {
+      out.push(`${c.vendorName} costs ${money(-comparable)} more than the pick, on the same scope.`);
+    }
+  }
+  return out;
 }

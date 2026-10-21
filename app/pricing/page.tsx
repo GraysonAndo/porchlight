@@ -1,14 +1,17 @@
 "use client";
 
 import Link from "next/link";
-import { CheckIcon } from "@/components/icons";
+import { ArrowUpIcon, CheckIcon, ClockIcon } from "@/components/icons";
 import { Badge, PlaceholderNote } from "@/components/ui";
 import { useDemo } from "@/lib/store";
 import { useState } from "react";
 
 type Pick = "starter" | "plus" | "pro";
 
-const TIERS: { id: Pick; name: string; price: number; line: string; features: string[] }[] = [
+/** A feature is live, planned ("soon"), or a hint about what the next tier adds. */
+type Feature = string | { text: string; soon?: true; hint?: true };
+
+const TIERS: { id: Pick; name: string; price: number; line: string; features: Feature[] }[] = [
   {
     id: "starter",
     name: "Starter",
@@ -19,6 +22,7 @@ const TIERS: { id: Pick; name: string; price: number; line: string; features: st
       "Tenant repair reports with photos",
       "Triage with emergency rules and safe steps",
       "Tenant questions answered from the record and lease",
+      { text: "Upgrade to Plus for quote checks", hint: true },
     ],
   },
   {
@@ -41,9 +45,9 @@ const TIERS: { id: Pick; name: string; price: number; line: string; features: st
     line: "GoHome watches the details for you.",
     features: [
       "Everything in Plus",
-      "Rent increase checks, notice drafts, and sending the notice (California)",
+      "Rent increase checks and notice drafts, ready for you to send (California)",
       "Quote audit with a drafted counter-offer",
-      "Coming in the full product: updates by text, and a call to you for emergencies",
+      { text: "Updates by text, and a call to you for emergencies", soon: true },
     ],
   },
 ];
@@ -60,7 +64,7 @@ export default function PricingPage() {
         <p className="eyebrow mb-2">Pricing</p>
         <h1 className="font-display text-4xl font-extrabold leading-tight sm:text-5xl">Simple pricing, per unit</h1>
         <p className="mt-3 max-w-2xl text-lg text-ink-soft">
-          Pay per unit, per month. Month to month, cancel any time. California only, for now. Nothing is charged right now,
+          Pay per unit per month. Month to month, cancel any time. California only, for now. Nothing is charged right now,
           and we are testing which tier makes sense. Tell us which you would pick.
         </p>
         <p className="mt-2">
@@ -69,9 +73,11 @@ export default function PricingPage() {
         </p>
       </div>
 
-      <fieldset className="card">
-        <legend className="label px-1">How many units do you own?</legend>
-        <div className="flex flex-wrap gap-2" role="radiogroup">
+      <section className="card" aria-labelledby="units-heading">
+        <h2 id="units-heading" className="text-lg font-extrabold">
+          How many units do you own?
+        </h2>
+        <div className="mt-2 flex flex-wrap gap-2" role="radiogroup" aria-labelledby="units-heading">
           {[1, 5, 10].map((n) => (
             <label
               key={n}
@@ -84,7 +90,7 @@ export default function PricingPage() {
             </label>
           ))}
         </div>
-      </fieldset>
+      </section>
 
       <ul className="grid gap-4 md:grid-cols-3">
         {TIERS.map((t) => {
@@ -96,22 +102,27 @@ export default function PricingPage() {
                 <span className="text-4xl font-extrabold">${t.price}</span>
                 <span className="text-ink-soft">{" per unit per month"}</span>
               </p>
-              {units > 1 && (
-                <p className="mt-1 font-bold">
-                  ${t.price * units} a month for {units} units (${t.price * units * 12} a year)
-                </p>
-              )}
-              {units === 1 && <p className="mt-1 text-sm text-ink-soft">${t.price * 12} a year for one unit</p>}
+              <p className="mt-1 text-sm text-ink-soft">
+                {units > 1 ? `$${t.price * units} a month for ${units} units` : "$" + t.price + " a month for 1 unit"}
+                <span className="block">${t.price * units * 12} a year</span>
+              </p>
               <p className="mt-2 text-ink-soft">{t.line}</p>
               <ul className="mt-3 flex-1 space-y-2">
-                {t.features.map((f) => (
-                  <li key={f} className="flex items-start gap-2 text-sm">
-                    <span className="mt-0.5 shrink-0 text-good-ink">
-                      <CheckIcon size={18} />
-                    </span>
-                    <span>{f}</span>
-                  </li>
-                ))}
+                {t.features.map((f) => {
+                  const feature = typeof f === "string" ? { text: f } : f;
+                  const soon = "soon" in feature && feature.soon;
+                  const hint = "hint" in feature && feature.hint;
+                  return (
+                    <li key={feature.text} className={`flex items-start gap-2 text-sm ${soon || hint ? "text-ink-soft" : ""}`}>
+                      <span className={`mt-0.5 shrink-0 ${soon || hint ? "text-ink-soft" : "text-good-ink"}`}>
+                        {soon ? <ClockIcon size={18} /> : hint ? <ArrowUpIcon size={18} /> : <CheckIcon size={18} />}
+                      </span>
+                      <span>
+                        {soon && <Badge tone="neutral" icon={false}>Coming soon</Badge>} {feature.text}
+                      </span>
+                    </li>
+                  );
+                })}
               </ul>
               <button
                 type="button"
@@ -119,16 +130,19 @@ export default function PricingPage() {
                 aria-pressed={chosen}
                 onClick={() => actions.setPricingPick(t.id)}
               >
-                {chosen ? "✓ I would pick this" : `I would pick ${t.name}`}
+                {chosen ? `✓ You picked ${t.name}` : `I would pick ${t.name}`}
               </button>
-              {chosen && (
-                <p className="mt-2 flex flex-wrap items-center gap-2 text-sm">
-                  <Badge tone="good">Saved on this device</Badge>
-                  <button type="button" className="inline-flex min-h-11 items-center font-bold underline underline-offset-4" onClick={() => actions.setPricingPick(null)}>
-                    Clear my pick
-                  </button>
-                </p>
-              )}
+              {/* The space is always there, so the buttons line up whether or not a tier is picked. */}
+              <p className="mt-2 flex min-h-11 flex-wrap items-center gap-2 text-sm">
+                {chosen && (
+                  <>
+                    <Badge tone="good">Saved on this device</Badge>
+                    <button type="button" className="inline-flex min-h-11 items-center font-bold underline underline-offset-4" onClick={() => actions.setPricingPick(null)}>
+                      Clear my pick
+                    </button>
+                  </>
+                )}
+              </p>
             </li>
           );
         })}
@@ -156,11 +170,11 @@ export default function PricingPage() {
           )}
         </div>
         <p className="mt-3 text-sm text-ink-soft">
-          Your pick shows up on the{" "}
+          Your pick is saved on this device and shows on the{" "}
           <Link href="/feedback" className="font-bold underline underline-offset-4">
             feedback notes
           </Link>{" "}
-          page. Use the &quot;Send feedback&quot; link at the bottom of the page to say why.
+          page.
         </p>
       </div>
     </div>

@@ -171,6 +171,8 @@ async function run(browser, vp) {
   await page.getByText("Plan to set aside each year").waitFor();
   await snap(page, vp, "24-owner-forecast");
   await page.goto(`${BASE}/owner/rent`);
+  await page.getByText("Confirm your area's inflation figure first").first().waitFor();
+  await page.getByLabel(/I checked this inflation figure for my area/).check();
   await page.getByText("OK to send: within the yearly limit").first().waitFor();
   await snap(page, vp, "25-owner-rent-ok");
   await page.locator("#proposed-rent").fill("3600");
@@ -226,6 +228,7 @@ async function run(browser, vp) {
   await page.goto(`${BASE}/owner/rent`);
   await page.getByText("From your lease").waitFor();
   await snap(page, vp, "27g-owner-rent-prefilled");
+  await page.getByLabel(/I checked this inflation figure for my area/).check();
   await page.getByRole("button", { name: "Send notice to Sample Tenant" }).click();
   await page.getByText(/was told by text, and the notice goes by mail/).waitFor(W);
   await snap(page, vp, "27h-owner-rent-notice-sent");

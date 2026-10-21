@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useState } from "react";
 import { PlainCodeNote } from "@/components/Agent";
 import { QuoteDetail } from "@/components/QuoteDetail";
@@ -9,6 +10,8 @@ import { Badge, Callout, Card } from "@/components/ui";
 import { VERDICT_LABEL, VERDICT_TONE } from "@/components/verdict";
 import { usd } from "@/lib/format";
 import { COLLECTED, PLAN } from "@/lib/plan";
+import { ACCESS_WINDOWS, REPAIR_ESTIMATE, VENDORS } from "@/lib/seed";
+import { useDemo } from "@/lib/store";
 import { SAMPLE_QUOTE_TEXT, detectQuoteJob, parseQuoteText, type ParsedQuote } from "@/lib/quoteParse";
 import type { VendorQuote } from "@/lib/types";
 
@@ -107,7 +110,7 @@ function PasteQuote() {
               setFromPhoto(file.name);
             }}
           />
-          <p className="hint">Sample data: any photo gives the same reading (the Harbor View quote). A full version would read your own photo.</p>
+          <p className="hint">Sample data: any photo gives the same reading, a sample quote from a fourth vendor that is not one of the three above. A full version would read your own photo.</p>
           {fromPhoto && parsed && (
             <p className="mt-1 text-sm font-bold" role="status">
               Read from {fromPhoto} (sample result). Check the lines below against your photo.
@@ -177,6 +180,106 @@ function PasteQuote() {
   );
 }
 
+/** The one clear next step: approve the pick, with the spending cap spelled out, or ask for more. */
+function ApproveBar() {
+  const { state, actions } = useDemo();
+  const [draft, setDraft] = useState(false);
+  const [copied, setCopied] = useState<"" | "yes" | "no">("");
+  const pick = VENDORS.find((v) => v.id === PLAN.vendorId);
+  // The next best licensed quote on the same scope is the one worth asking to match.
+  const runnerUp = COLLECTED.filter((c) => c.vendorId !== PLAN.vendorId && c.license !== null).sort((a, b) => a.normalized.adjusted - b.normalized.adjusted)[0];
+  const approved = state.approval !== null;
+  const approvedVendor = VENDORS.find((v) => v.id === state.approval?.vendorId);
+  const matchText = runnerUp
+    ? `Hello ${runnerUp.vendorName},\n\nI have a quote of ${usd(PLAN.total)} for the same water heater replacement at 1200 Example Court, with a permit. If you can match or beat that, with the permit included, I would like to compare again. Please also confirm your soonest visit, your warranty on parts and labor, and how long the quote holds.\n\nThank you.`
+    : "";
+
+  return (
+    <section aria-labelledby="next-step-heading" className="card space-y-3">
+      <h2 id="next-step-heading" className="text-xl font-extrabold">
+        What to do next
+      </h2>
+      {approved ? (
+        <p role="status" className="rounded-xl bg-good-tint p-3 font-bold text-good-ink">
+          Approved: {approvedVendor?.name ?? "your vendor"}, spending cap {usd(state.approval?.notToExceed ?? 0)}.{" "}
+          <Link href="/owner/book" className="underline underline-offset-4">
+            See the booking
+          </Link>
+        </p>
+      ) : (
+        <>
+          <button
+            type="button"
+            className="btn btn-primary btn-lg w-full sm:w-auto"
+            onClick={() =>
+              actions.approve({
+                vendorId: PLAN.vendorId,
+                notToExceed: PLAN.notToExceed,
+                accessWindow: ACCESS_WINDOWS[0],
+                sentAt: new Date().toISOString(),
+              })
+            }
+          >
+            Approve {PLAN.vendorName} for {usd(PLAN.total)} (cap {usd(PLAN.notToExceed)})
+          </button>
+          <p className="hint">
+            The cap is the quote plus 10%. {pick?.name ?? "The plumber"} must call you before going over it. Nothing is spent until you tap.
+          </p>
+        </>
+      )}
+      <div className="flex flex-wrap gap-2">
+        {runnerUp && (
+          <button type="button" className="btn btn-secondary" aria-expanded={draft} onClick={() => setDraft((d) => !d)}>
+            Ask {runnerUp.vendorName} to match
+          </button>
+        )}
+        <button
+          type="button"
+          className="btn btn-secondary"
+          onClick={() => {
+            const box = document.getElementById("paste-quote");
+            box?.scrollIntoView({ behavior: "smooth", block: "center" });
+            box?.focus();
+          }}
+        >
+          Add another quote
+        </button>
+        <Link href="/owner/book" className="btn btn-ghost">
+          Change the vendor, cap, or time
+        </Link>
+      </div>
+      {draft && runnerUp && (
+        <div>
+          <label htmlFor="match-draft" className="label">
+            A message to {runnerUp.vendorName}
+          </label>
+          <textarea id="match-draft" className="field min-h-36 text-sm" readOnly value={matchText} />
+          <div className="mt-2 flex flex-wrap items-center gap-2">
+            <button
+              type="button"
+              className="btn btn-secondary"
+              onClick={async () => {
+                try {
+                  await navigator.clipboard.writeText(matchText);
+                  setCopied("yes");
+                } catch {
+                  setCopied("no");
+                }
+              }}
+            >
+              Copy the message
+            </button>
+            <span role="status" className="text-sm font-bold">
+              {copied === "yes" && "Copied. Send it yourself: GoHome does not send from here."}
+              {copied === "no" && "Could not copy. Select the text and copy it by hand."}
+            </span>
+          </div>
+        </div>
+      )}
+    </section>
+  );
+}
+
 export default function QuotePage() {
   const [selected, setSelected] = useState(PLAN.vendorId);
   const current = COLLECTED.find((c) => c.vendorId === selected) ?? COLLECTED[0];
@@ -201,6 +304,16 @@ export default function QuotePage() {
             </li>
           ))}
         </ul>
+        {PLAN.comparisons.length > 0 && (
+          <div className="mt-4 rounded-2xl bg-white/10 p-3">
+            <p className="font-extrabold">How the others compare, on the same scope</p>
+            <ul className="mt-1 space-y-1 text-cream/90">
+              {PLAN.comparisons.map((line) => (
+                <li key={line}>{line}</li>
+              ))}
+            </ul>
+          </div>
+        )}
         {PLAN.skipped.length > 0 && (
           <div className="mt-4 rounded-2xl bg-white/10 p-3">
             <p className="font-extrabold">Skipped, and why</p>
@@ -219,6 +332,8 @@ export default function QuotePage() {
         Which quote to pick is a rule, not a guess: the cheapest quote with a fair price from a vendor that shows a
         license. The AI never chooses a vendor or a price.
       </PlainCodeNote>
+
+      <ApproveBar />
 
       <fieldset>
         <legend className="mb-2 text-xl font-extrabold">The quotes</legend>
@@ -245,6 +360,9 @@ export default function QuotePage() {
                   {pick && <Badge tone="good">GoHome&apos;s pick</Badge>}
                 </span>
                 <span className="text-3xl font-extrabold">{usd(c.quote.total)}</span>
+                {c.normalized.adjustments.length > 0 && (
+                  <span className="text-sm font-bold text-caution-ink">About {usd(c.normalized.adjusted)} with {c.missingLines.join(" and ")} added</span>
+                )}
                 <span>
                   <Badge tone={VERDICT_TONE[c.verdict]}>{VERDICT_LABEL[c.verdict]}</Badge>
                 </span>
@@ -265,7 +383,20 @@ export default function QuotePage() {
         </div>
       </fieldset>
 
-      <QuoteDetail key={current.vendorId} quote={current.quote} license={current.license} />
+      <QuoteDetail key={current.vendorId} quote={current.quote} license={current.license} details={VENDORS.find((v) => v.id === current.vendorId)?.details ?? null} />
+
+      <section aria-labelledby="repair-option-heading" className="card">
+        <h2 id="repair-option-heading" className="text-xl font-extrabold">
+          The repair option, for comparison
+        </h2>
+        <p className="mt-1 text-lg">
+          A repair is estimated at <strong>{usd(REPAIR_ESTIMATE)}</strong>. If the leak is a valve or a fitting, that may be all it takes. If it is the tank itself, a repair is only a short-term patch, which is why replacing is
+          recommended.{" "}
+          <Link href="/owner/decide" className="font-bold underline underline-offset-4">
+            See why
+          </Link>
+        </p>
+      </section>
 
       <PasteQuote />
     </StepShell>

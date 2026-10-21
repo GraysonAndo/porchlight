@@ -19,7 +19,7 @@ export function JobStatusTracker({ status }: { status: JobStatus }) {
             >
               {done ? <CheckIcon size={16} /> : i + 1}
             </span>
-            <span className={`mt-1 block text-[11px] font-bold leading-tight sm:text-sm ${here ? "text-ink" : "text-ink-soft"}`}>{s.label}</span>
+            <span className={`mt-1 block text-xs font-bold leading-tight sm:text-sm ${here ? "text-ink" : "text-ink-soft"}`}>{s.label}</span>
             <span className="sr-only">{done ? ", done" : here ? ", current" : ", not yet"}</span>
           </li>
         );

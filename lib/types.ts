@@ -182,6 +182,10 @@ export interface RentFormState {
   singleFamilyOrCondo: boolean;
   notCorporateOwned: boolean;
   exemptionNoticeGiven: boolean;
+  /** The lease itself has the required exemption wording. Both this and the notice are needed. */
+  leaseExemptionWording: boolean;
+  /** The owner checked the local inflation figure for their area. Until then no dollar maximum is shown as final. */
+  cpiConfirmed: boolean;
   buildingUnder15Years: boolean;
 }
 

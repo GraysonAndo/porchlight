@@ -48,10 +48,16 @@ export function ApprovalCard({ msg, onTap }: { msg: Msg; onTap: (msgId: string, 
 
       {primary && (
         <div className="mt-5 flex flex-col gap-3 sm:flex-row sm:items-center">
-          <button type="button" className="btn btn-primary btn-lg w-full sm:w-auto" onClick={() => onTap(msg.id, primary.id)}>
-            <TapIcon size={22} /> {primary.label}
-          </button>
-          {others.map((a) => (
+          {card?.kind === "lease" && !actions.some((a) => a.id === "rent5") ? (
+            <Link href="/owner/rent" className="btn btn-primary btn-lg w-full sm:w-auto">
+              Confirm the inflation figure and review
+            </Link>
+          ) : (
+            <button type="button" className="btn btn-primary btn-lg w-full sm:w-auto" onClick={() => onTap(msg.id, primary.id)}>
+              <TapIcon size={22} /> {primary.label}
+            </button>
+          )}
+          {(card?.kind === "lease" && !actions.some((a) => a.id === "rent5") ? actions : others).map((a) => (
             <button key={a.id} type="button" className="btn btn-ghost w-full sm:w-auto" onClick={() => onTap(msg.id, a.id)}>
               {a.label}
             </button>

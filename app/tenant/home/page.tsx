@@ -53,6 +53,13 @@ export default function TenantHomePage() {
                   <dt className="font-bold text-ink-soft">Installed</dt>
                   <dd>{item.installYear}</dd>
                 </dl>
+                <details className="rounded-xl bg-cream px-3 text-sm">
+                  <summary className="flex min-h-11 cursor-pointer items-center font-bold">Details</summary>
+                  <p className="pb-3">
+                    <span className="font-bold text-ink-soft">{/^lot\b/i.test(item.serial) ? "Lot number: " : "Serial number: "}</span>
+                    {item.serial.replace(/^lot\s*/i, "")}. You only need this if a plumber or the maker asks.
+                  </p>
+                </details>
                 {guides.length > 0 ? (
                   <div className="mt-auto flex flex-col gap-2 pt-2">
                     {guides.map((g) => (

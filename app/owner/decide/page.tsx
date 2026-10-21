@@ -9,7 +9,7 @@ import { decideRepairOrReplace } from "@/lib/decision";
 import { equipmentFor, heaterBeforeRepair } from "@/lib/equipment";
 import { usd, usdRange } from "@/lib/format";
 import { ageOf } from "@/lib/life";
-import { PLAN } from "@/lib/plan";
+import { TYPICAL_REPLACE_COST } from "@/lib/plan";
 import { REPAIR_ESTIMATE, WATER_HEATER_JOB } from "@/lib/seed";
 import { useDemo } from "@/lib/store";
 import { useState } from "react";
@@ -28,7 +28,7 @@ export default function DecidePage() {
     ageYears: ageOf(heater),
     typicalLifeYears: heater.typicalLifeYears,
     repairCost: repairBad ? REPAIR_ESTIMATE : repair,
-    replaceCost: PLAN.total,
+    replaceCost: TYPICAL_REPLACE_COST,
     failureMode: state.request && state.request.photos.length === 0 ? "unknown leak" : "tank leak",
   });
 
@@ -122,7 +122,7 @@ export default function DecidePage() {
           </div>
           <div>
             <div className="flex items-baseline justify-between gap-3">
-              <p className="font-bold">Replace ({PLAN.vendorName}, the best quote)</p>
+              <p className="font-bold">Replace (typical price, before any vendor is picked)</p>
               <p className="text-lg font-extrabold">{usd(result.numbers.replaceCost)}</p>
             </div>
             <div className="mt-1 h-5 rounded-full bg-cream-deep" role="img" aria-label={`Replace ${usd(result.numbers.replaceCost)}`}>
@@ -142,7 +142,7 @@ export default function DecidePage() {
         <p>GoHome recommends. The owner decides. Not sure about the numbers?</p>
         <p className="mt-2 flex flex-wrap gap-x-5 gap-y-1 font-bold">
           <Link href="/owner/quote" className="underline underline-offset-4">
-            Get a second quote (paste one you have)
+            Add another quote (paste one you have)
           </Link>
           <Link href="/owner/record" className="underline underline-offset-4">
             Correct the heater&apos;s age in the home record
