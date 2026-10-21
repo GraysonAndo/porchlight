@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { PlainCodeNote } from "@/components/Agent";
 import { useState } from "react";
 import { StepShell } from "@/components/StepShell";
@@ -7,11 +8,11 @@ import { Badge, Callout, Card, NumberField, PlaceholderNote } from "@/components
 import { addDays, longDate, pct, usd, usdCents } from "@/lib/format";
 import { useToday } from "@/lib/hooks";
 import { LEASE_ANNIVERSARY, LEASE_ANNIVERSARY_ISO } from "@/lib/houseQa";
-import { BASE_CAP_PERCENT, MAX_CAP_PERCENT, MAX_SANE_RENT, buildNotice, calculateRent, maxNewRentFor, noticeKindFor, rentLooksTooHigh, roundToCents, startDateFor } from "@/lib/rent";
+import { BASE_CAP_PERCENT, MAX_CAP_PERCENT, buildExemptionNotice, MAX_SANE_RENT, buildNotice, calculateRent, maxNewRentFor, noticeKindFor, rentLooksTooHigh, roundToCents, startDateFor } from "@/lib/rent";
 import { PROPERTY } from "@/lib/seed";
 
 const STATUTE_URL = "https://leginfo.legislature.ca.gov/faces/codes_displaySection.xhtml?lawCode=CIV&sectionNum=1947.12";
-import { daysUntil } from "@/lib/payments";
+import { daysUntil, dueStatus } from "@/lib/payments";
 import { useDemo } from "@/lib/store";
 
 function Check({
@@ -102,6 +103,7 @@ export default function RentPage() {
   const rentOdd = rentLooksTooHigh(form.currentRent) || rentLooksTooHigh(form.proposedRent);
   const [startOverride, setStartOverride] = useState<string | null>(null);
   const [service, setService] = useState("first-class mail");
+  const [showExemption, setShowExemption] = useState(false);
 
   const result = calculateRent({
     currentRent: form.currentRent,
@@ -227,7 +229,7 @@ export default function RentPage() {
           </div>
           <div>
             <dt className="font-bold text-ink-soft">Last increase</dt>
-            <dd className="text-lg font-extrabold">14 months ago</dd>
+            <dd className="text-lg font-extrabold">December 2024</dd>
           </div>
           <div>
             <dt className="font-bold text-ink-soft">Next lease anniversary</dt>
@@ -242,22 +244,30 @@ export default function RentPage() {
             </button>
           </p>
         )}
+        {!state.rentPaidAt && !state.payments.some((p) => p.kind === "rent") && dueStatus("rent").overdue && (
+          <p className="mt-3 rounded-xl border-l-8 border-glow-deep bg-caution-tint p-3 font-bold text-caution-ink">
+            Heads up: {PROPERTY.tenant}&apos;s October rent is {dueStatus("rent").text.replace(/\. It was due.*/, "")}. A rent increase does not change what is owed now, so you may want to settle that first.{" "}
+            <Link href="/owner" className="underline underline-offset-4">
+              See it in the Inbox
+            </Link>
+          </p>
+        )}
         {showSuggestion ? (
           <div className="mt-3 space-y-2 rounded-xl bg-good-tint p-3">
             <p className="font-bold text-good-ink">
               {sameAsMax
                 ? `The most the law allows right now is ${usdCents(maxLegal)} (${pct(((maxLegal - form.currentRent) / form.currentRent) * 100, 1)} more).`
-                : `Two good choices: the most the law allows, or a modest raise.`}
+                : `GoHome recommends the modest raise: it is the usual 5% and well inside the limit. The most the law allows is also here.`}
             </p>
             <div className="flex flex-col gap-2 sm:flex-row">
-              <button type="button" className="btn btn-primary" onClick={() => actions.setRent({ proposedRent: maxLegal })}>
-                Max legal: {usdCents(maxLegal)} ({pct(((maxLegal - form.currentRent) / form.currentRent) * 100, 1)}), {yearly(maxLegal)} more a year
-              </button>
               {!sameAsMax && (
-                <button type="button" className="btn btn-secondary" onClick={() => actions.setRent({ proposedRent: modest })}>
-                  Modest: {usdCents(modest)} ({pct(((modest - form.currentRent) / form.currentRent) * 100, 1)}), {yearly(modest)} more a year
+                <button type="button" className="btn btn-primary" onClick={() => actions.setRent({ proposedRent: modest })}>
+                  Recommended: {usdCents(modest)} ({pct(((modest - form.currentRent) / form.currentRent) * 100, 1)}), {yearly(modest)} more a year
                 </button>
               )}
+              <button type="button" className={`btn ${sameAsMax ? "btn-primary" : "btn-secondary"}`} onClick={() => actions.setRent({ proposedRent: maxLegal })}>
+                Max legal: {usdCents(maxLegal)} ({pct(((maxLegal - form.currentRent) / form.currentRent) * 100, 1)}), {yearly(maxLegal)} more a year
+              </button>
             </div>
           </div>
         ) : (
@@ -332,7 +342,7 @@ export default function RentPage() {
               onChange={(v) => actions.setRent({ increasesInLast12Months: v })}
               onEmptyChange={markEmpty("increases")}
               validate={(v) => (v < 0 ? "Enter 0 or more." : !Number.isInteger(v) ? "Enter a whole number, like 0, 1 or 2." : null)}
-              hint="The last increase on your lease was 14 months ago, so this starts at 0."
+              hint="The last increase on your lease was in December 2024, about 22 months ago, so this starts at 0."
             />
             {form.increasesInLast12Months > 0 && (
               <NumberField
@@ -425,6 +435,26 @@ export default function RentPage() {
             ) : (
               <div className="mt-3">
                 {capBlock}
+              </div>
+            )}
+
+            {form.singleFamilyOrCondo && form.notCorporateOwned && !form.exemptionNoticeGiven && !form.buildingUnder15Years && (
+              <div className="mt-4">
+                <Callout tone="info" title="You could be exempt from the yearly limit">
+                  <p>
+                    This home is a single family home with an individual owner. The only thing between you and the exemption is the written
+                    exemption notice. If it was in the lease, or you give it to your tenant, the yearly limit does not apply. For a tenancy that began after July
+                    1, 2020 the law asks for the notice to be in the lease itself, so check your lease first.
+                  </p>
+                  <button type="button" className="btn btn-secondary mt-3" aria-expanded={showExemption} onClick={() => setShowExemption((s) => !s)}>
+                    {showExemption ? "Hide the draft" : "Draft the exemption notice"}
+                  </button>
+                </Callout>
+                {showExemption && (
+                  <pre className="mt-3 max-h-80 overflow-auto whitespace-pre-wrap rounded-xl border border-line bg-cream p-4 font-mono text-sm leading-relaxed" tabIndex={0}>
+                    {buildExemptionNotice({ ownerName: PROPERTY.owner, tenantName: PROPERTY.tenant, address: PROPERTY.address, date: noticeDate })}
+                  </pre>
+                )}
               </div>
             )}
 

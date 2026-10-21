@@ -96,10 +96,12 @@ export type Ev =
   | { type: "contractor.counter"; total: number }
   | { type: "cron.lease" }
   | { type: "rent.paid"; paid: boolean; confirmation?: string }
+  | { type: "rent.remind"; daysLate: number }
   | { type: "utilities.paid"; amount: string; confirmation: string }
   | { type: "record.edit"; patch: Record<string, string> }
   | { type: "rent.notice"; kind: "increase" | "decrease"; from: string; to: string; effective: string }
   | { type: "owner.markDone" }
+  | { type: "owner.autoApprove"; limit: number }
   | { type: "owner.choose"; vendorId: string; notToExceed: number; accessWindow: string }
   | { type: "timer"; id: TimerId };
 
@@ -154,6 +156,8 @@ export interface World {
   };
   /** Whether this month's rent was marked paid (demo) */
   rentPaid: boolean;
+  /** Whether a late rent reminder was sent for this month */
+  rentReminded?: boolean;
   /** Whether this month's utilities were paid */
   utilitiesPaid?: boolean;
   /** The vendor, limit, and time the owner picked by hand instead of GoHome's plan */

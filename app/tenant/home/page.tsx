@@ -6,7 +6,7 @@ import { guidesForEquipment, homeWideGuides } from "@/lib/homeGuides";
 import { PROPERTY } from "@/lib/seed";
 import { LEASE_ANNIVERSARY } from "@/lib/houseQa";
 import { usd } from "@/lib/format";
-import { BILLS, money } from "@/lib/payments";
+import { BILLS, dueStatus, money } from "@/lib/payments";
 import { useDemo } from "@/lib/store";
 import { useEquipment } from "@/lib/useEquipment";
 
@@ -17,6 +17,7 @@ export default function TenantHomePage() {
   const paidKinds = new Set(state.payments.map((p) => p.kind));
   if (state.rentPaidAt) paidKinds.add("rent");
   const dueCents = BILLS.filter((b) => !paidKinds.has(b.kind)).reduce((sum, b) => sum + b.cents, 0);
+  const rentLate = !paidKinds.has("rent") && dueStatus("rent").overdue;
 
   return (
     <div className="mx-auto max-w-4xl space-y-8">
@@ -51,8 +52,6 @@ export default function TenantHomePage() {
                   <dd>{item.summary}</dd>
                   <dt className="font-bold text-ink-soft">Installed</dt>
                   <dd>{item.installYear}</dd>
-                  <dt className="font-bold text-ink-soft">{/^lot\b/i.test(item.serial) ? "Lot number" : "Serial"}</dt>
-                  <dd>{item.serial.replace(/^lot\s*/i, "")}</dd>
                 </dl>
                 {guides.length > 0 ? (
                   <div className="mt-auto flex flex-col gap-2 pt-2">
@@ -115,7 +114,9 @@ export default function TenantHomePage() {
           <div className="card flex flex-col gap-2">
             <p className="font-extrabold">Rent and utilities</p>
             <p className="text-3xl font-extrabold">{money(dueCents)}</p>
-            <p className="text-sm text-ink-soft">{dueCents > 0 ? "due this month" : "You are all paid up."}</p>
+            <p className={`text-sm ${rentLate ? "font-bold text-urgent" : "text-ink-soft"}`}>
+              {dueCents === 0 ? "You are all paid up." : rentLate ? `Rent is ${dueStatus("rent").text}` : "due this month"}
+            </p>
             <Link href="/tenant/pay" className="btn btn-primary mt-auto">
               {dueCents > 0 ? "Pay now" : "See payments"}
             </Link>

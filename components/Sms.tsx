@@ -104,8 +104,7 @@ export function Bubble({ msg, perspective, via }: { msg: Msg; perspective: Party
               <MoonIcon size={12} /> Delivered silently
             </span>
           )}
-          {mine && <span>Delivered</span>}
-          {!mine && via && <span>{via === "text" ? "Text (sample)" : "In app only"}</span>}
+          {!mine && via && <span>{via === "text" ? "Text" : "In app only"}</span>}
           <span>{entryTime(msg)}</span>
         </p>
       </div>

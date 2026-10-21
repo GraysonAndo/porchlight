@@ -159,7 +159,7 @@ export function seededHeaterTriage(): TriageResult {
       "Tank failure or a corroded tank bottom. A leak from the bottom of the tank usually means the tank has worn through, not that a fitting came loose.",
     safetySteps: [
       "Turn off the water supply valve to the heater.",
-      "Keep items off the garage floor.",
+      "Lay towels around the base and move anything that can get wet.",
       "Do not touch the heater if you are standing in water near anything electrical.",
       "If you smell gas at any time, leave the home and call 911 or your gas company. Do not touch the gas valve.",
     ],

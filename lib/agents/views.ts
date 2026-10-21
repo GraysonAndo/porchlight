@@ -7,6 +7,8 @@ import type { Engine, Entry, ToolCall, World } from "./types";
 
 export interface ActivityItem {
   id: string;
+  /** The job this belongs to, so a long feed can be grouped: "Water heater repair", "Rent increase", and so on */
+  job: string;
   clock: string;
   title: string;
   detail: string | null;
@@ -20,7 +22,7 @@ const TENANT_TEXT: Record<string, (t: ToolCall) => string> = {
   skip_fix_steps: () => "Decided not to ask you to fix anything. Getting safe comes first.",
   send_guide: () => "Opened the picture guide made for your exact heater",
   save_photo: () => "Saved your photo to the case",
-  notify_owner: () => "Quietly told your landlord",
+  notify_owner: () => "Let your landlord know",
   call_owner: () => "Called your landlord right away",
   place_call: () => "Called your landlord right away",
   nudge_owner: () => "Reminded your landlord",
@@ -32,23 +34,42 @@ const TENANT_TEXT: Record<string, (t: ToolCall) => string> = {
   answer_from_record: (t) => (/don't know/i.test(t.title) ? "Checked your home record and the lease. The answer is not there, so I did not guess." : "Looked that up in your home record"),
   ask_owner: () => "Passed your question to your landlord",
   record_rent_payment: () => "Recorded your rent payment",
+  remind_rent: () => "Reminded you that rent is late",
   send_notice: () => "Told you about your owner's rent notice",
   record_utility_payment: () => "Recorded your water and trash payment",
 };
 
+const CONTRACTOR_TOOLS = new Set(["read_quote", "check_quote_contractor", "flag_markup", "draft_pushback", "send_email", "hold"]);
+const PAYMENT_TOOLS = new Set(["record_rent_payment", "record_utility_payment", "remind_rent", "send_notice"]);
+
+/** Which job a tool call belongs to. Approvals take the job of the step before them. */
+function jobOf(e: ToolCall, previous: string): string {
+  if (e.agent === "sentinel") return "Rent increase";
+  if (e.agent === "gate") return previous;
+  if (PAYMENT_TOOLS.has(e.tool)) return "Rent and payments";
+  if (e.agent === "chat") return "Questions and home record";
+  if (CONTRACTOR_TOOLS.has(e.tool)) return "A contractor's quote";
+  // The repair's own checks and the quote it collected, but not a quote that came in on its own.
+  if (e.agent === "quote" && e.tool === "check_quote" && /counter|total is/i.test(e.title)) return "A contractor's quote";
+  return "Water heater repair";
+}
+
 export function activityFor(audience: "tenant" | "owner", entries: Entry[]): ActivityItem[] {
   const out: ActivityItem[] = [];
+  let previous = "Water heater repair";
   for (const e of entries) {
     if (e.kind === "tool") {
+      const job = jobOf(e, previous);
+      previous = job;
       if (audience === "owner") {
-        out.push({ id: e.id, clock: entryTime(e), title: e.title, detail: e.detail, engine: e.engine });
+        out.push({ id: e.id, job, clock: entryTime(e), title: e.title, detail: e.detail, engine: e.engine });
       } else {
         const text = TENANT_TEXT[e.tool];
-        if (text) out.push({ id: e.id, clock: entryTime(e), title: text(e), detail: null, engine: null });
+        if (text) out.push({ id: e.id, job, clock: entryTime(e), title: text(e), detail: null, engine: null });
       }
     } else if (e.kind === "record" && e.history) {
       if (audience === "owner") {
-        out.push({ id: e.id, clock: entryTime(e), title: "Updated the home record", detail: e.history, engine: "code" });
+        out.push({ id: e.id, job: /rent|lease|notice/i.test(e.history) ? "Rent increase" : "Water heater repair", clock: entryTime(e), title: "Updated the home record", detail: e.history, engine: "code" });
       }
     }
   }
@@ -93,7 +114,7 @@ export function requestsFor(w: World): RequestRow[] {
   let latestMain = -1;
   w.timeline.forEach((e) => {
     if (e.kind === "msg" && e.party === "tenant" && e.dir === "in" && e.text) lastTenantText = e.text;
-    if (e.kind === "tool" && e.tool === "emergency_rules") {
+    if (e.kind === "tool" && e.tool === "open_case") {
       latestMain = rows.length;
       rows.push({ id: e.id, title: lastTenantText.length > 60 ? `${lastTenantText.slice(0, 57).trimEnd()}...` : lastTenantText || "Your request", status: "Closed" });
     } else if (e.kind === "tool" && e.tool === "log_side_request") {

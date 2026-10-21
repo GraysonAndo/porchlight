@@ -81,8 +81,8 @@ export function SiteHeader() {
             >
               <GearIcon size={24} />
             </Link>
-            <Link href="/" className="btn btn-secondary !min-h-10 !px-3 text-sm">
-              Switch
+            <Link href={role === "owner" ? "/tenant" : "/owner"} className="btn btn-secondary !min-h-10 !px-3 text-sm">
+              Switch to {role === "owner" ? "tenant" : "owner"}
             </Link>
           </div>
         )}

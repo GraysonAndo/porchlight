@@ -19,6 +19,7 @@ import type {
   FeedbackNote,
   Payment,
   EquipmentEdit,
+  EquipmentItem,
   Photo,
   Prefs,
   RentNoticeSent,
@@ -66,6 +67,7 @@ function readStorage(): DemoState {
       payments: Array.isArray(parsed.payments) ? parsed.payments : [],
       rentNotice: parsed.rentNotice ?? null,
       rentNoticeLog: Array.isArray(parsed.rentNoticeLog) ? parsed.rentNoticeLog : parsed.rentNotice ? [parsed.rentNotice] : [],
+      extraEquipment: Array.isArray(parsed.extraEquipment) ? parsed.extraEquipment : [],
       guideProgress: parsed.guideProgress && typeof parsed.guideProgress === "object" ? parsed.guideProgress : {},
       equipmentEdits: parsed.equipmentEdits && typeof parsed.equipmentEdits === "object" ? parsed.equipmentEdits : {},
       agent: parsed.agent && Array.isArray(parsed.agent.timeline) ? { ...INITIAL_STATE.agent, ...parsed.agent } : INITIAL_STATE.agent,
@@ -153,7 +155,22 @@ function newId(): string {
 function runAgent(s: DemoState, ev: Ev, speed = 1): DemoState {
   const before = s.agent;
   const after = stampReveal(agentStep(before, ev), before.timeline.length, Date.now(), speed);
-  return { ...s, agent: after, ...syncFromWorld(s, before, after, ev, new Date().toISOString()) };
+  return autoApprove({ ...s, agent: after, ...syncFromWorld(s, before, after, ev, new Date().toISOString()) });
+}
+
+/** When the owner allows it, a repair at or under their limit is booked without asking. The tap is logged as GoHome's own. */
+function autoApprove(s: DemoState): DemoState {
+  const limit = s.prefs.ownerAutoApprove;
+  if (limit <= 0 || s.agent.triage.stage !== "decision_sent") return s;
+  const before = s.agent;
+  const after = stampReveal(agentStep(before, { type: "owner.autoApprove", limit }), before.timeline.length, Date.now());
+  if (after === before || after.triage.stage === "decision_sent") return s;
+  return { ...s, agent: after, ...syncFromWorld(s, before, after, { type: "owner.autoApprove", limit }, new Date().toISOString()) };
+}
+
+/** The current state, for code that runs outside React (the story player). */
+export function getDemoState(): DemoState {
+  return getSnapshot();
 }
 
 export interface DemoActions {
@@ -177,6 +194,8 @@ export interface DemoActions {
   sendRentNotice(info: Omit<RentNoticeSent, "sentAt">): void;
   /** Remember which step of a how-to guide the tenant is on. */
   setGuideStep(id: string, step: number): void;
+  /** The owner added equipment by photographing its data plate. */
+  addEquipment(item: EquipmentItem): void;
   /** The owner corrected a detail in the home record. Pass null to put the recorded details back. */
   saveEquipmentEdit(id: string, edit: EquipmentEdit | null): void;
   /** Send an event to GoHome's agent (a text, a photo, a tap). */
@@ -235,7 +254,7 @@ export const actions: DemoActions = {
       if (at === null) return s;
       const before = s.agent;
       const after = stampReveal(advanceTo(before, at), before.timeline.length, Date.now());
-      return { ...s, agent: after, ...syncFromWorld(s, before, after, { type: "timer", id: "quotes_in" }, new Date().toISOString()) };
+      return autoApprove({ ...s, agent: after, ...syncFromWorld(s, before, after, { type: "timer", id: "quotes_in" }, new Date().toISOString()) });
     }),
   setTextUpdates: (party, on) => update((s) => ({ ...s, textUpdates: { ...s.textUpdates, [party]: on } })),
   setTenantAnswers: (tenantAnswers) => update((s) => ({ ...s, tenantAnswers })),
@@ -272,7 +291,7 @@ export const actions: DemoActions = {
           "heater.brand": edit?.brand?.trim() || base.brand,
           "heater.model": edit?.model?.trim() || base.model,
           "heater.serial": edit?.serial?.trim() || base.serial,
-          "heater.location": edit?.location?.trim() || (s.jobCompletedAt ? "Garage, against the north wall" : recorded?.location ?? "Garage, against the north wall"),
+          "heater.location": edit?.location?.trim() || (s.jobCompletedAt ? "Garage, to the left of the garage door" : recorded?.location ?? "Garage, to the left of the garage door"),
         };
         // A corrected year changes the age the agent works from, so what GoHome says about the heater follows it.
         if (!s.jobCompletedAt) {
@@ -290,6 +309,7 @@ export const actions: DemoActions = {
       const sent = { ...info, sentAt };
       return runAgent({ ...s, rentNotice: sent, rentNoticeLog: [...s.rentNoticeLog, sent] }, { type: "rent.notice", kind: info.kind, from: moneyText(Math.round(info.from * 100)), to: moneyText(Math.round(info.to * 100)), effective: longDate(info.effective) });
     }),
+  addEquipment: (item) => update((s) => (s.extraEquipment.some((e) => e.id === item.id) ? s : { ...s, extraEquipment: [...s.extraEquipment, item] })),
   setGuideStep: (id, step) => update((s) => ({ ...s, guideProgress: { ...s.guideProgress, [id]: step } })),
   setPref: (key, value) => update((s) => ({ ...s, prefs: { ...s.prefs, [key]: value } })),
   setPricingPick: (pricingPick) => update((s) => ({ ...s, pricingPick })),

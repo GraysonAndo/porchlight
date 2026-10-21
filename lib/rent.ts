@@ -214,3 +214,30 @@ export function buildNotice(input: NoticeInput): string {
     "DRAFT, NOT LEGAL ADVICE. Local rules can be stricter than state law. Check before sending.",
   ].join("\n");
 }
+
+/**
+ * A draft of the written exemption notice for a single family home or condo that is not owned by a REIT, a corporation, or an
+ * LLC with a corporate member. It follows the wording the law asks for as far as this sample knows it. DRAFT, NOT LEGAL ADVICE.
+ */
+export function buildExemptionNotice(input: { ownerName: string; tenantName: string; address: string; date: string }): string {
+  return [
+    "DRAFT, NOT LEGAL ADVICE",
+    "",
+    "NOTICE THAT THIS PROPERTY IS EXEMPT FROM THE STATE RENT CAP",
+    "",
+    `Date: ${longDate(input.date) || "(add date)"}`,
+    `To: ${input.tenantName}`,
+    `From: ${input.ownerName}`,
+    `Property: ${input.address}`,
+    "",
+    "This property is not subject to the rent limits imposed by Section 1947.12 of the California Civil Code and is not subject to the just cause requirements of Section 1946.2 of the California Civil Code.",
+    "",
+    "This property meets the requirements of Sections 1947.12 (d)(5) and 1946.2 (e)(8) of the Civil Code and the owner is not any of the following: (1) a real estate investment trust, as defined by Section 856 of the Internal Revenue Code; (2) a corporation; or (3) a limited liability company in which at least one member is a corporation.",
+    "",
+    "",
+    "Owner signature: ______________________________",
+    `Printed name: ${input.ownerName}`,
+    "",
+    "DRAFT, NOT LEGAL ADVICE. For a tenancy that began after July 1, 2020, the law asks for this notice to be in the lease itself. Check the exact wording and timing with an attorney before relying on it.",
+  ].join("\n");
+}

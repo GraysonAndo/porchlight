@@ -1,8 +1,9 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { HomeIcon, KeyIcon } from "@/components/icons";
+import { HomeIcon, KeyIcon, PlayIcon } from "@/components/icons";
 import { LogoMark } from "@/components/Logo";
+import { story } from "@/lib/story";
 import { useDemo } from "@/lib/store";
 
 function RoleCard({
@@ -62,6 +63,14 @@ export default function GatePage() {
             body="See what needs your OK, and let GoHome take care of the rest."
             onClick={() => choose("owner")}
           />
+        </div>
+
+        <div className="mt-8 w-full rounded-2xl border border-line bg-white p-5">
+          <p className="font-extrabold">Just want to see it work?</p>
+          <p className="mt-1 text-ink-soft">One button plays a whole repair by itself, switching between the tenant and the owner as it goes.</p>
+          <button type="button" className="btn btn-secondary mt-3" onClick={() => story.start()}>
+            <PlayIcon size={20} /> Play the whole story
+          </button>
         </div>
       </div>
 

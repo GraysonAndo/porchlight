@@ -169,7 +169,7 @@ function PasteQuote() {
               </button>
             </Callout>
           ) : (
-            <QuoteDetail quote={quote} />
+            <QuoteDetail quote={quote} showNote={false} />
           )}
         </div>
       )}

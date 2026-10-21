@@ -27,6 +27,9 @@ export const PROPERTY = {
   tenantEmail: "sample.tenant@example.com",
   rent: 3200,
   tenantSince: 2023,
+  /** Sample lease terms for late rent */
+  lateFee: 50,
+  graceDays: 3,
 };
 
 /** The month the sample rent payment is for. */
@@ -44,12 +47,13 @@ export const SEED_REQUEST = { description: SEED_REQUEST_TEXT, photos: [SAMPLE_PH
 
 /** Equipment for the forecast. Typical life and replace cost are placeholders. */
 export const EQUIPMENT: EquipmentItem[] = [
-  { id: "water-heater", name: "Water heater", source: "Recorded at move-in from the data plate and the home inspection (sample)", brand: "Hearthline", model: "HL-40G-NG", serial: "15C0412-X", location: "Garage, against the north wall", summary: "40 gallon, natural gas, tank type", installYear: 2015, typicalLifeYears: 10, replaceLow: 1600, replaceHigh: 2600 },
-  { id: "furnace", source: "Recorded at move-in from the data plate (sample)", name: "Furnace", brand: "Cedarline", model: "CF-80-100", serial: "12F3391-B", location: "Hall closet", summary: "Gas forced air, 100,000 BTU", installYear: 2012, typicalLifeYears: 18, replaceLow: 4500, replaceHigh: 7000 },
-  { id: "air-conditioner", source: "Recorded at move-in from the data plate (sample)", name: "Air conditioner", brand: "Cedarline", model: "CA-3T-14", serial: "12A7710-C", location: "Side yard, next to the gate", summary: "3 ton, 14 SEER, outdoor unit", installYear: 2012, typicalLifeYears: 15, replaceLow: 5500, replaceHigh: 8500 },
-  { id: "dishwasher", source: "Installer warranty registration (sample)", name: "Dishwasher", brand: "Brightwell", model: "BW-DW24", serial: "18D2204-F", location: "Kitchen, left of the sink", summary: "24 inch built-in", installYear: 2018, typicalLifeYears: 10, replaceLow: 700, replaceHigh: 1200 },
-  { id: "refrigerator", source: "Added by the owner (sample)", name: "Refrigerator", brand: "Frostmere", model: "FM-21T", serial: "16R0953-K", location: "Kitchen", summary: "21 cubic feet, top freezer", installYear: 2016, typicalLifeYears: 14, replaceLow: 1100, replaceHigh: 1900 },
-  { id: "roof", source: "Home inspection report (sample)", name: "Roof", brand: "Ridgecrest", model: "RC-30 Architectural", serial: "Lot 09-2231", location: "Whole house", summary: "Asphalt shingle, 30 year rating", installYear: 2009, typicalLifeYears: 25, replaceLow: 9000, replaceHigh: 15000 },
+  { id: "water-heater", name: "Water heater", source: "Recorded at move-in from the data plate and the home inspection", brand: "Hearthline", model: "HL-40G-NG", serial: "15C0412-X", location: "Garage, to the left of the garage door", summary: "40 gallon, natural gas, tank type", installYear: 2015, typicalLifeYears: 10, replaceLow: 1600, replaceHigh: 2600 },
+  { id: "furnace", source: "Recorded at move-in from the data plate", name: "Furnace", brand: "Cedarline", model: "CF-80-100", serial: "12F3391-B", location: "Hall closet", summary: "Gas forced air, 100,000 BTU", installYear: 2012, typicalLifeYears: 18, replaceLow: 4500, replaceHigh: 7000 },
+  { id: "air-conditioner", source: "Recorded at move-in from the data plate", name: "Air conditioner", brand: "Cedarline", model: "CA-3T-14", serial: "12A7710-C", location: "Side yard, next to the gate", summary: "3 ton, 14 SEER, outdoor unit", installYear: 2012, typicalLifeYears: 15, replaceLow: 5500, replaceHigh: 8500 },
+  { id: "dishwasher", source: "Installer warranty registration", name: "Dishwasher", brand: "Brightwell", model: "BW-DW24", serial: "18D2204-F", location: "Kitchen, left of the sink", summary: "24 inch built-in", installYear: 2018, typicalLifeYears: 10, replaceLow: 700, replaceHigh: 1200 },
+  { id: "refrigerator", source: "Added by the owner", name: "Refrigerator", brand: "Frostmere", model: "FM-21T", serial: "16R0953-K", location: "Kitchen", summary: "21 cubic feet, top freezer", installYear: 2016, typicalLifeYears: 14, replaceLow: 1100, replaceHigh: 1900 },
+  { id: "smoke-co", source: "Move-in safety check", name: "Smoke and CO detectors", brand: "Safelight", model: "SL-10Y-COMBO", serial: "Lot 19-4410", location: "Hallway, each bedroom, and the kitchen", summary: "Hardwired smoke and carbon monoxide alarms, 10 year", installYear: 2019, typicalLifeYears: 10, replaceLow: 150, replaceHigh: 400, reminder: "California requires working smoke and carbon monoxide alarms. Test them on the 1st of each month, and change the backup batteries once a year." },
+  { id: "roof", source: "Home inspection report", name: "Roof", brand: "Ridgecrest", model: "RC-30 Architectural", serial: "Lot 09-2231", location: "Whole house", summary: "Asphalt shingle, 30 year rating", installYear: 2009, typicalLifeYears: 25, replaceLow: 9000, replaceHigh: 15000 },
 ];
 
 export const WATER_HEATER = EQUIPMENT[0];
@@ -65,7 +69,7 @@ export const OLD_HEATER_RECORD: WaterHeaterRecord = {
   ageYears: 11,
   unconfirmed: [],
   photo: null,
-  source: "Recorded at move-in from the data plate and the home inspection (sample)",
+  source: "Recorded at move-in from the data plate and the home inspection",
 };
 
 /** The replacement heater, added to the record automatically when the plumber finishes. */
@@ -79,7 +83,7 @@ export const NEW_HEATER_RECORD: WaterHeaterRecord = {
   ageYears: 0,
   unconfirmed: [],
   photo: null,
-  source: "Added automatically by the installer when the job was finished (sample)",
+  source: "Added automatically by the installer when the job was finished",
 };
 
 /** The job we are quoting, with placeholder market ranges (total and per line). */
@@ -161,7 +165,7 @@ export const VENDORS: Vendor[] = [
     id: "bayside",
     name: "Bayside Plumbing and Heating",
     total: 2850,
-    license: "CSLB #000000 (sample)",
+    license: "CSLB #000000",
     warning: null,
     itemized: true,
   },
@@ -169,7 +173,7 @@ export const VENDORS: Vendor[] = [
     id: "willow-glen",
     name: "Willow Glen Water Heater Co.",
     total: 2450,
-    license: "CSLB #000000 (sample)",
+    license: "CSLB #000000",
     warning: null,
     itemized: true,
   },
@@ -236,7 +240,8 @@ export const INITIAL_STATE: DemoState = {
   rentNoticeLog: [],
   equipmentEdits: {},
   guideProgress: {},
-  prefs: { tenantEmail: true, tenantAutopay: false, tenantAutopayMethod: null, ownerEmail: true, ownerEmergencyCalls: true, ownerPhone: PROPERTY.ownerPhone, tenantPhone: PROPERTY.tenantPhone },
+  extraEquipment: [],
+  prefs: { tenantEmail: true, tenantAutopay: false, tenantAutopayMethod: null, ownerEmail: true, ownerEmergencyCalls: true, ownerPhone: PROPERTY.ownerPhone, tenantPhone: PROPERTY.tenantPhone, ownerAutoApprove: 0 },
   agent: createWorld(),
   textUpdates: { tenant: true, owner: true },
   pricingPick: null,

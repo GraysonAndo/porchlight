@@ -1,26 +1,20 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
 import { FeedbackLink } from "./FeedbackButton";
 import { ResetButton } from "./ResetButton";
-import { roleForPath } from "@/lib/steps";
 
-/** The same footer on every page. Pricing is left out for tenants, because it is an owner topic. */
+/** The same footer on every page, for every role. */
 export function SiteFooter() {
-  const pathname = usePathname();
-  const role = roleForPath(pathname);
 
   return (
     <footer className="border-t border-line bg-white px-4 pb-24 pt-5 md:pb-8 sm:px-6">
       <div className="mx-auto flex w-full max-w-6xl flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div className="space-y-1">
           <nav aria-label="More about GoHome" className="flex flex-wrap gap-x-5 gap-y-0 text-sm font-bold">
-            {role !== "tenant" && (
-              <Link href="/pricing" className="inline-flex min-h-11 items-center underline underline-offset-4">
-                Pricing
-              </Link>
-            )}
+            <Link href="/pricing" className="inline-flex min-h-11 items-center underline underline-offset-4">
+              Pricing
+            </Link>
             <Link href="/about#team" className="inline-flex min-h-11 items-center underline underline-offset-4">
               Our team
             </Link>

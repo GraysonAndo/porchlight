@@ -93,3 +93,60 @@ export function buildForecast(
     setAsideHighPerMonth: Math.round(totalHigh / (FORECAST_YEARS * 12)),
   };
 }
+
+// ---------------------------------------------------------------------------
+// Cash flow: will the monthly set-aside actually cover each year's bills?
+// ---------------------------------------------------------------------------
+
+export interface CashFlowRow {
+  year: number;
+  /** Money on hand when this year's bills come due: what was already saved, plus the set-aside from the years before */
+  onHand: number;
+  /** Bills due this year, at the high estimate */
+  bills: number;
+  /** On hand minus bills. Negative means short. */
+  left: number;
+}
+
+export interface CashFlow {
+  rows: CashFlowRow[];
+  /** The first year with a shortfall, or null when every year is covered */
+  firstShortYear: number | null;
+  /** The most the owner is short in any one year, zero when covered */
+  worstShortfall: number;
+  /** Cash needed right now to cover the current year's bills, beyond what is already saved */
+  neededNow: number;
+  /** The monthly set-aside that covers every later year, given the cash on hand now. Rounded up to the dollar. */
+  monthlyToCover: number;
+}
+
+/**
+ * Walks the forecast year by year with the high estimates (so the plan errs on the safe side). A year's bills are paid from
+ * what is on hand at that point, and a year's set-aside only counts for later years, since the bills can come at any time.
+ */
+export function cashFlowFor(years: ForecastYear[], monthly: number, alreadySaved = 0): CashFlow {
+  const rows: CashFlowRow[] = [];
+  let cumulativeBills = 0;
+  let worst = 0;
+  let firstShort: number | null = null;
+  let monthlyNeeded = 0;
+  years.forEach((y, i) => {
+    cumulativeBills += y.high;
+    const onHand = alreadySaved + 12 * monthly * i - (cumulativeBills - y.high);
+    const left = onHand - y.high;
+    rows.push({ year: y.year, onHand, bills: y.high, left });
+    if (left < 0) {
+      worst = Math.max(worst, -left);
+      if (firstShort === null) firstShort = y.year;
+    }
+    if (i > 0) monthlyNeeded = Math.max(monthlyNeeded, (cumulativeBills - alreadySaved) / (12 * i));
+  });
+  const first = years[0];
+  return {
+    rows,
+    firstShortYear: firstShort,
+    worstShortfall: worst,
+    neededNow: first ? Math.max(0, first.high - alreadySaved) : 0,
+    monthlyToCover: Math.ceil(Math.max(0, monthlyNeeded)),
+  };
+}

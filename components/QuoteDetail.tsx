@@ -15,7 +15,7 @@ import { missingLines } from "@/lib/recommend";
 import { WATER_HEATER_JOB } from "@/lib/seed";
 import type { VendorQuote } from "@/lib/types";
 
-export function QuoteDetail({ quote, license }: { quote: VendorQuote; license?: string | null }) {
+export function QuoteDetail({ quote, license, showNote = true }: { quote: VendorQuote; license?: string | null; showNote?: boolean }) {
   const comparison = compareQuote(quote, WATER_HEATER_JOB);
   const total = comparison.total;
   const missing = missingLines(quote, WATER_HEATER_JOB);
@@ -60,7 +60,11 @@ export function QuoteDetail({ quote, license }: { quote: VendorQuote; license?: 
         )}
         <div className="mt-3 space-y-2">
           <PlainCodeNote>The total is compared with a hand-checked price table. The AI did not set this verdict.</PlainCodeNote>
-          <PlaceholderNote /> <span className="text-sm text-ink-soft">(typical prices and these sample quotes)</span>
+          {showNote && (
+            <>
+              <PlaceholderNote /> <span className="text-sm text-ink-soft">(typical prices and these sample quotes)</span>
+            </>
+          )}
         </div>
       </Card>
 

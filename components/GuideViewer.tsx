@@ -111,6 +111,10 @@ export function GuideViewer({ guide, onDone, doneLabel = "Done" }: { guide: Home
             onClick={() => {
               setPlaying(false);
               setIndex(0);
+              // Finishing the water shut-off guide is the same as tapping Done in the chat, so the tenant never has to do both.
+              if (guide.id === "heater-water-off" && state.agent.triage.stage === "steps_given") {
+                actions.agentSend({ type: "tenant.text", text: "done", shown: "Done" });
+              }
               onDone?.();
             }}
           >

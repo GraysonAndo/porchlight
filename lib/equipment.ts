@@ -30,8 +30,8 @@ export function recordIsComplete(record: WaterHeaterRecord | null): boolean {
  * the water heater uses its manufacture year and source. Otherwise the home
  * inspection estimate (about 2015) is used.
  */
-export function equipmentFor(record: WaterHeaterRecord | null, edits: Record<string, EquipmentEdit> = {}): EquipmentItem[] {
-  return applyEdits(baseEquipment(record), edits);
+export function equipmentFor(record: WaterHeaterRecord | null, edits: Record<string, EquipmentEdit> = {}, extras: EquipmentItem[] = []): EquipmentItem[] {
+  return applyEdits([...baseEquipment(record), ...extras], edits);
 }
 
 /** The owner's corrections laid over the recorded details. Blank corrections are ignored. */

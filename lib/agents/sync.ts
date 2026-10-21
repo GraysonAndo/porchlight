@@ -18,7 +18,7 @@ export function syncFromWorld(state: DemoState, before: World, after: World, ev:
   const patch: Partial<DemoState> = {};
 
   // A new problem from the tenant starts a new case. A question or a reply does not.
-  const started = ev.type === "tenant.text" && countTool(after, "emergency_rules") > countTool(before, "emergency_rules");
+  const started = ev.type === "tenant.text" && countTool(after, "open_case") > countTool(before, "open_case");
   let approval = state.approval;
   let jobCompletedAt = state.jobCompletedAt;
   if (started && ev.type === "tenant.text") {
