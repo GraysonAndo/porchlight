@@ -38,6 +38,11 @@ export default function FeedbackPage() {
         <p className="mt-2 text-ink-soft">
           Notes saved with the &quot;Send feedback&quot; link at the bottom of any page. They live in this browser only.
         </p>
+        <p className="mt-1">
+          <Link href="/" className="inline-flex min-h-11 items-center font-bold underline underline-offset-4">
+            Back to GoHome
+          </Link>
+        </p>
       </div>
 
       {pricingLine && (
@@ -88,8 +93,8 @@ export default function FeedbackPage() {
           <p className="text-lg font-bold">No notes yet.</p>
           <p className="text-ink-soft">
             Open any screen and tap &quot;Send feedback&quot; at the bottom of the page to add one.{" "}
-            <Link href="/tenant" className="font-bold underline underline-offset-4">
-              Back to GoHome
+            <Link href="/" className="font-bold underline underline-offset-4">
+              Back to the GoHome welcome page
             </Link>
           </p>
         </Card>

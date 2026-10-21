@@ -1,4 +1,3 @@
-import type { Metadata } from "next";
 import { Plus_Jakarta_Sans } from "next/font/google";
 import "./globals.css";
 import { StoreProvider } from "@/lib/store";
@@ -12,12 +11,6 @@ const jakarta = Plus_Jakarta_Sans({
   subsets: ["latin"],
   display: "swap",
 });
-
-// The title is set per page in the Shell, so each tab says where it is.
-export const metadata: Metadata = {
-  description:
-    "GoHome keeps a record of everything in your rental and handles repairs for you. Tenants get step-by-step help. Owners just tap Approve.",
-};
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (

@@ -10,13 +10,18 @@ import { VERDICT_LABEL, VERDICT_TONE } from "./verdict";
 import { ai } from "@/lib/ai";
 import { usd, usdRange } from "@/lib/format";
 import { useAsyncResult } from "@/lib/hooks";
-import { compareQuote } from "@/lib/quote";
+import { compareQuote, nearTopLines, normalizeQuote, rangePosition } from "@/lib/quote";
 import { missingLines } from "@/lib/recommend";
-import { WATER_HEATER_JOB } from "@/lib/seed";
+import { WATER_HEATER_JOB, type VendorDetails } from "@/lib/seed";
 import type { VendorQuote } from "@/lib/types";
 
-export function QuoteDetail({ quote, license, showNote = true }: { quote: VendorQuote; license?: string | null; showNote?: boolean }) {
+const NOT_PROVIDED = "Not provided";
+
+export function QuoteDetail({ quote, license, details, showNote = true }: { quote: VendorQuote; license?: string | null; details?: VendorDetails | null; showNote?: boolean }) {
   const comparison = compareQuote(quote, WATER_HEATER_JOB);
+  const normalized = normalizeQuote(quote, WATER_HEATER_JOB);
+  const position = rangePosition(quote.total, WATER_HEATER_JOB.marketTotal);
+  const nearTop = nearTopLines(quote, WATER_HEATER_JOB);
   const total = comparison.total;
   const missing = missingLines(quote, WATER_HEATER_JOB);
   const key = `${quote.vendorId}|${quote.total}|${quote.lines.map((l) => `${l.id}:${l.amount}`).join(",")}`;
@@ -43,6 +48,63 @@ export function QuoteDetail({ quote, license, showNote = true }: { quote: Vendor
         <div className="mt-2">
           <RangeBar amount={quote.total} range={total.range} />
         </div>
+        <p className="mt-2 text-sm">
+          {position >= 1
+            ? `This total is above the top of the typical range.`
+            : position <= 0
+              ? `This total is below the bottom of the typical range.`
+              : `This total sits about ${Math.round(position * 100)}% of the way up the typical range of ${usdRange(total.range.low, total.range.high)}.`}
+        </p>
+        {nearTop.length > 0 && (
+          <ul className="mt-2 space-y-1 text-sm font-bold text-caution-ink">
+            {nearTop.map((l) => (
+              <li key={l.id}>
+                {l.label} {usd(l.amount)} is {l.position >= 1 ? "at or above" : "near"} the top of its typical {usdRange(l.range.low, l.range.high)}. A good line to ask about.
+              </li>
+            ))}
+          </ul>
+        )}
+        {normalized.adjustments.length > 0 && (
+          <div className="mt-3 rounded-xl border border-line bg-cream p-3 text-sm">
+            <p className="font-extrabold">Adjusted so it covers the same work as the others</p>
+            <dl className="mt-1 space-y-0.5">
+              <div className="flex justify-between gap-3">
+                <dt>As quoted</dt>
+                <dd className="font-bold">{usd(normalized.original)}</dd>
+              </div>
+              {normalized.adjustments.map((a) => (
+                <div key={a.id} className="flex justify-between gap-3">
+                  <dt>
+                    Not listed: {a.label.toLowerCase()}, added at a typical price
+                    <span className="block text-xs text-ink-soft">{a.basis}</span>
+                  </dt>
+                  <dd className="font-bold">+{usd(a.amount)}</dd>
+                </div>
+              ))}
+              <div className="flex justify-between gap-3 border-t border-line pt-1">
+                <dt className="font-extrabold">Adjusted total for comparison</dt>
+                <dd className="font-extrabold">{usd(normalized.adjusted)}</dd>
+              </div>
+            </dl>
+            <p className="mt-1 text-xs text-ink-soft">The vendor&apos;s own price is unchanged. Ask whether the missing work is included or extra.</p>
+          </div>
+        )}
+        {details !== undefined && (
+          <dl className="mt-3 grid grid-cols-[10rem_1fr] gap-y-1 text-sm">
+            <dt className="font-bold text-ink-soft">Soonest visit</dt>
+            <dd>{details?.availability ?? NOT_PROVIDED}</dd>
+            <dt className="font-bold text-ink-soft">Parts warranty</dt>
+            <dd>{details?.partsWarranty ?? NOT_PROVIDED}</dd>
+            <dt className="font-bold text-ink-soft">Labor warranty</dt>
+            <dd>{details?.laborWarranty ?? NOT_PROVIDED}</dd>
+            <dt className="font-bold text-ink-soft">Tank size</dt>
+            <dd>{details?.unitSize ?? NOT_PROVIDED}</dd>
+            <dt className="font-bold text-ink-soft">Fuel</dt>
+            <dd>{details?.fuel ?? NOT_PROVIDED}</dd>
+            <dt className="font-bold text-ink-soft">Quote is good for</dt>
+            <dd>{details?.validFor ?? NOT_PROVIDED}</dd>
+          </dl>
+        )}
         {license !== undefined && (
           <p className="mt-3">
             <strong>License:</strong> {license ?? "Not shown"}
@@ -158,7 +220,19 @@ export function QuoteDetail({ quote, license, showNote = true }: { quote: Vendor
         </div>
       </details>
 
-      {check.loading || !check.data ? (
+      {check.timedOut || check.failed ? (
+        <Callout tone="caution" title="The questions are taking longer than expected" role="alert">
+          <p>Here are the basics to ask any vendor while that finishes, or try again.</p>
+          <ul className="mt-2 list-disc space-y-1 pl-5">
+            <li>How many labor hours are in the estimate, and what is the hourly rate?</li>
+            <li>Is a permit needed, and is it included or extra?</li>
+            <li>How long is the warranty on parts and on labor?</li>
+          </ul>
+          <button type="button" className="btn btn-primary mt-3" onClick={check.retry}>
+            Retry
+          </button>
+        </Callout>
+      ) : check.loading || !check.data ? (
         <Thinking message="Writing questions to ask this vendor..." />
       ) : (
         <div className="grid gap-5 md:grid-cols-2">

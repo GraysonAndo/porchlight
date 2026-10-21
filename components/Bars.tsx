@@ -82,7 +82,7 @@ export function LifespanBar({
         <div className="mt-1 flex justify-between text-xs font-bold text-ink-soft">
           <span>New</span>
           <span>
-            {over > 0 ? `${over} ${over === 1 ? "year" : "years"} past its typical life of ${typicalLifeYears}` : `Typical life: ${typicalLifeYears} years`}
+            {ageYears === 0 ? `New, about ${typicalLifeYears} years of life left` : over > 0 ? `${over} ${over === 1 ? "year" : "years"} past its typical life of ${typicalLifeYears}` : `Typical life: ${typicalLifeYears} years`}
           </span>
         </div>
       )}

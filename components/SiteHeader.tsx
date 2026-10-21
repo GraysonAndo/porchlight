@@ -11,7 +11,6 @@ import { PROPERTY } from "@/lib/seed";
 export function PublicHeader() {
   const pathname = usePathname();
   const links = [
-    { href: "/about#team", label: "Our team" },
     { href: "/about", label: "About" },
     { href: "/pricing", label: "Pricing" },
   ];
@@ -71,6 +70,7 @@ export function SiteHeader() {
           <div className="ml-auto flex items-center gap-2">
             <span className="hidden text-right text-sm leading-tight sm:block">
               <span className="block font-bold">{name}</span>
+              <span className="sr-only">, </span>
               <span className="block text-ink-soft">{role === "owner" ? "Owner" : "Tenant"}</span>
             </span>
             <Link

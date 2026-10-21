@@ -85,3 +85,77 @@ export function rangeBarScale(amount: number, range: PriceRange): RangeBarScale 
     markerPct: toPct(amount),
   };
 }
+
+// ---------------------------------------------------------------------------
+// Comparable scope: a quote that leaves out standard work looks cheaper than it is
+// ---------------------------------------------------------------------------
+
+export interface QuoteAdjustment {
+  id: string;
+  label: string;
+  /** What is added so the quote covers the same work as the others */
+  amount: number;
+  /** Where the number comes from */
+  basis: string;
+}
+
+export interface NormalizedQuote {
+  /** The total as the vendor quoted it */
+  original: number;
+  adjustments: QuoteAdjustment[];
+  /** The original plus the standard work the quote left out, at the middle of its typical range */
+  adjusted: number;
+}
+
+const ADJUSTMENT_LABELS: Record<string, string> = {
+  unit: "The unit",
+  labor: "Labor",
+  permit: "A permit",
+  haul: "Haul away",
+  expansion: "An expansion tank",
+  fittings: "Fittings",
+  seismic: "Seismic strapping",
+};
+
+/**
+ * Adds any standard line the quote does not list, at the middle of its typical range, so every quote is compared on the same scope.
+ * The vendor's own number is never changed: the original, each addition, and the adjusted total are all kept.
+ */
+export function normalizeQuote(quote: VendorQuote, item: QuoteItem): NormalizedQuote {
+  const present = new Set(quote.lines.map((l) => l.id));
+  const adjustments: QuoteAdjustment[] = Object.entries(item.marketLines)
+    .filter(([id]) => !present.has(id))
+    .map(([id, range]) => ({
+      id,
+      label: ADJUSTMENT_LABELS[id] ?? id,
+      amount: Math.round((range.low + range.high) / 2),
+      basis: `The middle of its typical range, $${range.low.toLocaleString("en-US")} to $${range.high.toLocaleString("en-US")}`,
+    }));
+  return { original: quote.total, adjustments, adjusted: quote.total + adjustments.reduce((sum, a) => sum + a.amount, 0) };
+}
+
+/** How far up its typical range an amount sits: 0 at the bottom, 1 at the top, more than 1 above it. */
+export function rangePosition(amount: number, range: PriceRange): number {
+  const spread = range.high - range.low;
+  return spread > 0 ? (amount - range.low) / spread : 0;
+}
+
+export interface NearTopLine {
+  id: string;
+  label: string;
+  amount: number;
+  range: PriceRange;
+  position: number;
+}
+
+/** Lines that sit at or near the top of their typical range, which is where to ask for a better price. */
+export function nearTopLines(quote: VendorQuote, item: QuoteItem, threshold = 0.9): NearTopLine[] {
+  const out: NearTopLine[] = [];
+  for (const line of quote.lines) {
+    const range = item.marketLines[line.id];
+    if (!range) continue;
+    const position = rangePosition(line.amount, range);
+    if (position >= threshold) out.push({ id: line.id, label: line.label, amount: line.amount, range, position });
+  }
+  return out;
+}

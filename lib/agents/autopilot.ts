@@ -59,6 +59,9 @@ export function autopilotNext(w: World): AutoStep {
   // Loop 3: the compliance sentinel.
   switch (w.sentinel.stage) {
     case "idle":
+      // Late rent comes first, and the rent cap needs the owner's own inflation figure, so both are settled before the lease check.
+      if (!w.rentPaid) return { ev: { type: "rent.paid", paid: true } };
+      if (!w.cpiConfirmed) return { ev: { type: "rent.cpi", confirmed: true } };
       return { ev: { type: "cron.lease" } };
     case "awaiting_owner":
       return ownerTap(w, "rent5");

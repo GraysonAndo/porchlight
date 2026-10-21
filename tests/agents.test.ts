@@ -55,7 +55,9 @@ describe("the full story with the autopilot", () => {
   });
 
   it("never shows the tenant a price", () => {
-    expect(textFor(w, "tenant")).not.toMatch(/\$|\bquote/i);
+    // Rent is the tenant's own money. What must never reach a tenant is a repair price or a quote.
+    const repairText = textFor(w, "tenant").split("\n").filter((l) => !/rent/i.test(l)).join("\n");
+    expect(repairText).not.toMatch(/\$|\bquote/i);
   });
 
   it("asks the owner for exactly one tap per decision: 3 taps in total", () => {
@@ -342,7 +344,9 @@ describe("loop 2: the quote audit and counter-negotiation", () => {
 });
 
 describe("loop 3: the compliance sentinel", () => {
-  const alerted = () => send(createWorld(), { type: "cron.lease" });
+  // Late rent comes first, and the cap needs the owner's own inflation figure, so both are settled before the check.
+  const settled = (w: World = createWorld()) => run(w, [{ type: "rent.paid", paid: true }, { type: "rent.cpi", confirmed: true }]);
+  const alerted = () => send(settled(), { type: "cron.lease" });
 
   it("texts the exact legal maximum, the notice period, and a draft stamped as not legal advice", () => {
     const w = alerted();
@@ -364,12 +368,13 @@ describe("loop 3: the compliance sentinel", () => {
 
   it("mails the notice, not texts it, and saves proof to the record", () => {
     let w = alerted();
+    const tenantBefore = msgs(w).filter((m) => m.party === "tenant").length;
     w = send(w, { type: "owner.tap", msgId: openOwnerMessage(w)!.id, action: "rentmax" });
     expect(toolNames(w)).toContain("mail_notice");
     const detail = w.timeline.find((e) => e.kind === "tool" && e.tool === "mail_notice");
     expect(detail && detail.kind === "tool" && detail.detail).toMatch(/properly served/);
     expect(recordAt(w.timeline, w.timeline.length).values["lease.notice"]).toContain("$3,456.00");
-    expect(msgs(w).filter((m) => m.party === "tenant")).toHaveLength(0);
+    expect(msgs(w).filter((m) => m.party === "tenant")).toHaveLength(tenantBefore);
     expect(nextTimerAt(w)).not.toBeNull();
   });
 
@@ -383,7 +388,7 @@ describe("loop 3: the compliance sentinel", () => {
   it("fires earlier timers on the way to the Monday check", () => {
     let w = createWorld();
     w = run(w, [LEAK, { type: "tenant.text", text: "2" }, { type: "tenant.text", text: "done" }]);
-    w = send(w, { type: "cron.lease" });
+    w = send(settled(w), { type: "cron.lease" });
     // the vendor quotes and the nudge came due before the lease check
     expect(toolNames(w)).toContain("read_quotes");
     expect(toolNames(w).indexOf("read_quotes")).toBeLessThan(toolNames(w).indexOf("scan_leases"));
@@ -509,5 +514,26 @@ describe("review round 8: the safety question comes first", () => {
   it("with a photo, the tank is known to be leaking", () => {
     const w = run(createWorld(), [{ type: "tenant.photo", photo: "leak" }]);
     expect(w.timeline.some((e) => e.kind === "msg" && e.photo === "leak")).toBe(true);
+  });
+});
+
+describe("audit: overdue rent and the rent cap", () => {
+  it("holds the rent increase check while rent is unpaid, with no card to approve", () => {
+    const w = send(createWorld(), { type: "cron.lease" });
+    expect(toolNames(w)).toContain("hold_for_late_rent");
+    expect(toolNames(w)).not.toContain("build_notice");
+    expect(openOwnerMessage(w)).toBeUndefined();
+  });
+
+  it("offers no mailing until the owner has confirmed the inflation figure", () => {
+    const w = send(run(createWorld(), [{ type: "rent.paid", paid: true }]), { type: "cron.lease" });
+    const card = openOwnerMessage(w)!;
+    expect(card.actions?.map((a) => a.id)).toEqual(["renthold"]);
+    expect(card.card?.facts.find((f) => f.label === "Legal maximum")?.value).toMatch(/Needs your inflation figure first/);
+  });
+
+  it("offers the mailing amounts once it is confirmed", () => {
+    const w = send(run(createWorld(), [{ type: "rent.paid", paid: true }, { type: "rent.cpi", confirmed: true }]), { type: "cron.lease" });
+    expect(openOwnerMessage(w)!.actions?.map((a) => a.id)).toEqual(["rent5", "rentmax", "renthold"]);
   });
 });

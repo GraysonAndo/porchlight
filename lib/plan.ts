@@ -19,6 +19,9 @@ if (!recommendation) throw new Error("The demo needs at least one collected quot
 
 export const PLAN: Recommendation = recommendation;
 
+/** What replacing the heater typically costs: the middle of the typical range. The repair or replace rule uses this, not a vendor's price, so the decision is made before any vendor is picked. */
+export const TYPICAL_REPLACE_COST = Math.round((WATER_HEATER_JOB.marketTotal.low + WATER_HEATER_JOB.marketTotal.high) / 2);
+
 export function collectedFor(vendorId: string): CheckedCandidate | undefined {
   return COLLECTED.find((c) => c.vendorId === vendorId);
 }

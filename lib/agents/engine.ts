@@ -13,10 +13,10 @@ import { equipmentFor } from "../equipment";
 import { buildForecast } from "../forecast";
 import { addDays, longDate, usd, usdCents, usdRange } from "../format";
 import { ageOf } from "../life";
-import { COLLECTED, PLAN } from "../plan";
+import { COLLECTED, PLAN, TYPICAL_REPLACE_COST } from "../plan";
 import { compareQuote, percentOverTop, verdictFor } from "../quote";
 import { SAMPLE_QUOTE_TEXT, parseQuoteText } from "../quoteParse";
-import { buildNotice, calculateRent, effectiveDateFor } from "../rent";
+import { buildNotice, calculateRent, effectiveDateFor, rentInputsFromForm } from "../rent";
 import { answerHouseQuestion, classifyTenantText } from "../houseQa";
 import { recordFromValues } from "./record";
 import {
@@ -316,6 +316,9 @@ function handle(w: World, ev: Ev): void {
       return onRentPaid(w, ev.paid, ev.confirmation);
     case "rent.remind":
       return onRentRemind(w, ev.daysLate);
+    case "rent.cpi":
+      w.cpiConfirmed = ev.confirmed;
+      return;
     case "record.edit":
       return onRecordEdit(w, ev.patch);
     case "rent.notice":
@@ -865,7 +868,7 @@ function quotesArrive(w: World): void {
     ageYears: age,
     typicalLifeYears: EQUIPMENT[0].typicalLifeYears,
     repairCost: REPAIR_ESTIMATE,
-    replaceCost: PLAN.total,
+    replaceCost: TYPICAL_REPLACE_COST,
     failureMode: hasTenantPhoto(w) ? "tank leak" : "unknown leak",
   });
   tool(w, "quote", "decide_repair_replace", "code", `Rule says: ${decision.recommendation}`, decision.reasons.join(" "));
@@ -879,12 +882,12 @@ function quotesArrive(w: World): void {
   say(
     w,
     "owner",
-    `DECISION NEEDED: ${decision.recommendation} the water heater\nWhy: ${decision.reasons.slice(0, 2).join(" ")}\n3 quotes, all checked by plain code:\n${lines}\nMy pick: ${shortName(PLAN.vendorName)}. Saves ${usd(PLAN.savedVsHighest)} vs the highest. Limit ${usd(PLAN.notToExceed)}. Visit ${windowText()}.`,
+    `DECISION NEEDED: ${decision.recommendation} the water heater\nWhy: ${decision.reasons.slice(0, 2).join(" ")}\n3 quotes, all checked by plain code:\n${lines}\nMy pick: ${shortName(PLAN.vendorName)}. Saves ${usd(PLAN.savedVsHighest)} vs the highest on the same scope.${PLAN.comparisons.length > 0 ? ` ${PLAN.comparisons.join(" ")}` : ""} Limit ${usd(PLAN.notToExceed)}. Visit ${windowText()}.`,
     {
       card: {
         kind: "decision",
         title: `Replace the water heater with ${shortName(PLAN.vendorName)}`,
-        summary: `The heater is ${age} years old, past its typical life. ${hasTenantPhoto(w) ? "The photo shows water at the base of the tank, so it cannot be repaired." : "Your tenant has not said where the water comes from, so the plumber checks for a cheap fix first, like a valve or a fitting."} GoHome checked 3 quotes and picked the best one for you.`,
+        summary: `The heater is ${age} years old, past its typical life. ${hasTenantPhoto(w) ? "The photo suggests water at the base of the tank, which likely means it cannot be repaired. The plumber confirms before any work." : "Your tenant has not said where the water comes from, so the plumber checks for a cheap fix first, like a valve or a fitting."} GoHome checked 3 quotes on the same scope and picked the best one for you. ${PLAN.comparisons[0] ?? ""}`,
         facts: [
           { label: "Price", value: `${usd(PLAN.total)}, a fair price`, tone: "good" },
           { label: "Spending limit", value: `${usd(PLAN.notToExceed)} (quote plus 10%)` },
@@ -1043,7 +1046,7 @@ function jobDone(w: World): void {
     `The heater is no longer overdue. Suggested set-aside is now ${usd(forecast.setAsideLowPerMonth)} to ${usd(forecast.setAsideHighPerMonth)} a month*.`,
   );
   say(w, "tenant", "All fixed! Thanks for your patience. If anything looks off, text me here.");
-  say(w, "owner", `Done. The new Hearthline HL-40G-NG is in your house record (serial ${n.serial}). Your 5-year forecast is updated. You spent ${w.stats.ownerTaps} tap and about a minute.`);
+  say(w, "owner", `Done. The new ${n.manufacturer} ${n.model} is in your house record (serial ${n.serial}). Your 5-year forecast is updated. You spent ${w.stats.ownerTaps} tap and about a minute.`);
 }
 
 // ---------------------------------------------------------------------------
@@ -1268,10 +1271,16 @@ function onContractorCounter(w: World, total: number): void {
 function onLeaseCheck(w: World): void {
   if (w.sentinel.stage !== "idle" && w.sentinel.stage !== "held") return;
   runDue(w, nextNineAm(w.clock));
+  // Overdue rent comes first. A rent increase is held until it is settled, so the owner is never nudged to raise rent on a tenant who owes.
+  if (!w.rentPaid) {
+    tool(w, "sentinel", "hold_for_late_rent", "code", "Held the rent increase check", `${RENT_MONTH} rent has not come in. The increase check waits until it is paid or marked paid.`);
+    say(w, "owner", `I am holding the rent increase check. ${RENT_MONTH} rent has not come in yet, and that comes first. Send a reminder or mark it paid, then ask me again.`, { silent: true });
+    return;
+  }
   const proposed = 3360;
-  const result = calculateRent({ ...DEFAULT_RENT_FORM, proposedRent: proposed });
+  const result = calculateRent(rentInputsFromForm({ ...DEFAULT_RENT_FORM, proposedRent: proposed }));
   tool(w, "sentinel", "scan_leases", "code", "Checked lease dates", "1200 Example Court: lease anniversary December 14, 2026. Last increase December 2024, about 22 months ago. 0 increases in the last 12 months.");
-  tool(w, "sentinel", "fetch_cpi", "code", "Looked up local CPI", "Local CPI change 3.0% (placeholder: the owner should confirm the current figure for the area).");
+  tool(w, "sentinel", "fetch_cpi", "code", "Used a sample inflation figure", "No live lookup was made. 3.0% is a placeholder, so confirm your area's figure on the rent page before sending anything.");
   tool(
     w,
     "sentinel",
@@ -1294,27 +1303,35 @@ function onLeaseCheck(w: World): void {
   say(
     w,
     "owner",
-    `Your lease anniversary at 1200 Example Court is December 14, 2026.\nMax legal increase today: ${result.capPercent.toFixed(1)}% (${usd(DEFAULT_RENT_FORM.currentRent)} to ${usdCents(result.maxNewRent)}). Cap = the lesser of 5% plus local CPI, or 10%.\nNotice period: ${result.noticeDays} days (90 if over 10%).\nDraft notice is ready (attached). DRAFT, NOT LEGAL ADVICE: local rules, like San Jose's, can be stricter.`,
+    `Your lease anniversary at 1200 Example Court is December 14, 2026.\nMax legal increase using a SAMPLE inflation figure: ${result.capPercent.toFixed(1)}% (${usd(DEFAULT_RENT_FORM.currentRent)} to ${usdCents(result.maxNewRent)}). Confirm your area's figure before using it. Cap = the lesser of 5% plus local CPI, or 10%.\nNotice period: ${result.noticeDays} days (90 if over 10%).\nDraft notice is ready (attached). DRAFT, NOT LEGAL ADVICE: local rules, like San Jose's, can be stricter.`,
     {
       card: {
         kind: "lease",
         title: "You can raise the rent at 1200 Example Court",
-        summary: "The lease anniversary is coming up. GoHome worked out the legal maximum and drafted the notice.",
+        summary: "The lease anniversary is coming up and GoHome drafted the notice. The legal maximum depends on your area's inflation figure, which you need to confirm first.",
         facts: [
-          { label: "Legal maximum", value: `${result.capPercent.toFixed(1)}% (${usdCents(result.maxNewRent)})` },
+          {
+            label: "Legal maximum",
+            value: w.cpiConfirmed ? `${result.capPercent.toFixed(1)}% (${usdCents(result.maxNewRent)})` : `Needs your inflation figure first (sample: ${result.capPercent.toFixed(1)}%, ${usdCents(result.maxNewRent)})`,
+            tone: w.cpiConfirmed ? undefined : "caution",
+          },
           { label: "Suggested", value: `5% (${usd(3360)})`, tone: "good" },
           { label: "Notice period", value: `${result.noticeDays} days` },
           { label: "Sent by", value: "Certified mail, with proof" },
           ...(w.rentPaid ? [] : [{ label: "Heads up", value: `${RENT_MONTH} rent has not come in yet`, tone: "caution" as const }]),
         ],
-        note: `Tap an amount and the notice is mailed with proof of service, and ${PROPERTY.tenant} is told. Nothing is mailed before that.`,
+        note: w.cpiConfirmed
+          ? `Tap an amount and the notice is mailed with proof of service, and ${PROPERTY.tenant} is told. Nothing is mailed before that.`
+          : "Confirm your area's inflation figure on the rent page first. The maximum shown here uses a sample figure, so nothing is mailed from this card.",
       },
       attachment: { title: "Draft rent notice", body: notice },
-      actions: [
-        { id: "rent5", label: `Mail at 5% (${usd(3360)})` },
-        { id: "rentmax", label: `Mail at max (${usd(result.maxNewRent)})` },
-        { id: "renthold", label: "Hold" },
-      ],
+      actions: w.cpiConfirmed
+        ? [
+            { id: "rent5", label: `Mail at 5% (${usd(3360)})` },
+            { id: "rentmax", label: `Mail at max (${usd(result.maxNewRent)})` },
+            { id: "renthold", label: "Hold" },
+          ]
+        : [{ id: "renthold", label: "Remind me later" }],
     },
   );
 }
@@ -1327,9 +1344,9 @@ function sentinelOwnerAction(w: World, action: string): void {
     say(w, "owner", "Okay, holding. I'll remind you in 14 days, before the lease anniversary gets close.");
     return;
   }
-  const max = calculateRent({ ...DEFAULT_RENT_FORM, proposedRent: DEFAULT_RENT_FORM.currentRent }).maxNewRent;
+  const max = calculateRent(rentInputsFromForm({ ...DEFAULT_RENT_FORM, proposedRent: DEFAULT_RENT_FORM.currentRent })).maxNewRent;
   const newRent = action === "rentmax" ? max : 3360;
-  const check = calculateRent({ ...DEFAULT_RENT_FORM, proposedRent: newRent });
+  const check = calculateRent(rentInputsFromForm({ ...DEFAULT_RENT_FORM, proposedRent: newRent }));
   if (!check.withinCap) return;
   const effective = effectiveDateFor(SAMPLE_NOTICE_DATE, check.noticeDays);
   tool(w, "gate", "approval_gate", "human", "Owner approved the notice", `One tap approved ${usdCents(newRent)} (${check.increasePercent.toFixed(1)}%), within the ${check.capPercent.toFixed(1)}% cap.`);

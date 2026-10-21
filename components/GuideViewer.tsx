@@ -13,7 +13,9 @@ import { useEquipment } from "@/lib/useEquipment";
 
 const PLAY_STEP_MS = 4500;
 
-export function GuideViewer({ guide, onDone, doneLabel = "Done" }: { guide: HomeGuide; onDone?: () => void; doneLabel?: string }) {
+/** On its own page the guide title is the page heading. Inside a dialog it is a second-level heading, so a page never has two h1s. */
+export function GuideViewer({ guide, onDone, doneLabel = "Done", inDialog = false }: { guide: HomeGuide; onDone?: () => void; doneLabel?: string; inDialog?: boolean }) {
+  const Title = inDialog ? "h2" : "h1";
   const { state, actions } = useDemo();
   const last = guide.steps.length - 1;
   // Where the tenant was is remembered, so a reload or a phone call in the middle of a guide loses nothing.
@@ -43,7 +45,7 @@ export function GuideViewer({ guide, onDone, doneLabel = "Done" }: { guide: Home
     <article aria-label={guide.title} className="space-y-4">
       <header>
         {guide.forItem && <p className="eyebrow mb-1">For your {guide.forItem}</p>}
-        <h2 className="text-2xl font-extrabold leading-tight">{guide.title}</h2>
+        <Title className="text-2xl font-extrabold leading-tight">{guide.title}</Title>
         <p className="mt-1 text-sm text-ink-soft">
           <strong className="text-ink">Time:</strong> {guide.time}. <strong className="text-ink">You need:</strong> {guide.youNeed}
         </p>
@@ -161,7 +163,7 @@ export function GuideButton({ guideId, label = "Show me how" }: { guideId: strin
               Close
             </button>
           </div>
-          <GuideViewer guide={guide} onDone={() => ref.current?.close()} />
+          <GuideViewer guide={guide} inDialog onDone={() => ref.current?.close()} />
         </div>
       </dialog>
     </>

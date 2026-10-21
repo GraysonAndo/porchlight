@@ -115,6 +115,7 @@ export default function RentPage() {
     singleFamilyOrCondo: form.singleFamilyOrCondo,
     notCorporateOwned: form.notCorporateOwned,
     exemptionNoticeGiven: form.exemptionNoticeGiven,
+    leaseHasExemptionWording: form.leaseExemptionWording,
     buildingUnder15Years: form.buildingUnder15Years,
   });
 
@@ -145,11 +146,15 @@ export default function RentPage() {
       : `This increase is within the yearly limit in Civil Code section 1947.12 (5% plus local inflation, never more than ${MAX_CAP_PERCENT}%).`,
   });
   const ready = missing.length === 0 && !rentOdd && !cpiOdd && Boolean(noticeDate);
-  const canSend = ready && kind !== "none" && !blockedByCount && (kind === "decrease" || result.withinCap || result.mayBeExempt);
+  // No dollar maximum is final until the owner has checked the inflation figure for their own area.
+  const capKnown = form.cpiConfirmed;
+  const lateRent = !state.rentPaidAt && !state.payments.some((pay) => pay.kind === "rent") && dueStatus("rent").overdue;
+  const canSend = ready && kind !== "none" && !blockedByCount && (kind === "decrease" || (capKnown && (result.withinCap || result.mayBeExempt)));
   // Two ways to pick a number: the most the law allows, or a modest raise. Only shown when the inputs make sense.
   const maxLegal = maxNewRentFor(form.currentRent, result.capPercent, form.increasesInLast12Months > 0 ? form.priorIncreasePercent : 0);
   const modest = Math.min(Math.round(form.currentRent * 1.05), Math.floor(maxLegal));
-  const showSuggestion = ready && !rentOdd && !blockedByCount && maxLegal > form.currentRent;
+  // The suggestion waits for a confirmed inflation figure, and for late rent to be settled.
+  const showSuggestion = ready && capKnown && !lateRent && !rentOdd && !blockedByCount && maxLegal > form.currentRent;
   const sameAsMax = Math.abs(modest - maxLegal) < 0.005;
   const yearly = (rent: number) => usd(Math.round((rent - form.currentRent) * 12));
   const sent = state.rentNotice;
@@ -160,7 +165,9 @@ export default function RentPage() {
       ? { tone: "neutral", title: "No change: the new rent is the same as the current rent" }
       : blockedByCount
         ? { tone: "urgent", title: "Do not send: a third increase in 12 months is not allowed", detail: `You said you already gave ${form.increasesInLast12Months}.` }
-        : result.mayBeExempt
+        : kind !== "decrease" && !capKnown
+          ? { tone: "caution", title: "Confirm your area's inflation figure first", detail: "The highest allowed rent depends on it, and the number shown now is only a sample." }
+          : result.mayBeExempt
           ? { tone: "caution", title: "May be exempt from the yearly limit", detail: "Confirm with an attorney before you send." }
           : kind === "decrease"
             ? { tone: "good", title: "OK to send: this lowers the rent" }
@@ -181,13 +188,13 @@ export default function RentPage() {
   const capBlock = (
     <dl>
       <Row label="Yearly limit">
-        {pct(result.capPercent)}
+        {capKnown ? pct(result.capPercent) : "Depends on your inflation figure"}
         <span className="block text-sm font-normal text-ink-soft">
-          {pct(BASE_CAP_PERCENT)} plus local inflation of {pct(form.cpiPercent)}, never more than {pct(MAX_CAP_PERCENT)}
+          {pct(BASE_CAP_PERCENT)} plus local inflation{capKnown ? ` of ${pct(form.cpiPercent)}` : ""}, never more than {pct(MAX_CAP_PERCENT)}
         </span>
       </Row>
       <Row label="Highest allowed new rent">
-        {usdCents(result.maxNewRent)}
+        {capKnown ? usdCents(result.maxNewRent) : "Confirm the inflation figure first"}
         {form.increasesInLast12Months > 0 && form.priorIncreasePercent > 0 && (
           <span className="block text-sm font-normal text-ink-soft">Lower because of the earlier increase of {pct(form.priorIncreasePercent)}.</span>
         )}
@@ -321,6 +328,9 @@ export default function RentPage() {
                 </>
               }
             />
+            <Check id="cpi-confirmed" checked={form.cpiConfirmed} onChange={(v) => actions.setRent({ cpiConfirmed: v })}>
+              I checked this inflation figure for my area. Until I do, GoHome will not show a dollar maximum as final.
+            </Check>
             <NumberField
               id="proposed-rent"
               label="Proposed new rent per month"
@@ -388,6 +398,13 @@ export default function RentPage() {
                 The tenant was given the required written exemption notice.
               </Check>
               <Check
+                id="ex-lease"
+                checked={form.leaseExemptionWording}
+                onChange={(v) => actions.setRent({ leaseExemptionWording: v })}
+              >
+                The lease itself has the exemption wording.
+              </Check>
+              <Check
                 id="ex-new"
                 checked={form.buildingUnder15Years}
                 onChange={(v) => actions.setRent({ buildingUnder15Years: v })}
@@ -438,13 +455,13 @@ export default function RentPage() {
               </div>
             )}
 
-            {form.singleFamilyOrCondo && form.notCorporateOwned && !form.exemptionNoticeGiven && !form.buildingUnder15Years && (
+            {form.singleFamilyOrCondo && form.notCorporateOwned && !(form.exemptionNoticeGiven && form.leaseExemptionWording) && !form.buildingUnder15Years && (
               <div className="mt-4">
                 <Callout tone="info" title="You could be exempt from the yearly limit">
                   <p>
-                    This home is a single family home with an individual owner. The only thing between you and the exemption is the written
-                    exemption notice. If it was in the lease, or you give it to your tenant, the yearly limit does not apply. For a tenancy that began after July
-                    1, 2020 the law asks for the notice to be in the lease itself, so check your lease first.
+                    This home is a single family home with an individual owner. The exemption needs two things: the written exemption notice given to
+                    your tenant, and the exemption wording in the lease itself. {form.exemptionNoticeGiven ? "You have the notice. Check the lease wording." : form.leaseExemptionWording ? "You have the lease wording. Check the notice." : "Check both."} For a tenancy that began after July
+                    1, 2020 the law asks for the notice to be in the lease itself, so look at your lease first. Confirm with an attorney.
                   </p>
                   <button type="button" className="btn btn-secondary mt-3" aria-expanded={showExemption} onClick={() => setShowExemption((s) => !s)}>
                     {showExemption ? "Hide the draft" : "Draft the exemption notice"}
@@ -528,7 +545,7 @@ export default function RentPage() {
                       {daysUntil(sendBy) > 0 ? `${daysUntil(sendBy)} days left to send` : daysUntil(sendBy) === 0 ? "Last day to send is today" : ""}
                     </strong>
                     <a
-                      className="font-bold text-brand underline underline-offset-4"
+                      className="inline-flex min-h-11 items-center font-bold text-brand underline underline-offset-4"
                       href={`data:text/calendar;charset=utf-8,${encodeURIComponent(reminderIcs(sendBy, startIso))}`}
                       download="send-rent-notice.ics"
                     >

@@ -77,10 +77,10 @@ export function decideRepairOrReplace(input: DecisionInput): DecisionResult {
     },
     {
       id: "tank-leak",
-      rule: "Replace if the tank itself is leaking. A leaking tank cannot be repaired. A leak from a valve or fitting can be.",
+      rule: "Replace if the tank itself is likely leaking. A leaking tank usually cannot be repaired. A leak from a valve or fitting can be.",
       triggered: leakTriggered,
       detail: leakTriggered
-        ? "The tank is leaking."
+        ? "The tank is likely leaking, based on the evidence so far."
         : failureMode === "unknown leak"
           ? "Not confirmed. The leak could be the tank, or just a valve or fitting, which can be a cheap fix. A photo or the plumber will show which."
           : "The tank is not leaking.",
@@ -99,7 +99,7 @@ export function decideRepairOrReplace(input: DecisionInput): DecisionResult {
     );
   }
   if (leakTriggered) {
-    reasons.push("The tank is leaking, and a leaking tank cannot be repaired.");
+    reasons.push("The tank itself is likely leaking, and a leaking tank usually cannot be repaired. The plumber confirms before any work.");
   }
 
   return {

@@ -207,7 +207,7 @@ export function CheckoutForm({ due, paidCount }: { due: PayKind[]; paidCount: nu
           <label key={b.kind} className="flex min-h-14 cursor-pointer items-center gap-3 rounded-xl border border-line px-3 py-2 has-[:checked]:border-brand has-[:checked]:bg-brand-tint/40">
             <input
               type="checkbox"
-              className="h-5 w-5 accent-[var(--color-brand)]"
+              className="h-6 w-6 accent-[var(--color-brand)]"
               checked={picked.includes(b.kind)}
               onChange={(e) => setPicked((prev) => (e.target.checked ? [...prev, b.kind] : prev.filter((k) => k !== b.kind)))}
             />

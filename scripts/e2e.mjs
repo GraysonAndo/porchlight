@@ -159,7 +159,7 @@ const chatText = (page) => page.getByRole("log", { name: "Messages" }).innerText
   await page.goto(`${BASE}/tenant/home`);
 
   // The record and the plan updated themselves.
-  check("My home shows the new heater model, and no serial numbers", (await count(page, "HL-40G-NG")) > 0 && (await count(page, "26J0007-A")) === 0);
+  check("My home shows the new heater model, and the serial is only inside Details", (await count(page, "HL-40G-NX")) > 0 && (await count(page, "HL-40G-NG")) === 0 && (await page.getByText("26J0007-A").filter({ visible: true }).count()) === 0);
   await page.goto(`${BASE}/owner/record`);
   await page.getByText("New, added automatically").waitFor(wait20);
   check("the owner's home record has the new heater by itself", (await count(page, "26J0007-A")) > 0);
@@ -226,7 +226,7 @@ const chatText = (page) => page.getByRole("log", { name: "Messages" }).innerText
   await page.goto(`${BASE}/owner/request`);
   check("the repair request page shows the heater from the record", (await count(page, /Hearthline HL-40G-NG/)) > 0);
   check("the owner sees the three spec buckets: SOON, not URGENT", (await page.getByText("SOON", { exact: true }).count()) > 0 && (await page.getByText("URGENT", { exact: true }).count()) === 0);
-  check("the repair tabs link the details", (await page.getByRole("navigation", { name: "Repair details" }).getByRole("link").allInnerTexts()).join() === "Request,Quotes,Decision,Booking");
+  check("the repair tabs link the details", (await page.getByRole("navigation", { name: "Repair details" }).getByRole("link").allInnerTexts()).join() === "Request,Decision,Quotes,Booking");
 
   await page.goto(`${BASE}/owner/decide`);
   await page.getByText("Replace it").waitFor();
@@ -323,8 +323,12 @@ const chatText = (page) => page.getByRole("log", { name: "Messages" }).innerText
   await page.goto(`${BASE}/owner`);
   await tabs(page, /Texts from GoHome/).click();
   await page.getByRole("button", { name: "Check my lease dates" }).click();
+  await page.getByText(/holding the rent increase check/).filter({ visible: true }).first().waitFor(wait20);
+  check("the lease check is held while the rent is unpaid", true);
+  await page.getByRole("button", { name: "Mark rent as paid" }).first().click();
+  await page.getByRole("button", { name: "Check my lease dates" }).click();
   await page.getByText(/Legal maximum/).filter({ visible: true }).first().waitFor(wait20);
-  check("the owner can ask GoHome to check the lease and gets the legal cap", true);
+  check("once rent is settled and the inflation figure confirmed, the owner gets the legal cap", true);
   await page.getByRole("button", { name: "Check my lease dates" }).waitFor();
   await page.getByRole("button", { name: "A contractor sent me a quote" }).click();
   await page.getByText(/22% above the top/).filter({ visible: true }).first().waitFor(wait20);
@@ -532,7 +536,7 @@ const chatText = (page) => page.getByRole("log", { name: "Messages" }).innerText
   const after = await team.locator("article").first().evaluate((e) => e.getBoundingClientRect().top);
   check("a card lifts about 4px on hover", Math.round(before - after) === 4, `${before} ${after}`);
   await page.goto(`${BASE}/`);
-  await page.locator("header").getByRole("link", { name: "Our team" }).click();
+  await page.locator("footer").getByRole("link", { name: "Our team" }).click();
   await page.waitForURL("**/about#team");
   check("the welcome page links to the team", true);
   check("no console errors on the team section", errors.length === 0, errors.join(" | "));
@@ -659,7 +663,14 @@ const chatText = (page) => page.getByRole("log", { name: "Messages" }).innerText
   check("an absurd inflation number is flagged the same way", (await page.locator("pre").count()) === 0);
   await page.locator("#cpi").fill("3");
 
-  // 11: prefilled from the lease, with a suggestion, a deadline, and a way to send.
+  // 11: prefilled from the lease. The suggestion waits for late rent to be settled and the inflation figure to be confirmed.
+  await page.locator("#proposed-rent").fill("3300");
+  check("no suggested number appears before the inflation figure is confirmed", (await page.getByRole("button", { name: /^Recommended:/ }).count()) === 0);
+  await page.getByLabel(/I checked this inflation figure for my area/).check();
+  check("late rent also holds the suggestion back", (await page.getByRole("button", { name: /^Recommended:/ }).count()) === 0);
+  await page.goto(`${BASE}/owner`);
+  await page.getByRole("button", { name: "Mark rent as paid" }).first().click();
+  await page.goto(`${BASE}/owner/rent`);
   check("the rent page starts from the lease", (await count(page, "From your lease")) > 0 && (await count(page, "$3,200.00 a month")) > 0 && (await count(page, "December 14, 2026")) > 0);
   await page.locator("#proposed-rent").fill("3300");
   await page.getByRole("button", { name: /^Recommended: \$3,360\.00/ }).click();
@@ -763,7 +774,7 @@ const chatText = (page) => page.getByRole("log", { name: "Messages" }).innerText
 
   // The tenant, the guides, and what GoHome says all use the corrected record.
   await page.goto(`${BASE}/tenant/home`);
-  check("the tenant's My home shows the corrected model and place, and still no serial", (await count(page, "Hearthline HL-40G-LP")) > 0 && (await count(page, "15C0412-Z")) === 0 && (await count(page, "Garage, east wall")) > 0);
+  check("the tenant's My home shows the corrected model and place, with the serial only inside Details", (await count(page, "Hearthline HL-40G-LP")) > 0 && (await page.getByText("15C0412-Z").filter({ visible: true }).count()) === 0 && (await count(page, "Garage, east wall")) > 0);
   await page.goto(`${BASE}/tenant/guides/heater-water-off`);
   check("the picture guide is written for the corrected model", (await count(page, /For your Hearthline HL-40G-LP/)) > 0);
   await page.goto(`${BASE}/tenant`);
@@ -795,7 +806,7 @@ const chatText = (page) => page.getByRole("log", { name: "Messages" }).innerText
     headerLinks.push((await page.locator("header").first().getByRole("link").allInnerTexts()).join("|"));
     footerLinks.push((await page.locator("footer").getByRole("link").allInnerTexts()).join("|") + "|" + (await page.locator("footer").getByRole("button").allInnerTexts()).join("|"));
   }
-  check("the welcome, About, Pricing, and Feedback pages share one header", new Set(headerLinks).size === 1 && headerLinks[0].includes("Our team") && headerLinks[0].includes("Pricing"), headerLinks.join(" // "));
+  check("the welcome, About, Pricing, and Feedback pages share one header, with no duplicate team link", new Set(headerLinks).size === 1 && !headerLinks[0].includes("Our team") && headerLinks[0].includes("About") && headerLinks[0].includes("Pricing"), headerLinks.join(" // "));
   check("and one footer", new Set(footerLinks).size === 1, footerLinks.join(" // "));
 
   // 16: the footer feedback link is on the welcome page too.
@@ -831,7 +842,7 @@ const chatText = (page) => page.getByRole("log", { name: "Messages" }).innerText
   check("the About page connects GoHome and Porchlight", /called Porchlight/.test(about));
   check("the FAQ section is called Help and FAQ everywhere", (await page.getByRole("heading", { name: "Help and FAQ" }).count()) === 1 && (await page.getByRole("link", { name: "Help and FAQ" }).count()) === 1 && !/Questions\n/.test(about));
   await page.getByRole("button", { name: "Send feedback" }).click();
-  check("and the feedback sheet names it the same", (await page.getByText("Help and FAQ", { exact: true }).count()) >= 1 && (await page.locator("dialog").innerText()).includes("Screen: Help and FAQ"));
+  check("and the feedback sheet names the page it was opened on", (await page.locator("dialog").innerText()).includes("Screen: About"));
   await page.getByRole("button", { name: "Cancel" }).click();
   await page.getByText("What counts as an emergency?").click();
   await page.getByText("What does my tenant see?").click();
@@ -900,7 +911,7 @@ const chatText = (page) => page.getByRole("log", { name: "Messages" }).innerText
   const { context, page, errors } = await newPage();
   await page.goto(`${BASE}/pricing`);
   await page.getByRole("button", { name: "I would pick Plus" }).click();
-  await page.getByRole("button", { name: /I would pick this/ }).waitFor(wait20);
+  await page.getByRole("button", { name: /You picked Plus/ }).waitFor(wait20);
   check("pricing shows $4, $6, and $8 per unit per month", (await page.getByText("$4").count()) > 0 && (await page.getByText("$6").count()) > 0 && (await page.getByText("$8").count()) > 0 && (await count(page, "per unit per month")) >= 3);
   check("pricing says month to month and California only", (await count(page, "Month to month")) > 0 && (await count(page, "California only, for now")) > 0);
   await page.goto(`${BASE}/about`);
@@ -1024,6 +1035,23 @@ const chatText = (page) => page.getByRole("log", { name: "Messages" }).innerText
     }, path);
     check(`text spacing and dashes on ${path}`, bad.length === 0, bad.join(" || "));
   }
+  await context.close();
+}
+
+// ======================= A slow AI never hangs a page =======================
+{
+  const { context, page, errors } = await newPage();
+  await context.addInitScript(() => {
+    window.__gohomeAiDelayMs = 30000;
+  });
+  await resetApp(page);
+  await page.goto(`${BASE}/owner/request`);
+  await page.getByRole("button", { name: "Retry" }).first().waitFor({ timeout: 20000 });
+  check("a slow triage shows Retry instead of loading forever", true);
+  await page.goto(`${BASE}/owner/quote`);
+  await page.getByRole("button", { name: "Retry" }).first().waitFor({ timeout: 20000 });
+  check("slow vendor questions show the basics and Retry instead of loading forever", (await count(page, "How many labor hours are in the estimate")) > 0);
+  check("no console errors with a slow AI", errors.length === 0, errors.join(" | "));
   await context.close();
 }
 

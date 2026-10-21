@@ -31,6 +31,7 @@ Other commands:
 | `npm test` | Vitest unit tests for the decision, forecast, rent, quote, quote paste parser, recommendation, scenario, agent log, agents, guides, and mock AI logic |
 | `npm run build` | Production build |
 | `node scripts/walkthrough.mjs` | Walks every screen at 390x844 and 1280x800, saves screenshots, checks layout (needs the app running) |
+| `node scripts/a11y.mjs` | Accessibility and responsive check on 19 pages at 360, 390 and 1280 wide: names, tap targets, text size, contrast, headings, focus ring, horizontal scroll, plus the guide, approval card and emergency states (needs the app running). Not Lighthouse and not a real device |
 | `node scripts/e2e.mjs` | Behavior checks: the landing page, both sides and what each can see, the guides, reload, Reset, `?reset=1`, blocked localStorage, feedback notes, old links (needs the app running) |
 
 The two scripts use Playwright with the preinstalled Chromium (never run `playwright install`). Set `BASE_URL` if the app is not on port 3000.
@@ -90,7 +91,7 @@ The app is fully static and makes no network requests at runtime. The font (Plus
 
 **Phone preview.** `/tenant/texts` (linked from the tenant Help page and Settings) shows a phone mockup of how GoHome will feel by text in the full product. It runs its own copy of the agent, so it never touches the real conversation. Tap a message, type to it, or press "Play the whole story" to watch a leak go from the first text to "All fixed".
 
-**Shell.** The welcome page, About, Pricing, and Feedback share one header (Our team, About, Pricing) and one footer (Pricing for non-tenants, Our team, Help and FAQ, Contact, Send feedback, Reset sample data). Reset asks first, stays on the page, and says it is done. Texting and calling are described as "in the full product" wherever the sample does not really do them.
+**Shell.** The welcome page, About, Pricing, and Feedback share one header (About, Pricing) and one footer (Pricing for non-tenants, Our team, Help and FAQ, Contact, Send feedback, Reset sample data). Reset asks first, stays on the page, and says it is done. Texting and calling are described as "in the full product" wherever the sample does not really do them.
 
 **Also:** `/pricing`, `/about` (the leadership team, FAQ, and how prices work), `/feedback` (interview notes). The footer has "Send feedback", "Reset sample data", and `?reset=1` works on any page. The old demo consoles (`/live`, `/sms`) and the old label and tenant step pages redirect.
 
@@ -246,3 +247,17 @@ The UI only talks to the `AIProvider` interface in `lib/types.ts`, through one i
 - Replace placeholder prices with real local data, and ask owners which numbers they trust.
 - Have an attorney review the AB 1482 logic, the notice wording, and the local rules (for example San Jose) before anyone relies on it.
 - Add multi-property support and real accounts only if interviews show owners want them.
+
+## Audit documents
+
+The master audit is tracked in `docs/`:
+
+- `docs/audit-fix-checklist.md`: every finding with its status and how it was checked.
+- `docs/product-roadmap.md`: the 68 product ideas, classified.
+- `docs/legal-review-checklist.md`: California legal and licensing items. Not legal advice, and not reviewed by an attorney.
+- `docs/competitor-research.md`: historical competitor notes that need fresh research before anyone quotes them.
+- `docs/unit-economics.md`: the cost model. Estimates only.
+- `docs/metrics-and-readiness.md`: MVP scope, success metrics, and investor and grader questions.
+
+The product is named GoHome. The earlier name Porchlight survives only in the working branch name and in the About page note. Renaming the GitHub repository and any hosting project or domain is a manual step.
+

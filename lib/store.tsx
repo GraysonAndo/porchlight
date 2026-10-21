@@ -231,7 +231,12 @@ export const actions: DemoActions = {
   setTriage: (triage) => update((s) => ({ ...s, triage })),
   saveHouseRecord: (houseRecord) => update((s) => ({ ...s, houseRecord })),
   setQuoteCheck: (quoteCheck) => update((s) => ({ ...s, quoteCheck })),
-  setRent: (patch) => update((s) => ({ ...s, rent: { ...s.rent, ...patch } })),
+  setRent: (patch) =>
+    update((s) => {
+      const next = { ...s, rent: { ...s.rent, ...patch } };
+      // Confirming (or un-confirming) the inflation figure tells the agent, so its rent card only offers to mail once it is confirmed.
+      return patch.cpiConfirmed !== undefined && patch.cpiConfirmed !== s.rent.cpiConfirmed ? runAgent(next, { type: "rent.cpi", confirmed: patch.cpiConfirmed }) : next;
+    }),
   // Approving on the booking screen goes through the agent too, so the texts and the status stay in step.
   approve: (approval) =>
     update((s) => {
