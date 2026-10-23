@@ -38,7 +38,7 @@ export function LateRentCard() {
         </button>
       </div>
       <p className="mt-2 text-sm text-ink-soft">
-        {reminded ? `${PROPERTY.tenant} was texted what is owed and the late fee.` : "One tap texts your tenant what is owed. Use Mark as paid if they paid another way, like a check."}
+        {reminded ? `${PROPERTY.tenant} was texted what is owed and the late fee.` : "One tap texts your tenant what is owed. In the full product GoHome also sends this on its own after the grace period, so you only step in if you want to. Use Mark as paid if they paid another way, like a check."}
       </p>
     </section>
   );

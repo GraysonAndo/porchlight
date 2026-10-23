@@ -596,6 +596,15 @@ function onTenantText(w: World, raw: string, shown?: string): void {
     return logOtherProblem(w, text, triage, true);
   }
 
+  // The tenant did not have to finish the steps for GoHome to carry on, so Help and Done can still arrive later.
+  if (["quotes_pending", "decision_sent", "booked"].includes(stage)) {
+    if (/^\s*help\s*$/i.test(text)) return sendHelpGuide(w, false);
+    if (/^\s*done\s*$/i.test(text)) {
+      say(w, "tenant", "Great, thanks. There is nothing else for you to do. I'm still on the plumber and I'll text you.");
+      return;
+    }
+  }
+
   switch (stage) {
     case "idle":
     case "closed":
@@ -771,35 +780,34 @@ function answerElectrical(w: World, text: string): void {
   say(
     w,
     "tenant",
-    `Good. Two quick steps for your ${heaterLabel(w)}:\n${numbered(steps)}\nNot sure how? Tap Show me how for a picture guide made for your exact heater, or tap Help. Don't touch the heater if you're standing in water, and never touch the gas valve. If you smell gas, leave and call 911. Tap Done when you're finished.${photoAsk}`,
+    `Good. Two quick steps for your ${heaterLabel(w)}:\n${numbered(steps)}\nNot sure how? Tap Show me how for a picture guide made for your exact heater, or tap Help. Don't touch the heater if you're standing in water, and never touch the gas valve. If you smell gas, leave and call 911.${photoAsk}\nI am already getting a plumber lined up, so you do not need to wait for me or call anyone. I will text you the plumber's name and time.`,
     {
       guide: "heater-water-off",
-      actions: [
-        { id: "done", label: "Done", text: "done" },
-        { id: "help", label: "Help", text: "help" },
-      ],
+      actions: [{ id: "help", label: "Help", text: "help" }],
     },
   );
   tool(w, "triage", "notify_owner", "action", "Sent a silent heads-up to the owner", "Urgency is soon, not an emergency, so there is no phone call. The owner gets a quiet text instead.");
-  say(
-    w,
-    "owner",
-    `Water heater leak at ${PROPERTY.address}. The tenant has the steps to turn off the water to the heater and has not confirmed yet. Gas is left to a licensed plumber. I'm lining up quotes. Nothing needed from you yet.`,
-    { silent: true },
-  );
+  // The plumber does not depend on the tenant finishing the steps, so GoHome keeps going and nobody has to tap Done.
+  tool(w, "triage", "keep_going", "code", "Did not wait for the tenant", "Finding a plumber does not depend on the steps being finished, so GoHome started right away. The tenant can still ask for help at any time.");
+  dispatch(w, false);
+}
+
+/** The tenant asked for help with the steps: send the picture guide again, in words. */
+function sendHelpGuide(w: World, askForDone: boolean): void {
+  const guide = guideForStep("Turn off the water supply valve to the heater.", {});
+  const body = guide
+    ? `${guide.title} (${guide.time}):\n${numbered(guide.steps.slice(0, 4))}\nStop and get help if: ${guide.stopIf[0] ?? "anything looks unsafe"}`
+    : "Find the shut-off valve on the cold water pipe above the heater and turn the handle at a right angle to the pipe.";
+  tool(w, "triage", "send_guide", "code", "Sent the guide for this exact heater", `Hand-written guide for the ${heaterLabel(w)} from the home record. General safety information, not professional advice.`);
+  say(w, "tenant", body, {
+    guide: "heater-water-off",
+    ...(askForDone ? { actions: [{ id: "done", label: "Done", text: "done" }] } : {}),
+  });
 }
 
 function afterSteps(w: World, text: string): void {
   if (/\bhelp\b/i.test(text)) {
-    const guide = guideForStep("Turn off the water supply valve to the heater.", {});
-    const body = guide
-      ? `${guide.title} (${guide.time}):\n${numbered(guide.steps.slice(0, 4))}\nStop and get help if: ${guide.stopIf[0] ?? "anything looks unsafe"}`
-      : "Find the shut-off valve on the cold water pipe above the heater and turn the handle crosswise to the pipe.";
-    tool(w, "triage", "send_guide", "code", "Sent the guide for this exact heater", `Hand-written guide for the ${heaterLabel(w)} from the home record. General safety information, not professional advice.`);
-    say(w, "tenant", body, {
-      guide: "heater-water-off",
-      actions: [{ id: "done", label: "Done", text: "done" }],
-    });
+    sendHelpGuide(w, true);
     return;
   }
 
@@ -814,7 +822,7 @@ function onTenantPhoto(w: World, photo: PhotoKind): void {
 }
 
 /** Work out the facts from the home record, check vendors, and ask for quotes. */
-function dispatch(w: World): void {
+function dispatch(w: World, tellTenant = true): void {
   const heater = EQUIPMENT[0];
   const year = heaterYear(w);
   const age = ageOf({ installYear: year });
@@ -838,11 +846,11 @@ function dispatch(w: World): void {
     `Standing permission: GoHome may request quotes. It may not book, negotiate, or spend without a tap. Sent the address and the house record${hasTenantPhoto(w) ? ", plus the tenant's photo" : ""}.`,
   );
 
-  say(w, "tenant", "All set. Your landlord has been told. You don't need to call anyone. I'll text you the plumber's name and time. I'm watching this and will keep you posted.");
+  if (tellTenant) say(w, "tenant", "All set. Your landlord has been told. You don't need to call anyone. I'll text you the plumber's name and time. I'm watching this and will keep you posted.");
   say(
     w,
     "owner",
-    `From your house record: ${heaterLabel(w)}, 40 gal gas, made March 2015, ${age} years old (typical life ${heater.typicalLifeYears}*). Warranty expired*. I asked 3 vendors for quotes and I'll send you one decision when they're in.\n*Illustrative placeholder, not market data`,
+    `Water heater leak at ${PROPERTY.address}. The tenant has the steps to turn off the water to the heater. Gas is left to a licensed plumber.\nFrom your house record: ${heaterLabel(w)}, 40 gal gas, made March 2015, ${age} years old (typical life ${heater.typicalLifeYears}*). Warranty expired*. I asked 3 vendors for quotes and I'll send you one decision when they're in.\n*Illustrative placeholder, not market data`,
     { silent: true },
   );
   w.triage.stage = "quotes_pending";

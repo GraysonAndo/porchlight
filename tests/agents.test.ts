@@ -175,7 +175,7 @@ describe("loop 1: the 4 AM triage and dispatch", () => {
 
   it("answers HELP with a hand-written guide", () => {
     const w = run(createWorld(), [LEAK, { type: "tenant.text", text: "2" }, { type: "tenant.text", text: "help" }]);
-    expect(w.triage.stage).toBe("steps_given");
+    expect(w.triage.stage).toBe("quotes_pending");
     expect(toolNames(w)).toContain("send_guide");
   });
 
@@ -430,7 +430,7 @@ describe("final defect list: chat behavior", () => {
     const w = run(createWorld(), [LEAK_EV, { type: "tenant.text", text: "2" }]);
     const owner = texts(w, "owner", "out").join("\n");
     expect(owner).not.toMatch(/water and gas are being shut off|Tenant is safe/i);
-    expect(owner).toMatch(/has not confirmed|lining up/i);
+    expect(owner).toMatch(/asked 3 vendors for quotes/i);
   });
 
   it("the gas answer does not ask for a reply before the tenant is outside", () => {
@@ -444,7 +444,7 @@ describe("final defect list: chat behavior", () => {
   it("a quick reply shows its label in the chat while the engine still reads its code", () => {
     const w = run(createWorld(), [LEAK_EV, { type: "tenant.text", text: "2", shown: "No" }]);
     expect(texts(w, "tenant", "in")).toContain("No");
-    expect(w.triage.stage).toBe("steps_given");
+    expect(w.triage.stage).toBe("quotes_pending");
   });
 
   it("a different problem while a repair is open is its own request", () => {
@@ -461,6 +461,44 @@ describe("final defect list: chat behavior", () => {
     const w = run(createWorld(), [LEAK_EV, { type: "tenant.text", text: "2" }]);
     const after = send(w, { type: "tenant.text", text: "done" });
     expect(texts(after, "tenant", "out").at(-1) ?? "").not.toMatch(/separate request/i);
+  });
+});
+
+describe("audit round 3: the agent does not wait on people", () => {
+  const texts = (w: World, party: "tenant" | "owner", dir: "in" | "out") =>
+    msgs(w)
+      .filter((m) => m.party === party && m.dir === dir)
+      .map((m) => m.text);
+
+  it("starts on the plumber as soon as the safe steps are sent, without waiting for Done", () => {
+    const w = run(createWorld(), [LEAK, { type: "tenant.text", text: "2" }]);
+    expect(w.triage.stage).toBe("quotes_pending");
+    expect(toolNames(w)).toEqual(expect.arrayContaining(["pick_safety_steps", "keep_going", "request_quotes"]));
+    expect(w.pending.map((p) => p.id)).toContain("quotes_in");
+  });
+
+  it("sends the steps and the plumber news in one message, not two", () => {
+    const w = run(createWorld(), [LEAK, { type: "tenant.text", text: "2" }]);
+    const out = texts(w, "tenant", "out");
+    expect(out.filter((t) => /Two quick steps/.test(t))).toHaveLength(1);
+    expect(out.at(-1)).toMatch(/already getting a plumber lined up/i);
+    expect(out.some((t) => /^All set\./.test(t))).toBe(false);
+  });
+
+  it("answers a late Done kindly, and a late Help with the guide, without starting anything twice", () => {
+    let w = run(createWorld(), [LEAK, { type: "tenant.text", text: "2" }]);
+    const requests = toolNames(w).filter((n) => n === "request_quotes").length;
+    w = send(w, { type: "tenant.text", text: "done" });
+    expect(texts(w, "tenant", "out").at(-1)).toMatch(/nothing else for you to do/i);
+    w = send(w, { type: "tenant.text", text: "help" });
+    expect(toolNames(w)).toContain("send_guide");
+    expect(toolNames(w).filter((n) => n === "request_quotes")).toHaveLength(requests);
+    expect(w.triage.stage).toBe("quotes_pending");
+  });
+
+  it("does not ask the tenant to tap Done at all", () => {
+    const w = run(createWorld(), [LEAK, { type: "tenant.text", text: "2" }]);
+    expect(texts(w, "tenant", "out").join("\n")).not.toMatch(/Tap Done/);
   });
 });
 
@@ -491,7 +529,7 @@ describe("review round 8: the safety question comes first", () => {
     expect(last.actions?.map((a) => a.label)).toEqual(["Yes", "No"]);
     const steps = run(createWorld(), [LEAK_EV, { type: "tenant.text", text: "2" }]);
     const msg = [...steps.timeline].reverse().find((e) => e.kind === "msg" && e.dir === "out" && e.party === "tenant") as Msg;
-    expect(msg.actions?.map((a) => a.label)).toEqual(["Done", "Help"]);
+    expect(msg.actions?.map((a) => a.label)).toEqual(["Help"]);
   });
 
   it("nothing in the copy assumes it is night", () => {

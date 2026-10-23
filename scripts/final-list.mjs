@@ -80,7 +80,8 @@ const chatText = (page) => page.getByRole("log", { name: "Messages" }).innerText
   await page.getByText("Equipment involved").waitFor(wait20);
   check("the request page uses the corrected location", /south wall/.test(await page.locator("main").innerText()));
   await page.goto(`${BASE}/owner/decide`);
-  check("the repair or replace advice uses the corrected age", /14 years/.test(await page.locator("main").innerText()));
+  await page.getByText(/14 years/).first().waitFor(wait20).catch(() => {});
+  check("the repair or replace advice uses the corrected age", /14 years/.test(await page.locator("main").innerText()), (await page.locator("main").innerText()).slice(0, 300));
   await page.goto(`${BASE}/owner`);
   await page.getByRole("button", { name: "See how GoHome handles a repair" }).click();
   await page.getByRole("button", { name: "Approve" }).first().waitFor({ timeout: 30000 });
@@ -130,8 +131,7 @@ const chatText = (page) => page.getByRole("log", { name: "Messages" }).innerText
   await page.getByText(/Two quick steps/).first().waitFor(wait20);
   await page.waitForTimeout(1200);
   check("the answer chip shows its label, not a code", (await chatText(page)).split("\n").some((l) => l.trim() === "No"));
-  await page.getByRole("button", { name: "Done", exact: true }).click();
-  await page.getByText(/Your landlord has been told/).first().waitFor(wait20);
+  await page.getByText(/Your landlord has been told|getting a plumber lined up/).first().waitFor(wait20);
   await page.waitForTimeout(800);
   await page.locator("#tenant-msg").fill("The kitchen sink is clogged and backing up");
   await page.getByRole("button", { name: "Send", exact: true }).click();
@@ -307,7 +307,7 @@ const chatText = (page) => page.getByRole("log", { name: "Messages" }).innerText
   await page.getByText(/Two quick steps/).first().waitFor(wait20);
   await page.waitForTimeout(2500);
   check("after the answer, the rules are logged", /Not an emergency/i.test(await panel()));
-  check("the action buttons say Done and Help", (await page.getByRole("button", { name: "Done", exact: true }).count()) === 1 && (await page.getByRole("button", { name: "Help", exact: true }).count()) === 1);
+  check("the only action button is Help, because GoHome does not wait for Done", (await page.getByRole("button", { name: "Done", exact: true }).count()) === 0 && (await page.getByRole("button", { name: "Help", exact: true }).count()) === 1);
   const chat1 = await chatText(page);
   check("it asks for a photo of the drip", /photo of where it is dripping/i.test(chat1));
   check("web chat does not say Delivered under the tenant's own messages", !/Delivered/.test(chat1));
@@ -317,14 +317,13 @@ const chatText = (page) => page.getByRole("log", { name: "Messages" }).innerText
     return !/Serial|15C0412|Lot number/i.test(t) && /left of the garage door/.test(t);
   })());
   await page.goto(`${BASE}/tenant`);
-  // Finishing the guide counts as Done.
+  // Finishing the guide just closes it. GoHome did not wait for it.
   await page.getByRole("button", { name: "Show me how" }).first().click();
   const dialog = page.getByRole("dialog");
   while ((await dialog.getByRole("button", { name: "Next step" }).count()) > 0) await dialog.getByRole("button", { name: "Next step" }).click();
   check("the guide says T, towels, and shoes the right way", true);
   await dialog.getByRole("button", { name: "Done" }).click();
-  await page.getByText(/All set. Your landlord has been told/).first().waitFor(wait20);
-  check("finishing the guide counts as Done in the chat", true);
+  check("finishing the guide closes it and the chat has already moved on without Done", (await page.getByText(/getting a plumber lined up/).count()) >= 1);
   const chat2 = await chatText(page);
   check("no copy that assumes it is night", !/go back to sleep|keep sleeping/i.test(chat2));
 

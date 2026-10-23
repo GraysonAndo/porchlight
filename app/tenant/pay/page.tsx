@@ -30,6 +30,8 @@ function PayBody() {
   const dueTotal = due.reduce((s, b) => s + b.cents, 0);
   const checkouts = new Set(state.payments.map((p) => p.confirmation)).size;
   // One receipt per checkout: the bills paid, the card fee on its own line, and what was charged in all.
+  const lastPayment = state.payments.at(-1);
+  const savedMethod = lastPayment ? `${lastPayment.method === "card" ? "card" : "bank account"} ending in ${lastPayment.last4}` : "sample bank account ending in 6789";
   const receipts = [...new Set(state.payments.map((p) => p.confirmation))]
     .reverse()
     .map((confirmation) => {
@@ -145,6 +147,31 @@ function PayBody() {
               </ul>
             )}
           </section>
+
+          {state.payments.some((p) => p.kind === "rent") && (
+            <section aria-labelledby="autopay-heading" className="card space-y-2">
+              <h2 id="autopay-heading" className="text-xl font-extrabold">
+                {state.prefs.tenantAutopay ? "Autopay is on" : "Never think about rent again?"}
+              </h2>
+              {state.prefs.tenantAutopay ? (
+                <p className="text-ink-soft">Rent will be paid on the 1st with your {savedMethod}. You can turn this off in Settings. This is a sample, so nothing is charged.</p>
+              ) : (
+                <>
+                  <p className="text-ink-soft">Turn on autopay and rent is paid on the 1st with your {savedMethod}. You will still get a receipt every time. This is a sample, so nothing is charged.</p>
+                  <button
+                    type="button"
+                    className="btn btn-secondary"
+                    onClick={() => {
+                      actions.setPref("tenantAutopayMethod", savedMethod);
+                      actions.setPref("tenantAutopay", true);
+                    }}
+                  >
+                    Turn on autopay
+                  </button>
+                </>
+              )}
+            </section>
+          )}
 
           <p className="text-sm text-ink-soft">
             Autopay, and who gets your receipts, are in{" "}

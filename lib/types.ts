@@ -255,6 +255,8 @@ export interface Prefs {
   tenantPhone: string;
   /** GoHome books a repair on its own when the quote is at or under this many dollars. 0 means it always asks. */
   ownerAutoApprove: number;
+  /** The owner has seen, and answered, the offer to let GoHome book small repairs on its own. */
+  ownerAutoOfferSeen: boolean;
 }
 
 export interface DemoState {

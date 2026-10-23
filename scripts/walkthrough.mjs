@@ -85,8 +85,7 @@ async function run(browser, vp) {
   await page.waitForTimeout(400);
   await page.screenshot({ path: `${OUT}07-guide-step-3-${vp.name}.png` });
   await page.keyboard.press("Escape");
-  await page.getByRole("button", { name: "Done", exact: true }).click();
-  await page.getByText(/I'm watching this/).waitFor(W);
+  await page.getByText(/getting a plumber lined up/).first().waitFor(W);
   await page.waitForTimeout(1500);
   await snap(page, vp, "08-tenant-waiting");
 

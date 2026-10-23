@@ -17,15 +17,15 @@ Nothing here claims a legal opinion, a vendor relationship, a customer interview
 
 | Status | Count |
 |---|---:|
-| Fixed | 45 |
+| Fixed | 52 |
 | Verified | 28 |
 | Already resolved | 15 |
 | Roadmap | 1 |
 | Requires human review | 1 |
 | Open | 1 |
-| **Total findings** | **91** |
+| **Total findings** | **98** |
 
-Round 2 added R01 to R10 (customer-focused). Findings: 54 original (T01 to T13, O01 to O12, H01 to H13, P01 to P09, S01 to S07), 12 extra quote findings (Q01 to Q12), and 15 accessibility requirements (A01 to A15). The 68 product ideas are in `docs/product-roadmap.md`.
+Rounds 2 and 3 added R01 to R17 (customer-focused). Findings: 54 original (T01 to T13, O01 to O12, H01 to H13, P01 to P09, S01 to S07), 12 extra quote findings (Q01 to Q12), and 15 accessibility requirements (A01 to A15). The 68 product ideas are in `docs/product-roadmap.md`.
 
 ## Tenant flow
 
@@ -143,7 +143,7 @@ Round 2 added R01 to R10 (customer-focused). Findings: 54 original (T01 to T13, 
 | A14 | Low | Duplicated step numbers | Verified | See Q12. |
 | A15 | Medium | Every visible control performs its advertised action | Verified | scripts/e2e.mjs, scripts/final-list.mjs and scripts/walkthrough.mjs click through every control on the main flows. Not every control on every state was clicked, so this is broad, not exhaustive. |
 
-## Round 2: customer-focused findings
+## Rounds 2 and 3: customer-focused findings
 
 These came from walking the product as a stressed tenant on a phone and as an older owner who is not technical. IDs start with R.
 
@@ -159,6 +159,13 @@ These came from walking the product as a stressed tenant on a phone and as an ol
 | R08 | Low | The page used min-h-screen, which is taller than the visible area on iPhone Safari with the address bar showing | Fixed | Changed to min-h-dvh. Not verified on a real iPhone. |
 | R09 | Low | Layout shift at load on Pay (0.395, footer only) and Quote (0.108) | Open | Both happen once at about 100 to 150 ms when the page swaps from its server version to the version with saved data. Nothing visible jumps on screen in a normal load. Fix would need a skeleton that matches each page. Not done. |
 | R10 | Medium | Does the product survive a 320px screen, a landscape phone and text zoomed to 200%? | Verified | scripts/phone.mjs: no horizontal scroll and no clipped text on 14 pages in all three modes. |
+| R11 | High | The tenant had to tap Done before GoHome would start on the plumber, so the whole repair waited on a button | Fixed | lib/agents/engine.ts: GoHome sends the safe steps and starts on the plumber in the same moment, in one message. A late Done is thanked and a late Help still sends the guide, and nothing starts twice. tests/agents.test.ts (audit round 3), tests/prompts.test.ts and scripts/e2e.mjs cover it. The picture guide's own Done button now only closes the guide. |
+| R12 | Medium | An owner was asked to tap Approve every single time, with no easy way to say handle small ones for me | Fixed | After the first approval the inbox offers Yes up to $500, $1,500 or $3,000, or No keep asking. It only changes the setting when the owner chooses, and the same setting is in Settings. Emergencies always ring. scripts/e2e.mjs covers the offer, the confirmation and that it does not come back. |
+| R13 | Low | The owner was never shown how much GoHome did without them | Fixed | The Today panel says how many steps GoHome handled on its own, counted from the activity log. It is a count of log entries, not a measured saving. |
+| R14 | Medium | The inflation confirmation, which gates the rent suggestion, sat in the form far below where the owner is looking | Fixed | The From your lease card now asks it in place (I checked my area: use 3%, or Change the figure) with the BLS link. It still shows no dollar maximum until the owner confirms, and it is the same setting as the checkbox below. |
+| R15 | Low | A tenant who just paid rent had to hunt through Settings to turn on autopay | Fixed | The Pay page offers Turn on autopay in one tap after a rent payment. It saves the setting only; nothing is charged in this sample. |
+| R16 | Low | The welcome page never said how GoHome works | Fixed | A three-step How it works section: a tenant texts, GoHome does the legwork, the owner taps once or sets a limit. scripts/e2e.mjs checks it. |
+| R17 | Low | The booked card and the late-rent card implied the owner has to close the job or chase the tenant by hand | Fixed | Copy now says that in the full product the plumber's report closes the job and GoHome sends the late-rent reminder on its own after the grace period. The sample buttons stay as stand-ins and are labeled that way. No automatic sending was built, so nothing claims it happened. |
 
 ## Needs manual verification
 

@@ -4,6 +4,7 @@ import { useState } from "react";
 import { AgentPanel } from "@/components/AgentPanel";
 import { ApprovalCard } from "@/components/ApprovalCard";
 import { JobStatusTracker } from "@/components/JobStatusTracker";
+import { AutoApproveOffer } from "@/components/AutoApproveOffer";
 import { LateRentCard } from "@/components/LateRentCard";
 import { RentCard } from "@/components/RentCard";
 import { Thread } from "@/components/Thread";
@@ -14,6 +15,7 @@ import { dueStatus } from "@/lib/payments";
 import { PROPERTY, VENDORS } from "@/lib/seed";
 import { useDemo } from "@/lib/store";
 import { useJobStatus } from "@/lib/useJobStatus";
+import { activityFor } from "@/lib/agents/views";
 import Link from "next/link";
 
 const ASK = [
@@ -40,6 +42,9 @@ export default function OwnerHomePage() {
   const needs = open.length + (lateRent ? 1 : 0);
   const emergencies = open.filter((m) => m.card?.kind === "emergency");
   const approvals = open.filter((m) => m.card?.kind !== "emergency");
+
+  // Steps GoHome did by itself: everything in the log that a person did not have to tap.
+  const handled = activityFor("owner", agent.visible).filter((i) => i.engine !== "human").length;
 
   const headline =
     needs > 0
@@ -76,6 +81,11 @@ export default function OwnerHomePage() {
             <p className="eyebrow !text-white/70">Today</p>
             <p className="mt-1 text-3xl font-extrabold leading-tight sm:text-4xl">{headline}</p>
             <p className="mt-2 text-lg text-white/85">{sub}</p>
+            {handled > 0 && (
+              <p className="mt-2 text-sm font-bold text-white/80">
+                GoHome has handled {handled} {handled === 1 ? "step" : "steps"} on its own so far. Only the taps below are yours.
+              </p>
+            )}
             {hasRepair && (
               <div className="mt-5 rounded-xl bg-white p-4 text-ink">
                 <p className="mb-3 font-extrabold">Water heater repair</p>
@@ -111,7 +121,7 @@ export default function OwnerHomePage() {
                   Booked: {vendor?.name ?? "your plumber"}, {state.approval?.accessWindow}.
                 </span>
               </p>
-              <p className="mt-1 text-ink-soft">Your tenant has been told. After the visit, tap Mark done. The new heater goes into your home record on its own.</p>
+              <p className="mt-1 text-ink-soft">Your tenant has been told. In the full product the plumber&apos;s report closes the job and the new heater goes into your home record on its own. In this sample, tap Mark done to skip ahead.</p>
               <button type="button" className="btn btn-primary btn-lg mt-3 w-full sm:w-auto" onClick={() => agent.send({ type: "owner.markDone" })}>
                 Mark done
               </button>
@@ -123,6 +133,8 @@ export default function OwnerHomePage() {
               Approved. Confirming with the vendor...
             </p>
           )}
+
+          {(status === "approved" || status === "booked" || status === "done") && <AutoApproveOffer lastQuote={vendor?.total ?? null} />}
 
           <RentCard />
           <p className="text-sm text-ink-soft">

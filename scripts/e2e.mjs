@@ -108,8 +108,8 @@ const chatText = (page) => page.getByRole("log", { name: "Messages" }).innerText
   check("the guide never tells the tenant to touch gas", !/turn the gas|gas valve to|pilot|relight/i.test(await dialog.innerText()) || /Do not touch the gas control/.test(await dialog.innerText()));
   check("the guide says when to stop and get help", (await dialog.getByText("Stop and get help if:").count()) === 1);
   await dialog.getByRole("button", { name: "Done" }).click();
-  await page.getByRole("button", { name: "Done", exact: true }).click();
-  await page.getByText(/I'm watching this/).waitFor(wait20);
+  check("the chat never asks the tenant to tap Done, because GoHome does not wait", (await page.getByRole("button", { name: "Done", exact: true }).count()) === 0 && !/Tap Done/.test(await chatText(page)));
+  await page.getByText(/getting a plumber lined up/).first().waitFor(wait20);
   const chat = await chatText(page);
   check("the tenant is never asked for a photo of a label", !/sticker|silver|label photo/i.test(chat));
   check("the tenant never sees a price or a quote", !/\$\d|\bquote/i.test(chat), chat.slice(0, 100));
@@ -578,8 +578,6 @@ const chatText = (page) => page.getByRole("log", { name: "Messages" }).innerText
   await prompt.getByRole("button", { name: /Act as the tenant: No, nothing electrical/ }).waitFor(wait20);
   check("the prompt shows what the tenant sees", (await prompt.getByText("The tenant sees").count()) === 1);
   await prompt.getByRole("button", { name: /Act as the tenant: No, nothing electrical/ }).click();
-  await prompt.getByRole("button", { name: /Act as the tenant: Done/ }).waitFor(wait20);
-  await prompt.getByRole("button", { name: /Act as the tenant: Done/ }).click();
   await page.getByRole("button", { name: "Approve", exact: true }).waitFor(wait20);
   check("acting as the tenant brings the owner's approval card", true);
 
@@ -605,8 +603,6 @@ const chatText = (page) => page.getByRole("log", { name: "Messages" }).innerText
   await page.getByRole("button", { name: "My water heater is leaking" }).click();
   await page.getByText(/near an outlet/).waitFor(wait20);
   await page.getByRole("button", { name: /^No$/ }).click();
-  await page.getByRole("button", { name: "Done", exact: true }).waitFor(wait20);
-  await page.getByRole("button", { name: "Done", exact: true }).click();
   await prompt.getByRole("button", { name: /Act as the owner: Approve/ }).waitFor(wait20);
   check("the tenant sees that the owner has a plan, with a button to act as the owner", (await prompt.getByText("The owner sees").count()) === 1);
   await prompt.getByRole("button", { name: /Act as the owner: Approve/ }).click();
@@ -1061,6 +1057,34 @@ const chatText = (page) => page.getByRole("log", { name: "Messages" }).innerText
   await page.goto(`${BASE}/owner/record`);
   check("with nothing reported there is no download and no made-up history", (await page.getByRole("link", { name: "Download the repair record" }).count()) === 0 && (await count(page, "Nothing has happened yet")) === 1);
   check("no console errors in the customer ease checks", errors.length === 0, errors.join(" | "));
+  await context.close();
+}
+
+// ======================= Less work for people: no Done, a skip-the-tap offer, a handled count =======================
+{
+  const { context, page, errors } = await newPage();
+  await resetApp(page);
+  await page.goto(`${BASE}/`);
+  check("the welcome page explains how it works in three steps", (await page.getByRole("heading", { name: "How it works" }).count()) === 1 && (await page.getByRole("listitem").filter({ hasText: "The owner taps once" }).count()) === 1);
+  await page.goto(`${BASE}/tenant`);
+  await page.getByRole("button", { name: "My water heater is leaking" }).click();
+  await page.getByText(/near an outlet/).waitFor(wait20);
+  await page.getByRole("button", { name: /^No$/ }).click();
+  await page.getByText(/already getting a plumber lined up/).waitFor(wait20);
+  check("after the safety answer GoHome starts on the plumber without any other tap", (await page.getByRole("button", { name: "Done", exact: true }).count()) === 0);
+  await page.goto(`${BASE}/owner`);
+  await page.getByRole("button", { name: "Approve", exact: true }).waitFor(wait20);
+  check("the owner is told how many steps GoHome handled on its own", (await count(page, /GoHome has handled \d+ steps? on its own/)) > 0);
+  check("no skip-the-tap offer before the first approval", (await page.getByRole("heading", { name: "Want to skip this tap next time?" }).count()) === 0);
+  await page.getByRole("button", { name: "Approve", exact: true }).click();
+  await page.getByRole("heading", { name: "Want to skip this tap next time?" }).waitFor(wait20);
+  await page.getByRole("button", { name: "Yes, up to $1,500" }).click();
+  check("choosing an amount confirms it and keeps emergencies ringing", (await count(page, /book repairs of \$1,500 or less on its own/)) > 0 && (await count(page, /Emergencies still ring you/)) > 0);
+  await page.goto(`${BASE}/owner/settings`);
+  check("the same amount is now the setting", (await page.locator("#auto-approve").inputValue()) === "1500");
+  await page.goto(`${BASE}/owner`);
+  check("the offer does not come back once answered", (await page.getByRole("heading", { name: "Want to skip this tap next time?" }).count()) === 0);
+  check("no console errors in the less-work checks", errors.length === 0, errors.join(" | "));
   await context.close();
 }
 

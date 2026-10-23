@@ -65,6 +65,27 @@ export default function GatePage() {
           />
         </div>
 
+        <section aria-labelledby="how-heading" className="mt-8 w-full text-left">
+          <h2 id="how-heading" className="text-center text-sm font-extrabold uppercase tracking-widest text-ink-soft">
+            How it works
+          </h2>
+          <ol className="mt-3 grid gap-3 sm:grid-cols-3">
+            {[
+              ["A tenant texts a problem", "GoHome already knows the home, so it gives safe steps made for the exact equipment."],
+              ["GoHome does the legwork", "It lines up plumbers, checks each quote, and sets a spending limit. Nobody waits on a phone call."],
+              ["The owner taps once", "Or lets GoHome book small repairs on its own, under a limit the owner picks."],
+            ].map(([title, body], i) => (
+              <li key={title} className="rounded-2xl border border-line bg-white p-4">
+                <span aria-hidden="true" className="mb-2 flex h-8 w-8 items-center justify-center rounded-full bg-brand-tint text-sm font-extrabold text-brand">
+                  {i + 1}
+                </span>
+                <p className="font-extrabold">{title}</p>
+                <p className="mt-1 text-sm text-ink-soft">{body}</p>
+              </li>
+            ))}
+          </ol>
+        </section>
+
         <div className="mt-8 w-full rounded-2xl border border-line bg-white p-5">
           <p className="font-extrabold">Just want to see it work?</p>
           <p className="mt-1 text-ink-soft">One button plays a whole repair by itself, switching between the tenant and the owner as it goes.</p>

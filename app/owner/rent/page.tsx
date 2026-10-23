@@ -277,6 +277,24 @@ export default function RentPage() {
               </button>
             </div>
           </div>
+        ) : ready && !capKnown && !blockedByCount && !rentOdd ? (
+          <div className="mt-3 space-y-2 rounded-xl bg-caution-tint p-3">
+            <p className="font-bold text-caution-ink">
+              One thing first: check the inflation figure for your area. GoHome shows no dollar maximum until you do. The figure here is {form.cpiPercent}%, a sample, not a live lookup (find the real one at the{" "}
+              <a href="https://www.bls.gov/cpi/" className="underline underline-offset-4" target="_blank" rel="noreferrer">
+                U.S. Bureau of Labor Statistics
+              </a>
+              ).
+            </p>
+            <div className="flex flex-col gap-2 sm:flex-row">
+              <button type="button" className="btn btn-primary" onClick={() => actions.setRent({ cpiConfirmed: true })}>
+                I checked my area: use {form.cpiPercent}%
+              </button>
+              <a href="#cpi" className="btn btn-secondary">
+                Change the figure
+              </a>
+            </div>
+          </div>
         ) : (
           ready && blockedByCount && <p className="mt-3 rounded-xl bg-urgent-tint p-3 font-bold text-urgent">No suggestion: a third increase in 12 months is not allowed.</p>
         )}
