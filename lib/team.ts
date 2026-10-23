@@ -36,7 +36,7 @@ export const TEAM: TeamMember[] = [
     role: "Co-founder & Head of Finance",
     photo: "hayden",
     linkedin: "https://www.linkedin.com/in/hayden-haar-a05502279/",
-    bio: "Owns pricing, the repair-or-replace math, and the 5-year forecast, keeping every number honest and explainable. He has worked in capital markets and corporate development at Vantage Data Centers, so he is used to putting a number behind big decisions.",
+    bio: "Owns pricing, the repair-or-replace math, and the 5-year forecast, keeping every number honest and explainable.",
     shade: "bg-[#c2410c]",
   },
 ];

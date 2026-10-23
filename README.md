@@ -111,7 +111,7 @@ Who does what, shown with a small chip on every step in the owner's activity pan
 "The team behind GoHome" on `/about` is data in `lib/team.ts`: Grayson Ando (Co-founder & CEO), Ezekiel Thun (Co-founder & Head of Design), and Hayden Haar (Co-founder & Head of Finance). Each card has a photo, name, role, a short bio, and a small LinkedIn icon link. On desktop the three cards sit in one row and lift 4px on hover. On a phone they stack and each fits in about half a screen. Cards fade in as they scroll into view (not with reduced motion).
 
 - **Photos:** `public/team/grayson.jpg`, `ezekiel.jpg`, and `hayden.jpg` (480px squares). To change one, replace the file (png, jpeg, and webp also work) and redeploy. If a file is missing, the avatar shows initials on its own brand shade.
-- **Bios:** each is the role plus, where known, one credential. Grayson's (family rental in San Jose, Business Operations Analyst at SanDisk) and Hayden's (capital markets and corporate development at Vantage Data Centers) came from the team, so **check the wording**, especially Hayden's. Ezekiel's bio has no credential yet because none was provided. Add one sentence to his `bio` in `lib/team.ts`.
+- **Bios:** each is the role plus, where known, one credential. Grayson's (family rental in San Jose, Business Operations Analyst at SanDisk) came from the team. Hayden's is role only. Ezekiel's bio has no credential yet because none was provided. Add one sentence to his `bio` in `lib/team.ts`.
 
 ## What is REAL vs FAKED
 
