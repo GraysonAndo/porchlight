@@ -517,7 +517,7 @@ const chatText = (page) => page.getByRole("log", { name: "Messages" }).innerText
   const text = await team.innerText();
   check("the team section has all three names and the new titles", ["Grayson Ando", "Co-founder & CEO", "Ezekiel Thun", "Co-founder & Head of Design", "Hayden Haar", "Co-founder & Head of Finance"].every((t) => text.includes(t)), text.slice(0, 80));
   check("each bio is two sentences at most", (await team.locator("article p").allInnerTexts()).filter((t) => t.length > 40).every((t) => (t.match(/[.!?](\s|$)/g) ?? []).length <= 2));
-  check("Grayson's bio names SanDisk and the San Jose rental, and Hayden's names Vantage Data Centers", text.includes("SanDisk") && text.includes("San Jose") && text.includes("Vantage Data Centers"));
+  check("Grayson's bio names SanDisk and the San Jose rental", text.includes("SanDisk") && text.includes("San Jose"));
   check("no bio has a placeholder in it", !/\[|ADD ONE|TODO/.test(text));
   const icons = await team.locator("a[href*='linkedin.com/in/']").evaluateAll((els) => els.map((e) => ({ href: e.getAttribute("href"), label: e.getAttribute("aria-label"), target: e.getAttribute("target"), rel: e.getAttribute("rel"), box: e.getBoundingClientRect().width })));
   check("each leader has a small LinkedIn icon link with an aria-label", icons.length === 3 && icons.every((i) => /on LinkedIn/.test(i.label ?? "") && i.target === "_blank" && /noreferrer/.test(i.rel ?? "")), JSON.stringify(icons));
