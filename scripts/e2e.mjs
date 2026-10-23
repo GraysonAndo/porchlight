@@ -1091,6 +1091,7 @@ const chatText = (page) => page.getByRole("log", { name: "Messages" }).innerText
   await page.getByRole("button", { name: "Yes, up to $1,500" }).click();
   check("choosing an amount confirms it and keeps emergencies ringing", (await count(page, /book repairs of \$1,500 or less on its own/)) > 0 && (await count(page, /Emergencies still ring you/)) > 0);
   await page.goto(`${BASE}/owner/settings`);
+  await page.waitForFunction(() => document.querySelector("#auto-approve")?.value === "1500", null, { timeout: 20000 }).catch(() => {});
   check("the same amount is now the setting", (await page.locator("#auto-approve").inputValue()) === "1500");
   await page.goto(`${BASE}/owner`);
   check("the offer does not come back once answered", (await page.getByRole("heading", { name: "Want to skip this tap next time?" }).count()) === 0);

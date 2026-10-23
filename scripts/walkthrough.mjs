@@ -226,7 +226,7 @@ async function run(browser, vp) {
   await snap(page, vp, "27f-owner-record-edit");
   await page.goto(`${BASE}/owner/rent`);
   await openLease(page);
-  await page.getByText("From your lease").waitFor();
+  await page.getByRole("heading", { name: "From your lease" }).waitFor();
   await snap(page, vp, "27g-owner-rent-prefilled");
   await page.getByLabel(/I checked this inflation figure for my area/).check();
   await page.getByRole("button", { name: "Send notice to Sample Tenant" }).click();
