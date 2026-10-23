@@ -259,8 +259,11 @@ const chatText = (page) => page.getByRole("log", { name: "Messages" }).innerText
   await resetApp(page);
   await page.goto(`${BASE}/pricing`);
   check("each page has its own tab title", (await page.title()) === "Pricing | GoHome");
-  await page.getByText("10 units").click();
-  check("pricing shows the whole portfolio", (await page.getByText("$80 a month for 10 units").count()) === 1 && (await page.getByText("$960 a year").count()) === 1);
+  await page.getByLabel("How many units do you own?").fill("10");
+  const plusCard = page.locator("li.card", { hasText: "Plus" }).first();
+  check("pricing shows the whole portfolio", (await plusCard.getByText("$60 a month for 10 units").count()) === 1 && (await page.getByText("$960 a year").count()) === 1);
+  await page.getByLabel("How many units do you own?").fill("7");
+  check("the units slider updates prices as it moves", (await page.getByText("$56 a month for 7 units").count()) === 1 && (await page.getByText("$504 a year").count()) === 1);
   await page.getByRole("button", { name: "I would pick Plus" }).click();
   check("the pick is confirmed next to the tier", (await page.locator("li.card", { hasText: "Plus" }).getByText("Saved on this device").count()) === 1);
   await page.goto(`${BASE}/owner/settings`);
