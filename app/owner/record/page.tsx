@@ -13,6 +13,9 @@ import { ageOf, lifeStage } from "@/lib/life";
 import { PROPERTY, VENDORS } from "@/lib/seed";
 import { useDemo } from "@/lib/store";
 import { useEquipment } from "@/lib/useEquipment";
+import { useAgent } from "@/lib/agents/useAgent";
+import { activityFor } from "@/lib/agents/views";
+import { repairRecordText } from "@/lib/repairRecord";
 import { useEffect, useRef, useState } from "react";
 
 export default function OwnerRecordPage() {
@@ -22,6 +25,8 @@ export default function OwnerRecordPage() {
   const replaced = state.jobCompletedAt !== null;
   const old = heaterBeforeRepair(state);
   const equipment = useEquipment();
+  const agent = useAgent();
+  const record = activityFor("owner", agent.visible);
   const doneVendor = state.approval ? VENDORS.find((v) => v.id === state.approval?.vendorId) : undefined;
   const dialogRef = useRef<HTMLDialogElement>(null);
   const editingItem = equipment.find((e) => e.id === editing);
@@ -61,6 +66,25 @@ export default function OwnerRecordPage() {
           </p>
         </Card>
       )}
+
+      <Card title="Repair record">
+        {record.length === 0 ? (
+          <p className="text-ink-soft">Nothing has happened yet. When a repair starts, every step is saved here with its date and time.</p>
+        ) : (
+          <>
+            <p className="text-ink-soft">
+              {record.length} {record.length === 1 ? "step" : "steps"} saved, each with its date and time. Keep a copy for your files, for insurance, or in case a tenant or contractor disputes what happened.
+            </p>
+            <a
+              className="btn btn-secondary mt-3 inline-flex"
+              href={`data:text/plain;charset=utf-8,${encodeURIComponent(repairRecordText(PROPERTY.address, PROPERTY.owner, record))}`}
+              download="gohome-repair-record.txt"
+            >
+              Download the repair record
+            </a>
+          </>
+        )}
+      </Card>
 
       <ul className="grid gap-4 md:grid-cols-2">
         {equipment.map((item) => {

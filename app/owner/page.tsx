@@ -174,7 +174,7 @@ export default function OwnerHomePage() {
               party="owner"
               msgs={msgs}
               typing={agent.typingFor("owner")}
-              placeholder="Text GoHome, for example 1 to approve"
+              placeholder="Message GoHome"
               onSend={(text) => agent.send({ type: "owner.text", text })}
               suggestions={ASK}
               via={via}

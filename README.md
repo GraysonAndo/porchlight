@@ -32,6 +32,7 @@ Other commands:
 | `npm run build` | Production build |
 | `node scripts/walkthrough.mjs` | Walks every screen at 390x844 and 1280x800, saves screenshots, checks layout (needs the app running) |
 | `node scripts/a11y.mjs` | Accessibility and responsive check on 19 pages at 360, 390 and 1280 wide: names, tap targets, text size, contrast, headings, focus ring, horizontal scroll, plus the guide, approval card and emergency states (needs the app running). Not Lighthouse and not a real device |
+| `node scripts/phone.mjs` | Phone-style checks in an emulated browser: a 320px phone, a landscape phone, text zoomed to 200%, and real touch taps through the first tenant steps (needs the app running). Emulation only, not iOS Safari or a real phone |
 | `node scripts/e2e.mjs` | Behavior checks: the landing page, both sides and what each can see, the guides, reload, Reset, `?reset=1`, blocked localStorage, feedback notes, old links (needs the app running) |
 
 The two scripts use Playwright with the preinstalled Chromium (never run `playwright install`). Set `BASE_URL` if the app is not on port 3000.
@@ -102,7 +103,7 @@ Who does what, shown with a small chip on every step in the owner's activity pan
 | Chip | Meaning |
 | --- | --- |
 | AI | Reads photos and writes text. |
-| Plain code | Decides prices, rules, thresholds, and the legal cap, from hand-checked tables. Screens say "Plain code, not AI." next to those numbers. |
+| Fixed rule | Decides prices, rules, thresholds, and the legal cap, from hand-checked tables. Screens say "A fixed rule, not AI." next to those numbers. (In the code this engine is still called `code`.) |
 | GoHome acts | Sends, books, and notifies, inside limits the owner set. |
 | A person taps | Nothing is spent without this. |
 

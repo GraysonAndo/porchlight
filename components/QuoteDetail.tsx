@@ -233,7 +233,9 @@ export function QuoteDetail({ quote, license, details, showNote = true }: { quot
           </button>
         </Callout>
       ) : check.loading || !check.data ? (
-        <Thinking message="Writing questions to ask this vendor..." />
+        <div className="min-h-[28rem] md:min-h-[13rem]">
+          <Thinking message="Writing questions to ask this vendor..." />
+        </div>
       ) : (
         <div className="grid gap-5 md:grid-cols-2">
           <Card title="Lines to look at">

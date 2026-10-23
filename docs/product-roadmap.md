@@ -18,7 +18,7 @@ These 68 ideas come from the original audit. They are a menu, not a build list. 
 | 2 |  | Predict from evidence, not age | Later | Real repair history, enough homes | Med | L | Not built |
 | 3 | ★ | Photo diagnosis | Later | Real vision model, plumber review | High | L | Mock only: a sample photo gives a fixed reading |
 | 4 |  | Plan the year (seasonal plan) | Later | Home record, reminders | Low | M | Not built |
-| 5 |  | Explain everything (Plain code tags) | V1 | None | Low | S | Partly built: Plain code notes appear on rules and numbers |
+| 5 |  | Explain everything (Fixed rule tags) | V1 | None | Low | S | Partly built: Fixed rule notes appear on rules and numbers |
 
 ## Group B: Getting data in and keeping it
 
@@ -61,7 +61,7 @@ These 68 ideas come from the original audit. They are a menu, not a build list. 
 | 30 |  | Permit checks | Later | City-specific rules | Med | L | Not built |
 | 31 |  | Just-cause guardrails | Not yet | Attorney review, local rules | High | M | Not built |
 | 32 |  | Habitability response clock | Later | Activity log | Med | M | Not built |
-| 33 |  | Audit trail as legal protection (Download the repair record) | V1 | Activity log with timestamps | Low | S | Partly built: the log has timestamps, no download yet |
+| 33 |  | Audit trail as legal protection (Download the repair record) | V1 | Activity log with timestamps | Low | S | Partly built: the log has timestamps and a Download the repair record text file on the home record |
 
 ## Group E: Tenant experience
 

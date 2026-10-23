@@ -373,7 +373,7 @@ const chatText = (page) => page.getByRole("log", { name: "Messages" }).innerText
   check("no recommended raise is shown while the inflation figure is unconfirmed and rent is late", (await page.getByRole("button", { name: /^Recommended:/ }).count()) === 0);
   await page.getByLabel(/I checked this inflation figure for my area/).check();
   await page.goto(`${BASE}/owner`);
-  await page.getByRole("button", { name: "Mark rent as paid" }).first().click();
+  await page.getByRole("button", { name: "Mark as paid" }).first().click();
   await page.goto(`${BASE}/owner/rent`);
   check("the recommended raise is first", (await page.getByRole("button", { name: /^Recommended: \$3,360\.00/ }).count()) === 1);
   check("the exemption chance is spelled out", (await page.getByText("You could be exempt from the yearly limit").count()) === 1);

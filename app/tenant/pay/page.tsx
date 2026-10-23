@@ -46,7 +46,7 @@ function PayBody() {
   useEffect(() => {
     latest.current = { due, checkouts };
   });
-  const [height, setHeight] = useState(760);
+  const [height, setHeight] = useState(930);
   const frame = useRef<HTMLIFrameElement>(null);
   const seen = useRef(new Set<string>());
 

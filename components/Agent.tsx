@@ -20,8 +20,8 @@ export const ENGINE_META: Record<
     Icon: RobotIcon,
   },
   code: {
-    label: "Plain code",
-    hint: "Decides prices, rules, and the legal cap",
+    label: "Fixed rule",
+    hint: "A set rule decides prices, rules, and the legal cap",
     chip: "bg-ink text-cream border-ink",
     dot: "bg-ink text-cream",
     Icon: CalculatorIcon,
@@ -114,7 +114,7 @@ export function PlainCodeNote({ children }: { children?: React.ReactNode }) {
     <p className="flex items-start gap-2 rounded-xl bg-ink px-3 py-2 text-sm text-cream">
       <CalculatorIcon size={18} />
       <span>
-        <strong>Plain code, not AI.</strong>{" "}
+        <strong>A fixed rule, not AI.</strong>{" "}
         {children ?? "This was calculated from a hand-checked table. The AI reads photos and writes text. It never sets a price, a rule, or the legal cap."}
       </span>
     </p>

@@ -17,15 +17,15 @@ Nothing here claims a legal opinion, a vendor relationship, a customer interview
 
 | Status | Count |
 |---|---:|
-| Fixed | 37 |
-| Verified | 26 |
+| Fixed | 45 |
+| Verified | 28 |
 | Already resolved | 15 |
-| Blocked | 1 |
 | Roadmap | 1 |
 | Requires human review | 1 |
-| **Total findings** | **81** |
+| Open | 1 |
+| **Total findings** | **91** |
 
-Findings: 54 original (T01 to T13, O01 to O12, H01 to H13, P01 to P09, S01 to S07), 12 extra quote findings (Q01 to Q12), and 15 accessibility requirements (A01 to A15). The 68 product ideas are in `docs/product-roadmap.md`.
+Round 2 added R01 to R10 (customer-focused). Findings: 54 original (T01 to T13, O01 to O12, H01 to H13, P01 to P09, S01 to S07), 12 extra quote findings (Q01 to Q12), and 15 accessibility requirements (A01 to A15). The 68 product ideas are in `docs/product-roadmap.md`.
 
 ## Tenant flow
 
@@ -132,16 +132,33 @@ Findings: 54 original (T01 to T13, O01 to O12, H01 to H13, P01 to P09, S01 to S0
 | A03 | Medium | Owner Inbox links are small | Verified | scripts/a11y.mjs flags no link or button under 24px, and the calendar reminder link on the rent page is now 44px tall. Inline links inside sentences are exempt from the target size rule. |
 | A04 | Medium | Rent exemption checkboxes are 24 px | Verified | Checkboxes are 24px (h-6 w-6) and their labels are clickable, including the pay checkboxes. scripts/a11y.mjs checks the minimum. |
 | A05 | Low | Other small inline links and tap targets | Verified | Same script check. Only inline links inside sentences remain below 44px. |
-| A06 | Medium | Headings, focus, keyboard, contrast, names, announcements | Verified | scripts/a11y.mjs checks titles, lang, one main, one h1 per page, no skipped heading levels, accessible names, duplicate ids, contrast (WCAG AA ratios, computed from styles) and a visible keyboard focus ring. Status announcements use role=status where used. Screen reader behavior itself was NOT tested with VoiceOver or NVDA. |
+| A06 | Medium | Headings, focus, keyboard, contrast, names, announcements | Verified | scripts/a11y.mjs checks titles, lang, one main, one h1 per page, no skipped heading levels, accessible names, duplicate ids, contrast (WCAG AA ratios, computed from styles) and a visible keyboard focus ring. Status announcements use role=status where used. Round 2 read the Playwright accessibility tree of the tenant chat and owner inbox (landmarks, headings, names, order) and found the order sensible. Screen reader behavior itself was NOT tested with VoiceOver or NVDA. |
 | A07 | Medium | No horizontal scroll at mobile widths, all pages | Verified | scripts/a11y.mjs: no horizontal scroll at 360, 390 and 1280 on 19 pages, plus guide, approval card and emergency states. |
 | A08 | Low | Tenant bottom tabs: Chat and Activity | Verified | The tenant tab bar and the Chat and Activity tabs were exercised at 390px in scripts/e2e.mjs. |
-| A09 | Low | Loading speed and Lighthouse | Blocked | Lighthouse needs a Chrome DevTools or CI run that is not available here. Not run. Run it against the deployed build. |
+| A09 | Low | Loading speed and Lighthouse | Verified | Round 2: Lighthouse 13.5.0 ran against the production build on a local server (mobile profile, preinstalled Chromium). Accessibility 100 on 9 pages (welcome, tenant, tenant home, pay, owner, quote, rent, pricing, about). Best practices 100 and SEO 100 on all 9. Performance 67 to 97. Weakest: Pay 73 (layout shift 0.395, a client hydration swap that moves only the footer) and Quote 88 (shift 0.108 at hydration). Not fixed, see R09. This was a local run, not the deployed site. |
 | A10 | Medium | Tenant Pay page, owner toggles, real phone widths | Verified | The Pay page, owner settings and toggles are in the a11y route list and pass at phone widths in an emulated browser. Not a real phone. |
-| A11 | Medium | Real-device test (iOS Safari) | Requires human review | No real device was available. Test iOS Safari and Android Chrome by hand and record the result here. |
+| A11 | Medium | Real-device test (iOS Safari) | Requires human review | Round 2 added scripts/phone.mjs: emulated 320px phone, landscape phone and 200% text on 14 pages (no horizontal scroll, no clipped text) and a real touch-tap journey. That is Chromium emulation only. A real iOS Safari and Android Chrome test is still needed. |
 | A12 | Low | Header settings control accessible name | Fixed | The header Settings link has the accessible name Settings. |
 | A13 | Low | Sample OwnerOwner | Fixed | The name and the role are separated for assistive technology (see Q10). |
 | A14 | Low | Duplicated step numbers | Verified | See Q12. |
 | A15 | Medium | Every visible control performs its advertised action | Verified | scripts/e2e.mjs, scripts/final-list.mjs and scripts/walkthrough.mjs click through every control on the main flows. Not every control on every state was clicked, so this is broad, not exhaustive. |
+
+## Round 2: customer-focused findings
+
+These came from walking the product as a stressed tenant on a phone and as an older owner who is not technical. IDs start with R.
+
+| ID | Priority | Finding | Status | Verification note |
+|---|---|---|---|---|
+| R01 | High | The owner's job tracker said Quoted while the tenant was still being asked a safety question and no quotes existed | Fixed | lib/jobStatus.ts now reads the agent stage. tests/jobStatus.test.ts and scripts/e2e.mjs cover it. |
+| R02 | Medium | Two buttons did the same thing on the owner inbox when rent was late (Mark as paid and Mark rent as paid), and the overdue rent was explained twice | Fixed | The rent card drops its own button while the late-rent card is showing. scripts/e2e.mjs checks there is exactly one. |
+| R03 | Medium | A tenant on a phone saw a cut-off prompt in the chat box (Tell GoHome what is wron) | Fixed | The prompt is now What is wrong? (owner side: Message GoHome). scripts/e2e.mjs checks it. |
+| R04 | Medium | Owners saw the label Plain code, which means nothing to a non-technical person | Fixed | The label now reads Fixed rule, and the note says A fixed rule, not AI. The engine is still called code inside the program. |
+| R05 | High | A tenant had no always-visible way to reach 911, only inside the chat after typing something | Fixed | The Help page now opens with a short line and a 44px Call 911 button. scripts/e2e.mjs checks it. Wording needs plumber and attorney review like the other safety copy. |
+| R06 | Medium | With one request open, the tenant had no plain statement of where it stood | Fixed | The Help page shows Where things stand with the status in plain words, announced politely to screen readers. scripts/e2e.mjs checks it. |
+| R07 | Medium | An owner could not keep a dated record of what happened on a repair (roadmap idea 33) | Fixed | Home record has a Download the repair record button. It is built from the activity log with full dates, and says nothing when there is no history. tests/repairRecord.test.ts and scripts/e2e.mjs cover it. |
+| R08 | Low | The page used min-h-screen, which is taller than the visible area on iPhone Safari with the address bar showing | Fixed | Changed to min-h-dvh. Not verified on a real iPhone. |
+| R09 | Low | Layout shift at load on Pay (0.395, footer only) and Quote (0.108) | Open | Both happen once at about 100 to 150 ms when the page swaps from its server version to the version with saved data. Nothing visible jumps on screen in a normal load. Fix would need a skeleton that matches each page. Not done. |
+| R10 | Medium | Does the product survive a 320px screen, a landscape phone and text zoomed to 200%? | Verified | scripts/phone.mjs: no horizontal scroll and no clipped text on 14 pages in all three modes. |
 
 ## Needs manual verification
 

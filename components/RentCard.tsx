@@ -52,7 +52,7 @@ export function RentCard() {
           );
         })}
       </ul>
-      {!paid && (
+      {!paid && !dueStatus("rent").overdue && (
         <div className="mt-3 space-y-1">
           <button type="button" className="btn btn-secondary" onClick={() => actions.setRentPaid(true)}>
             Mark rent as paid

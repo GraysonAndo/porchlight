@@ -33,16 +33,24 @@ export default function TenantPage() {
         </p>
       </div>
 
-      {requests.length > 1 && (
+      <p className="flex flex-wrap items-center gap-x-3 gap-y-1 rounded-2xl border border-urgent/40 bg-urgent-tint px-4 py-2 text-sm font-bold text-ink">
+        <span>Fire, gas smell, or someone hurt? Get out first and call</span>
+        <a href="tel:911" aria-label="Call 911" className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-lg bg-urgent px-4 font-extrabold text-white">
+          911
+        </a>
+        <span>. Then tell GoHome.</span>
+      </p>
+
+      {requests.length > 0 && (
         <section aria-labelledby="requests-heading" className="card !p-4">
           <h2 id="requests-heading" className="text-lg font-extrabold">
-            Your requests
+            {requests.length === 1 ? "Where things stand" : "Your requests"}
           </h2>
-          <ul className="mt-1 divide-y divide-line">
+          <ul className="mt-1 divide-y divide-line" aria-live="polite">
             {requests.map((r) => (
               <li key={r.id} className="flex flex-wrap items-baseline justify-between gap-x-4 py-1.5 text-sm">
                 <span className="font-bold">{r.title}</span>
-                <span className="text-ink-soft">{r.status}</span>
+                <span className="font-bold text-ink-soft">{r.status}</span>
               </li>
             ))}
           </ul>
@@ -83,7 +91,7 @@ export default function TenantPage() {
             party="tenant"
             msgs={msgs}
             typing={agent.typingFor("tenant")}
-            placeholder="Tell GoHome what is wrong"
+            placeholder="What is wrong?"
             onSend={(text, shown) => agent.send({ type: "tenant.text", text, shown })}
             onPhoto={(photo) => agent.send({ type: "tenant.photo", photo })}
             photoLabels={[["leak", "Photo of the problem"]]}

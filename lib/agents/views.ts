@@ -10,6 +10,8 @@ export interface ActivityItem {
   /** The job this belongs to, so a long feed can be grouped: "Water heater repair", "Rent increase", and so on */
   job: string;
   clock: string;
+  /** The full date and time, for a printed or saved record */
+  stamp: string;
   title: string;
   detail: string | null;
   engine: Engine | null;
@@ -54,6 +56,12 @@ function jobOf(e: ToolCall, previous: string): string {
   return "Water heater repair";
 }
 
+/** Date and time together, so a saved record never has a bare "9:06 AM". */
+function stampOf(e: { at: number; revealAt?: number }): string {
+  if (e.revealAt === undefined) return entryTime(e);
+  return new Date(e.revealAt).toLocaleString("en-US", { month: "short", day: "numeric", year: "numeric", hour: "numeric", minute: "2-digit" });
+}
+
 export function activityFor(audience: "tenant" | "owner", entries: Entry[]): ActivityItem[] {
   const out: ActivityItem[] = [];
   let previous = "Water heater repair";
@@ -62,14 +70,14 @@ export function activityFor(audience: "tenant" | "owner", entries: Entry[]): Act
       const job = jobOf(e, previous);
       previous = job;
       if (audience === "owner") {
-        out.push({ id: e.id, job, clock: entryTime(e), title: e.title, detail: e.detail, engine: e.engine });
+        out.push({ id: e.id, job, clock: entryTime(e), stamp: stampOf(e), title: e.title, detail: e.detail, engine: e.engine });
       } else {
         const text = TENANT_TEXT[e.tool];
-        if (text) out.push({ id: e.id, job, clock: entryTime(e), title: text(e), detail: null, engine: null });
+        if (text) out.push({ id: e.id, job, clock: entryTime(e), stamp: stampOf(e), title: text(e), detail: null, engine: null });
       }
     } else if (e.kind === "record" && e.history) {
       if (audience === "owner") {
-        out.push({ id: e.id, job: /rent|lease|notice/i.test(e.history) ? "Rent increase" : "Water heater repair", clock: entryTime(e), title: "Updated the home record", detail: e.history, engine: "code" });
+        out.push({ id: e.id, job: /rent|lease|notice/i.test(e.history) ? "Rent increase" : "Water heater repair", clock: entryTime(e), stamp: stampOf(e), title: "Updated the home record", detail: e.history, engine: "code" });
       }
     }
   }
