@@ -442,7 +442,7 @@ const chatText = (page) => page.getByRole("log", { name: "Messages" }).innerText
   await page.getByRole("button", { name: "Play the whole story" }).click();
   await page.getByText("That is the whole story: a leak reported").waitFor({ timeout: 120000 });
   check("the story plays itself from report to done", true);
-  const rec = await (async () => { await page.getByRole("button", { name: "Close" }).click(); await page.goto(`${BASE}/owner/record`); return page.locator("main").innerText(); })();
+  const rec = await (async () => { await page.getByRole("button", { name: "Close" }).click(); await page.goto(`${BASE}/owner/record`); await page.getByText("26J0007-A").first().waitFor({ timeout: 20000 }).catch(() => {}); return page.locator("main").innerText(); })();
   check("and the new heater is in the record at the end", /26J0007-A/.test(rec));
   check("no console errors in the story", errors.length === 0, errors.join(" | "));
   await context.close();
