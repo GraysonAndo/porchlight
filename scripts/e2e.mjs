@@ -67,6 +67,11 @@ const chatText = (page) => page.getByRole("log", { name: "Messages" }).innerText
   await page.getByRole("button", { name: /Tenant/ }).click();
   await page.waitForURL("**/tenant");
   check("choosing tenant opens the tenant side", true);
+  await page.getByRole("link", { name: /GoHome, back to the start/ }).click();
+  await page.waitForURL(`${BASE}/`);
+  check("the logo takes either person back to the start, where tenant or owner can be picked again", (await page.getByRole("button", { name: /Tenant/ }).count()) === 1 && (await page.getByRole("button", { name: /Owner/ }).count()) === 1);
+  await page.getByRole("button", { name: /Tenant/ }).click();
+  await page.waitForURL("**/tenant");
   check("the tenant side has only Help, My home, and Pay in its tabs", (await page.getByRole("navigation", { name: "Tenant tabs" }).getByRole("link").allInnerTexts()).join() === "Help,My home,Pay");
   await page.getByRole("link", { name: "Switch to owner" }).click();
   await page.waitForURL("**/owner");

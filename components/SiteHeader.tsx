@@ -47,7 +47,7 @@ export function SiteHeader() {
   return (
     <header className="sticky top-0 z-30 border-b border-line bg-white/95 backdrop-blur">
       <div className="mx-auto flex w-full max-w-6xl items-center gap-4 px-4 py-2 sm:px-6">
-        <Link href={role ? (role === "owner" ? "/owner" : "/tenant") : "/"} className="inline-flex min-h-11 items-center rounded-lg" aria-label="GoHome">
+        <Link href="/" className="inline-flex min-h-11 items-center rounded-lg" aria-label="GoHome, back to the start to pick tenant or owner">
           <Logo />
         </Link>
         {nav.length > 0 && (
@@ -80,6 +80,9 @@ export function SiteHeader() {
               className={`inline-flex h-11 w-11 items-center justify-center rounded-lg ${pathname === `/${role}/settings` ? "bg-brand-tint text-brand" : "text-ink-soft hover:bg-cream-deep hover:text-ink"}`}
             >
               <GearIcon size={24} />
+            </Link>
+            <Link href="/" className="hidden min-h-10 items-center rounded-lg px-2 text-sm font-bold text-ink-soft underline underline-offset-4 hover:text-ink lg:inline-flex">
+              Pick a role
             </Link>
             <Link href={role === "owner" ? "/tenant" : "/owner"} className="btn btn-secondary !min-h-10 !px-3 text-sm">
               Switch to {role === "owner" ? "tenant" : "owner"}
