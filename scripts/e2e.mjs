@@ -1130,8 +1130,8 @@ const chatText = (page) => page.getByRole("log", { name: "Messages" }).innerText
   const email = await page.locator("details", { hasText: "See what the weekly email would say" }).innerText();
   check("the weekly email preview is built from the real log and dates", /This week at 1200 Example Court/.test(email) && /handled \d+ steps? on its own/.test(email) && /Coming up:/.test(email) && /Lease anniversary/.test(email), email);
   await page.goto(`${BASE}/tenant`);
-  await page.getByText(/late/i).first().waitFor(wait20);
-  check("the tenant was texted the reminder", (await chatText(page)).match(/late fee|\$50/i) !== null);
+  await page.getByText(/Friendly reminder/).first().waitFor(wait20);
+  check("the tenant was texted the reminder, with the late fee from the lease", /Friendly reminder/.test(await chatText(page)) && /\$50 late fee/.test(await chatText(page)), (await chatText(page)).slice(0, 300));
   check("no console errors with automatic reminders", errors.length === 0, errors.join(" | "));
   await context.close();
 }
