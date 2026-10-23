@@ -52,6 +52,10 @@ const TIERS: { id: Pick; name: string; price: number; line: string; features: Fe
   },
 ];
 
+// GoHome is built for owners with 1 to 10 units.
+const MIN_UNITS = 1;
+const MAX_UNITS = 10;
+
 export default function PricingPage() {
   const { state, actions } = useDemo();
   const pick = state.pricingPick;
@@ -74,21 +78,28 @@ export default function PricingPage() {
       </div>
 
       <section className="card" aria-labelledby="units-heading">
-        <h2 id="units-heading" className="text-lg font-extrabold">
-          How many units do you own?
-        </h2>
-        <div className="mt-2 flex flex-wrap gap-2" role="radiogroup" aria-labelledby="units-heading">
-          {[1, 5, 10].map((n) => (
-            <label
-              key={n}
-              className={`flex min-h-11 cursor-pointer items-center rounded-xl border-2 px-4 font-bold has-[:focus-visible]:outline has-[:focus-visible]:outline-[3px] has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-ink ${
-                units === n ? "border-ink bg-glow" : "border-line bg-white"
-              }`}
-            >
-              <input type="radio" name="units" className="sr-only" checked={units === n} onChange={() => setUnits(n)} />
-              {n} {n === 1 ? "unit" : "units"}
-            </label>
-          ))}
+        <div className="flex items-baseline justify-between gap-4">
+          <h2 id="units-heading" className="text-lg font-extrabold">
+            <label htmlFor="units-slider">How many units do you own?</label>
+          </h2>
+          <p className="text-2xl font-extrabold tabular-nums" aria-hidden="true">
+            {units} {units === 1 ? "unit" : "units"}
+          </p>
+        </div>
+        <input
+          id="units-slider"
+          type="range"
+          min={MIN_UNITS}
+          max={MAX_UNITS}
+          step={1}
+          value={units}
+          onChange={(e) => setUnits(Number(e.target.value))}
+          aria-valuetext={`${units} ${units === 1 ? "unit" : "units"}`}
+          className="mt-3 h-11 w-full cursor-pointer accent-brand"
+        />
+        <div className="flex justify-between text-sm text-ink-soft" aria-hidden="true">
+          <span>{MIN_UNITS}</span>
+          <span>{MAX_UNITS}</span>
         </div>
       </section>
 
@@ -103,8 +114,9 @@ export default function PricingPage() {
                 <span className="text-ink-soft">{" per unit per month"}</span>
               </p>
               <p className="mt-1 text-sm text-ink-soft">
-                {units > 1 ? `$${t.price * units} a month for ${units} units` : "$" + t.price + " a month for 1 unit"}
-                <span className="block">${t.price * units * 12} a year</span>
+                <span className="font-bold text-ink tabular-nums">${t.price * units}</span>
+                {` a month for ${units} ${units === 1 ? "unit" : "units"}`}
+                <span className="block tabular-nums">${(t.price * units * 12).toLocaleString()} a year</span>
               </p>
               <p className="mt-2 text-ink-soft">{t.line}</p>
               <ul className="mt-3 flex-1 space-y-2">
