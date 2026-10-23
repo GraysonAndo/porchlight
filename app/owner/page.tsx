@@ -5,6 +5,7 @@ import { AgentPanel } from "@/components/AgentPanel";
 import { ApprovalCard } from "@/components/ApprovalCard";
 import { JobStatusTracker } from "@/components/JobStatusTracker";
 import { AutoApproveOffer } from "@/components/AutoApproveOffer";
+import { ComingUpCard } from "@/components/ComingUpCard";
 import { LateRentCard } from "@/components/LateRentCard";
 import { RentCard } from "@/components/RentCard";
 import { Thread } from "@/components/Thread";
@@ -137,6 +138,7 @@ export default function OwnerHomePage() {
           {(status === "approved" || status === "booked" || status === "done") && <AutoApproveOffer lastQuote={vendor?.total ?? null} />}
 
           <RentCard />
+          <ComingUpCard />
           <p className="text-sm text-ink-soft">
             Want the details behind a repair? Open any approval and tap &quot;See the details&quot;, or check the{" "}
             <Link href="/owner/record" className="font-bold underline underline-offset-4">
