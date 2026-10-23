@@ -78,28 +78,30 @@ export default function PricingPage() {
       </div>
 
       <section className="card" aria-labelledby="units-heading">
-        <div className="flex items-baseline justify-between gap-4">
-          <h2 id="units-heading" className="text-lg font-extrabold">
-            <label htmlFor="units-slider">How many units do you own?</label>
-          </h2>
-          <p className="text-2xl font-extrabold tabular-nums" aria-hidden="true">
+        <h2 id="units-heading" className="text-lg font-extrabold">
+          <label htmlFor="units-slider">How many units do you own?</label>
+        </h2>
+        <div className="mt-2 flex items-center gap-4">
+          <div className="w-full max-w-xs">
+            <input
+              id="units-slider"
+              type="range"
+              min={MIN_UNITS}
+              max={MAX_UNITS}
+              step={1}
+              value={units}
+              onChange={(e) => setUnits(Number(e.target.value))}
+              aria-valuetext={`${units} ${units === 1 ? "unit" : "units"}`}
+              className="h-11 w-full cursor-pointer accent-brand"
+            />
+            <div className="-mt-2 flex justify-between text-xs text-ink-soft" aria-hidden="true">
+              <span>{MIN_UNITS}</span>
+              <span>{MAX_UNITS}</span>
+            </div>
+          </div>
+          <p className="min-w-[5.5rem] whitespace-nowrap text-xl font-extrabold tabular-nums" aria-hidden="true">
             {units} {units === 1 ? "unit" : "units"}
           </p>
-        </div>
-        <input
-          id="units-slider"
-          type="range"
-          min={MIN_UNITS}
-          max={MAX_UNITS}
-          step={1}
-          value={units}
-          onChange={(e) => setUnits(Number(e.target.value))}
-          aria-valuetext={`${units} ${units === 1 ? "unit" : "units"}`}
-          className="mt-3 h-11 w-full cursor-pointer accent-brand"
-        />
-        <div className="flex justify-between text-sm text-ink-soft" aria-hidden="true">
-          <span>{MIN_UNITS}</span>
-          <span>{MAX_UNITS}</span>
         </div>
       </section>
 
