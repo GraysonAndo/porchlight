@@ -211,7 +211,6 @@ async function run(browser, vp) {
   await page.getByRole("button", { name: /Act as the tenant: No, nothing electrical/ }).waitFor(W);
   await snap(page, vp, "27c-owner-live-preview-tenant-question");
   await page.getByRole("button", { name: /Act as the tenant: No, nothing electrical/ }).click();
-  await page.getByRole("button", { name: /Act as the tenant: Done/ }).click();
   await page.getByRole("button", { name: "Approve", exact: true }).waitFor(W);
   await page.waitForTimeout(800);
   await snap(page, vp, "27d-owner-live-preview-approval");
