@@ -3,7 +3,7 @@
 //
 // Usage: BASE_URL=http://localhost:3000 node scripts/e2e.mjs
 
-import { launch, watchErrors, BASE } from "./browser.mjs";
+import { launch, watchErrors, BASE, openLease } from "./browser.mjs";
 
 let failed = 0;
 function check(name, ok, detail = "") {
@@ -284,6 +284,7 @@ const chatText = (page) => page.getByRole("log", { name: "Messages" }).innerText
 
   // Rent
   await page.goto(`${BASE}/owner/rent`);
+  await openLease(page);
   check("the rent page says California only and names AB 1482", (await count(page, "California only, for now")) > 0 && (await count(page, "AB 1482")) > 0);
   await page.locator("#current-rent").fill("");
   await page.getByText("Fill in the numbers to see the result").waitFor(wait20);
@@ -312,6 +313,7 @@ const chatText = (page) => page.getByRole("log", { name: "Messages" }).innerText
   await page.getByRole("button", { name: "Reset sample data" }).click();
   await page.getByRole("button", { name: "Yes, reset" }).click();
   await page.goto(`${BASE}/owner/rent`);
+  await openLease(page);
   check("Reset restores the rent numbers and checkboxes", (await page.locator("#proposed-rent").inputValue()) === "3360" && !(await page.getByLabel("The tenant was given the required written exemption notice.").isChecked()));
   check("no console errors on the owner side", errors.length === 0, errors.join(" | "));
   await context.close();
@@ -618,6 +620,7 @@ const chatText = (page) => page.getByRole("log", { name: "Messages" }).innerText
   const { context, page, errors } = await newPage();
   await resetApp(page);
   await page.goto(`${BASE}/owner/rent`);
+  await openLease(page);
   const out = () => page.locator("main").innerText();
 
   // 1: money is rounded to the cent.
@@ -668,6 +671,7 @@ const chatText = (page) => page.getByRole("log", { name: "Messages" }).innerText
   await page.goto(`${BASE}/owner`);
   await page.getByRole("button", { name: "Mark as paid" }).first().click();
   await page.goto(`${BASE}/owner/rent`);
+  await openLease(page);
   check("the rent page starts from the lease", (await count(page, "From your lease")) > 0 && (await count(page, "$3,200.00 a month")) > 0 && (await count(page, "December 14, 2026")) > 0);
   await page.locator("#proposed-rent").fill("3300");
   await page.getByRole("button", { name: /^Recommended: \$3,360\.00/ }).click();
@@ -685,6 +689,7 @@ const chatText = (page) => page.getByRole("log", { name: "Messages" }).innerText
   await page.getByText(/Your owner sent you a notice by mail/).waitFor(wait20);
   check("the tenant is texted about the notice", true);
   await page.goto(`${BASE}/owner/rent`);
+  await openLease(page);
   check("a sent notice stays sent after a reload", (await page.getByRole("button", { name: "Notice sent" }).count()) === 1);
 
   // 12: plain words, no raw keys.
@@ -1084,7 +1089,45 @@ const chatText = (page) => page.getByRole("log", { name: "Messages" }).innerText
   check("the same amount is now the setting", (await page.locator("#auto-approve").inputValue()) === "1500");
   await page.goto(`${BASE}/owner`);
   check("the offer does not come back once answered", (await page.getByRole("heading", { name: "Want to skip this tap next time?" }).count()) === 0);
+  // The owner's inbox lists the dates GoHome is tracking, from the same sources as the other pages.
+  await page.getByRole("heading", { name: "Coming up" }).waitFor(wait20);
+  const coming = await page.getByRole("heading", { name: "Coming up" }).locator("xpath=ancestor::section").innerText();
+  check("Coming up lists the water bill, the last day to send a rent notice, and the lease anniversary", /Water and trash is due/.test(coming) && /Last day to send a rent notice/.test(coming) && /November 14, 2026/.test(coming) && /December 14, 2026/.test(coming), coming);
+  // The rent page keeps the lease facts folded and asks for the inflation check in place.
+  await resetApp(page);
+  await page.goto(`${BASE}/owner/rent`);
+  await page.getByText("From your lease").first().waitFor(wait20);
+  check("the lease facts and exemption checks are folded away until needed", !(await page.locator("#current-rent").isVisible()));
+  check("the sample figure can be confirmed from the lease card in one tap", (await page.getByRole("button", { name: /^I checked my area: use 3%/ }).count()) === 1);
+  await page.getByRole("button", { name: /^I checked my area: use 3%/ }).click();
+  check("that tap is the same setting as the checkbox", await page.getByLabel(/I checked this inflation figure for my area/).isChecked());
+  check("and the verdict moves on", (await count(page, "OK to send: within the yearly limit")) > 0);
+  await openLease(page);
+  await page.getByLabel("The tenant was given the required written exemption notice.").check();
+  check("opening the folded section reaches the exemption checks", await page.getByLabel("The tenant was given the required written exemption notice.").isChecked());
   check("no console errors in the less-work checks", errors.length === 0, errors.join(" | "));
+  await context.close();
+}
+
+// ======================= The owner can let GoHome remind late tenants =======================
+{
+  const { context, page, errors } = await newPage();
+  await resetApp(page);
+  await page.goto(`${BASE}/owner`);
+  await page.getByRole("button", { name: "Send a reminder" }).waitFor(wait20);
+  check("by default nothing is sent without the owner: the reminder waits for a tap", (await page.getByRole("button", { name: "Send a reminder" }).isEnabled()) && (await count(page, "GoHome is sending the reminder for you now")) === 0);
+  await page.getByRole("button", { name: "Remind late tenants for me from now on" }).click();
+  await page.getByRole("button", { name: "Reminder sent" }).waitFor(wait20);
+  check("after the owner opts in, GoHome sends it on its own and says so", (await count(page, /GoHome sent it for you, as you asked/)) > 0);
+  await page.goto(`${BASE}/owner/settings`);
+  check("the same choice is a switch in Settings", (await page.getByRole("switch", { name: "Remind late tenants for me" }).getAttribute("aria-checked")) === "true");
+  await page.getByText("See what the weekly email would say").click();
+  const email = await page.locator("details", { hasText: "See what the weekly email would say" }).innerText();
+  check("the weekly email preview is built from the real log and dates", /This week at 1200 Example Court/.test(email) && /handled \d+ steps? on its own/.test(email) && /Coming up:/.test(email) && /Lease anniversary/.test(email), email);
+  await page.goto(`${BASE}/tenant`);
+  await page.getByText(/late/i).first().waitFor(wait20);
+  check("the tenant was texted the reminder", (await chatText(page)).match(/late fee|\$50/i) !== null);
+  check("no console errors with automatic reminders", errors.length === 0, errors.join(" | "));
   await context.close();
 }
 

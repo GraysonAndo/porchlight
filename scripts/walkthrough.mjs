@@ -4,7 +4,7 @@
 // Usage: BASE_URL=http://localhost:3000 node scripts/walkthrough.mjs
 
 import { mkdirSync, readdirSync, unlinkSync } from "node:fs";
-import { launch, layoutProblems, watchErrors, BASE } from "./browser.mjs";
+import { launch, layoutProblems, watchErrors, BASE, openLease } from "./browser.mjs";
 
 const OUT = new URL("../docs/screenshots/", import.meta.url).pathname;
 mkdirSync(OUT, { recursive: true });
@@ -170,6 +170,7 @@ async function run(browser, vp) {
   await page.getByText("Plan to set aside each year").waitFor();
   await snap(page, vp, "24-owner-forecast");
   await page.goto(`${BASE}/owner/rent`);
+  await openLease(page);
   await page.getByText("Confirm your area's inflation figure first").first().waitFor();
   await page.getByLabel(/I checked this inflation figure for my area/).check();
   await page.getByText("OK to send: within the yearly limit").first().waitFor();
@@ -225,6 +226,7 @@ async function run(browser, vp) {
   await page.getByLabel("Model", { exact: true }).waitFor();
   await snap(page, vp, "27f-owner-record-edit");
   await page.goto(`${BASE}/owner/rent`);
+  await openLease(page);
   await page.getByText("From your lease").waitFor();
   await snap(page, vp, "27g-owner-rent-prefilled");
   await page.getByLabel(/I checked this inflation figure for my area/).check();

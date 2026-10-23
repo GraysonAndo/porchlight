@@ -49,6 +49,12 @@ export function StepShell({ stepId, children }: { stepId: string; children: Reac
         </div>
       )}
       <h1 className="text-3xl font-extrabold leading-tight sm:text-4xl">{PAGE_TITLES[path] ?? "GoHome"}</h1>
+      {isRepair && !hydrated && (
+        // Holds the space the sample note will take, so the page does not jump when the saved data loads.
+        <p aria-hidden="true" className="invisible mt-3 rounded-xl px-4 py-3 font-bold">
+          No repair has been reported yet, so this page shows a sample of what GoHome prepares after your tenant reports a problem. Go to the Inbox to start one.
+        </p>
+      )}
       {showingSample && (
         <p role="note" className="mt-3 rounded-xl bg-glow-tint px-4 py-3 font-bold">
           No repair has been reported yet, so this page shows a sample of what GoHome prepares after your tenant reports a problem.{" "}

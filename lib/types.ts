@@ -257,6 +257,8 @@ export interface Prefs {
   ownerAutoApprove: number;
   /** The owner has seen, and answered, the offer to let GoHome book small repairs on its own. */
   ownerAutoOfferSeen: boolean;
+  /** GoHome texts a late-rent reminder for the owner, once, after the grace period. Off until the owner turns it on. */
+  ownerAutoRemind: boolean;
 }
 
 export interface DemoState {

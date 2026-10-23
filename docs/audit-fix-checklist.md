@@ -17,15 +17,14 @@ Nothing here claims a legal opinion, a vendor relationship, a customer interview
 
 | Status | Count |
 |---|---:|
-| Fixed | 52 |
+| Fixed | 56 |
 | Verified | 28 |
 | Already resolved | 15 |
 | Roadmap | 1 |
 | Requires human review | 1 |
-| Open | 1 |
-| **Total findings** | **98** |
+| **Total findings** | **101** |
 
-Rounds 2 and 3 added R01 to R17 (customer-focused). Findings: 54 original (T01 to T13, O01 to O12, H01 to H13, P01 to P09, S01 to S07), 12 extra quote findings (Q01 to Q12), and 15 accessibility requirements (A01 to A15). The 68 product ideas are in `docs/product-roadmap.md`.
+Rounds 2 and 3 added R01 to R20 (customer-focused). Findings: 54 original (T01 to T13, O01 to O12, H01 to H13, P01 to P09, S01 to S07), 12 extra quote findings (Q01 to Q12), and 15 accessibility requirements (A01 to A15). The 68 product ideas are in `docs/product-roadmap.md`.
 
 ## Tenant flow
 
@@ -157,7 +156,7 @@ These came from walking the product as a stressed tenant on a phone and as an ol
 | R06 | Medium | With one request open, the tenant had no plain statement of where it stood | Fixed | The Help page shows Where things stand with the status in plain words, announced politely to screen readers. scripts/e2e.mjs checks it. |
 | R07 | Medium | An owner could not keep a dated record of what happened on a repair (roadmap idea 33) | Fixed | Home record has a Download the repair record button. It is built from the activity log with full dates, and says nothing when there is no history. tests/repairRecord.test.ts and scripts/e2e.mjs cover it. |
 | R08 | Low | The page used min-h-screen, which is taller than the visible area on iPhone Safari with the address bar showing | Fixed | Changed to min-h-dvh. Not verified on a real iPhone. |
-| R09 | Low | Layout shift at load on Pay (0.395, footer only) and Quote (0.108) | Open | Both happen once at about 100 to 150 ms when the page swaps from its server version to the version with saved data. Nothing visible jumps on screen in a normal load. Fix would need a skeleton that matches each page. Not done. |
+| R09 | Low | Layout shift at load on Pay (0.395, footer only) and Quote (0.108) | Fixed | Cause found: Pay showed a short Loading line and then the full page, and the repair pages added the sample note after saved data loaded. See R20. Confirmed by a fresh Lighthouse run only if the A09 note says so. |
 | R10 | Medium | Does the product survive a 320px screen, a landscape phone and text zoomed to 200%? | Verified | scripts/phone.mjs: no horizontal scroll and no clipped text on 14 pages in all three modes. |
 | R11 | High | The tenant had to tap Done before GoHome would start on the plumber, so the whole repair waited on a button | Fixed | lib/agents/engine.ts: GoHome sends the safe steps and starts on the plumber in the same moment, in one message. A late Done is thanked and a late Help still sends the guide, and nothing starts twice. tests/agents.test.ts (audit round 3), tests/prompts.test.ts and scripts/e2e.mjs cover it. The picture guide's own Done button now only closes the guide. |
 | R12 | Medium | An owner was asked to tap Approve every single time, with no easy way to say handle small ones for me | Fixed | After the first approval the inbox offers Yes up to $500, $1,500 or $3,000, or No keep asking. It only changes the setting when the owner chooses, and the same setting is in Settings. Emergencies always ring. scripts/e2e.mjs covers the offer, the confirmation and that it does not come back. |
@@ -165,7 +164,10 @@ These came from walking the product as a stressed tenant on a phone and as an ol
 | R14 | Medium | The inflation confirmation, which gates the rent suggestion, sat in the form far below where the owner is looking | Fixed | The From your lease card now asks it in place (I checked my area: use 3%, or Change the figure) with the BLS link. It still shows no dollar maximum until the owner confirms, and it is the same setting as the checkbox below. |
 | R15 | Low | A tenant who just paid rent had to hunt through Settings to turn on autopay | Fixed | The Pay page offers Turn on autopay in one tap after a rent payment. It saves the setting only; nothing is charged in this sample. |
 | R16 | Low | The welcome page never said how GoHome works | Fixed | A three-step How it works section: a tenant texts, GoHome does the legwork, the owner taps once or sets a limit. scripts/e2e.mjs checks it. |
-| R17 | Low | The booked card and the late-rent card implied the owner has to close the job or chase the tenant by hand | Fixed | Copy now says that in the full product the plumber's report closes the job and GoHome sends the late-rent reminder on its own after the grace period. The sample buttons stay as stand-ins and are labeled that way. No automatic sending was built, so nothing claims it happened. |
+| R17 | Low | The booked card implied the owner has to close the job by hand, and a late-rent reminder always needed a tap | Fixed | The booked card now says that in the full product the plumber's report closes the job, and Mark done is a stand-in. Late-rent reminders are real and opt-in: Remind late tenants for me (inbox button and Settings switch, off by default) makes GoHome text the reminder once after the grace period. scripts/e2e.mjs covers off by default, opting in, the log and the tenant's text. |
+| R18 | Low | The owner had no view of what GoHome was keeping track of | Fixed | Coming up card in the inbox: water bill due date, last day to send a rent notice for the anniversary, and the anniversary, all from the same sources as the other pages. tests/comingUp.test.ts and scripts/e2e.mjs cover it. |
+| R19 | Medium | The rent page asked for five fields and five checkboxes before the owner could act | Fixed | The lease facts and exemption checks fold away while they match the lease, with a one-line summary, and open by themselves when something needs a look. The inflation check and the proposed rent stay up front. scripts/e2e.mjs checks the folded default, the one-tap confirm and the folded checks. |
+| R20 | Low | Pay and the repair detail pages jumped at load (layout shift 0.395 and 0.108) | Fixed | Pay holds its height until saved data loads, and repair pages hold the space of the sample note. Needs a fresh Lighthouse run to confirm the numbers; see the A09 note. |
 
 ## Needs manual verification
 

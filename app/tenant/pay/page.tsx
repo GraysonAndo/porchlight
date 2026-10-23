@@ -18,7 +18,7 @@ const makeSrc = (kinds: PayKind[], n: number) => `/checkout?due=${kinds.join(","
 /** Waits until the saved payments are loaded, so the checkout starts with the right bills. */
 export default function PayPage() {
   const { hydrated } = useDemo();
-  if (!hydrated) return <p className="mx-auto max-w-5xl text-ink-soft">Loading your payments...</p>;
+  if (!hydrated) return <p className="mx-auto min-h-[103rem] max-w-5xl text-ink-soft md:min-h-[64rem]">Loading your payments...</p>;
   return <PayBody />;
 }
 

@@ -2,7 +2,7 @@
 //
 // Usage: BASE_URL=http://localhost:3000 node scripts/final-list.mjs
 
-import { launch, watchErrors, BASE } from "./browser.mjs";
+import { launch, watchErrors, BASE, openLease } from "./browser.mjs";
 
 let failed = 0;
 function check(name, ok, detail = "") {
@@ -40,6 +40,7 @@ const chatText = (page) => page.getByRole("log", { name: "Messages" }).innerText
   await a.getByRole("switch", { name: "Email me a weekly summary" }).waitFor(wait20);
   const b = await open();
   await b.goto(`${BASE}/owner/rent`);
+  await openLease(b);
   await b.locator("#proposed-rent").fill("3333");
   await b.waitForTimeout(300);
   // Tab A was loaded before B changed the rent. Its save must not put the old rent back.
@@ -51,6 +52,7 @@ const chatText = (page) => page.getByRole("log", { name: "Messages" }).innerText
 
   // Live: A sits on the rent page, B changes it, A shows it without a reload.
   await a.goto(`${BASE}/owner/rent`);
+  await openLease(a);
   await b.locator("#proposed-rent").fill("3344");
   await a.waitForFunction(() => document.querySelector("#proposed-rent")?.value === "3344", null, { timeout: 5000 }).then(
     () => check("an open page picks up a change made in another tab", true),
@@ -193,6 +195,7 @@ const chatText = (page) => page.getByRole("log", { name: "Messages" }).innerText
   const page = await open();
   await resetApp(page);
   await page.goto(`${BASE}/owner/rent`);
+  await openLease(page);
   const verdict = () => page.locator("[role=status].sticky").innerText();
   check("before the inflation figure is confirmed the verdict asks for it, and Send is disabled", /Confirm your area's inflation figure first/.test(await verdict()) && (await page.getByRole("button", { name: /Send notice/ }).isDisabled()));
   await page.getByLabel(/I checked this inflation figure for my area/).check();
@@ -369,11 +372,13 @@ const chatText = (page) => page.getByRole("log", { name: "Messages" }).innerText
   // Rent page: the recommended raise is the primary button, and the exemption is explained.
   await resetApp(page);
   await page.goto(`${BASE}/owner/rent`);
+  await openLease(page);
   check("no recommended raise is shown while the inflation figure is unconfirmed and rent is late", (await page.getByRole("button", { name: /^Recommended:/ }).count()) === 0);
   await page.getByLabel(/I checked this inflation figure for my area/).check();
   await page.goto(`${BASE}/owner`);
   await page.getByRole("button", { name: "Mark as paid" }).first().click();
   await page.goto(`${BASE}/owner/rent`);
+  await openLease(page);
   check("the recommended raise is first", (await page.getByRole("button", { name: /^Recommended: \$3,360\.00/ }).count()) === 1);
   check("the exemption chance is spelled out", (await page.getByText("You could be exempt from the yearly limit").count()) === 1);
   await page.getByRole("button", { name: "Draft the exemption notice" }).click();

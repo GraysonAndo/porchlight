@@ -258,7 +258,7 @@ export const INITIAL_STATE: DemoState = {
   equipmentEdits: {},
   guideProgress: {},
   extraEquipment: [],
-  prefs: { tenantEmail: true, tenantAutopay: false, tenantAutopayMethod: null, ownerEmail: true, ownerEmergencyCalls: true, ownerPhone: PROPERTY.ownerPhone, tenantPhone: PROPERTY.tenantPhone, ownerAutoApprove: 0, ownerAutoOfferSeen: false },
+  prefs: { tenantEmail: true, tenantAutopay: false, tenantAutopayMethod: null, ownerEmail: true, ownerEmergencyCalls: true, ownerPhone: PROPERTY.ownerPhone, tenantPhone: PROPERTY.tenantPhone, ownerAutoApprove: 0, ownerAutoOfferSeen: false, ownerAutoRemind: false },
   agent: createWorld(),
   textUpdates: { tenant: true, owner: true },
   pricingPick: null,

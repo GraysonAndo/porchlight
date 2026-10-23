@@ -95,3 +95,10 @@ export async function layoutProblems(page) {
     return problems;
   });
 }
+
+/** The rent page folds the lease facts and exemption checks away. Opens them so a script can reach those fields. */
+export async function openLease(page) {
+  const details = page.locator("details:has(#current-rent)");
+  await details.waitFor({ state: "attached", timeout: 20000 });
+  if (!(await details.evaluate((el) => el.open))) await details.locator("summary").click();
+}
