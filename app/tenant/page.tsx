@@ -6,6 +6,8 @@ import { AgentPanel } from "@/components/AgentPanel";
 import { Thread } from "@/components/Thread";
 import { useAgent } from "@/lib/agents/useAgent";
 import { requestsFor } from "@/lib/agents/views";
+import { useDemo } from "@/lib/store";
+import { BILLS, dueStatus, money } from "@/lib/payments";
 
 const STARTERS = [
   { label: "My water heater is leaking", text: "water heater is leaking all over the garage" },
@@ -20,6 +22,13 @@ export default function TenantPage() {
   const requests = requestsFor({ ...agent.world, timeline: agent.visible });
   const via = agent.textUpdates.tenant ? "text" : "app";
   const [view, setView] = useState<"chat" | "activity">("chat");
+  const { state, hydrated } = useDemo();
+  // What the tenant owes, so paying is one tap from the first screen instead of a search through the tabs.
+  const paidKinds = new Set(state.payments.map((p) => p.kind));
+  if (state.rentPaidAt) paidKinds.add("rent");
+  const dueCents = BILLS.filter((b) => !paidKinds.has(b.kind)).reduce((sum, b) => sum + b.cents, 0);
+  const rentLate = !paidKinds.has("rent") && dueStatus("rent").overdue;
+  const needsTime = agent.world.triage.stage === "booked" && !agent.world.triage.tenantConfirmed;
 
   return (
     <div className="space-y-4">
@@ -41,6 +50,18 @@ export default function TenantPage() {
         <span>. Then tell GoHome.</span>
       </p>
 
+      {hydrated && dueCents > 0 && (
+        <section aria-label="What you owe" className={`flex flex-wrap items-center justify-between gap-3 rounded-2xl border-2 px-4 py-3 ${rentLate ? "border-urgent bg-urgent-tint" : "border-line bg-white"}`}>
+          <p className="font-bold">
+            You owe {money(dueCents)}.{" "}
+            <span className={rentLate ? "text-urgent" : "text-ink-soft"}>{rentLate ? `Rent is ${dueStatus("rent").text}` : "Due this month."}</span>
+          </p>
+          <Link href="/tenant/pay" className="btn btn-primary !min-h-11">
+            Pay now
+          </Link>
+        </section>
+      )}
+
       {requests.length > 0 && (
         <section aria-labelledby="requests-heading" className="card !p-4">
           <h2 id="requests-heading" className="text-lg font-extrabold">
@@ -54,6 +75,16 @@ export default function TenantPage() {
               </li>
             ))}
           </ul>
+          {needsTime && (
+            <div className="mt-3 flex flex-wrap gap-2" role="group" aria-label="Is the plumber's time good?">
+              <button type="button" className="btn btn-primary !min-h-11" onClick={() => agent.send({ type: "tenant.text", text: "1", shown: "That works" })}>
+                That works
+              </button>
+              <button type="button" className="btn btn-secondary !min-h-11" onClick={() => agent.send({ type: "tenant.text", text: "2", shown: "Another time" })}>
+                Another time
+              </button>
+            </div>
+          )}
         </section>
       )}
 

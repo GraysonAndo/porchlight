@@ -6,6 +6,25 @@ import { GearIcon } from "./icons";
 import { Logo } from "./Logo";
 import { OWNER_NAV, TENANT_NAV, isActive, roleForPath } from "@/lib/steps";
 import { PROPERTY } from "@/lib/seed";
+import { useAttention } from "@/lib/useAttention";
+
+/** A small count on a tab when something is waiting on this person. Spoken as well as shown. */
+function NavBadge({ count }: { count: number }) {
+  if (count <= 0) return null;
+  return (
+    <span className="ml-1.5 inline-flex min-w-5 items-center justify-center rounded-full bg-urgent px-1.5 text-xs font-extrabold leading-5 text-white">
+      <span aria-hidden="true">{count}</span>
+      <span className="sr-only">, {count} waiting on you</span>
+    </span>
+  );
+}
+
+/** Which tab each count belongs on: the first one for each side. */
+function badgeFor(role: "owner" | "tenant" | null, href: string, att: { owner: number; tenant: number }): number {
+  if (role === "owner" && href === "/owner") return att.owner;
+  if (role === "tenant" && href === "/tenant") return att.tenant;
+  return 0;
+}
 
 /** The header for pages that belong to neither side: the welcome page, About, Pricing, and Feedback. Same links on every one. */
 export function PublicHeader() {
@@ -40,6 +59,7 @@ export function PublicHeader() {
 export function SiteHeader() {
   const pathname = usePathname();
   const role = roleForPath(pathname);
+  const att = useAttention();
   if (!role) return <PublicHeader />;
   const nav = role === "owner" ? OWNER_NAV : role === "tenant" ? TENANT_NAV : [];
   const name = role === "owner" ? PROPERTY.owner : PROPERTY.tenant;
@@ -62,6 +82,7 @@ export function SiteHeader() {
                 }`}
               >
                 {item.label}
+                <NavBadge count={badgeFor(role, item.href, att)} />
               </Link>
             ))}
           </nav>
@@ -98,6 +119,7 @@ export function SiteHeader() {
 export function MobileTabs() {
   const pathname = usePathname();
   const role = roleForPath(pathname);
+  const att = useAttention();
   const nav = role === "owner" ? OWNER_NAV : role === "tenant" ? TENANT_NAV : [];
   if (nav.length === 0) return null;
   return (
@@ -115,7 +137,10 @@ export function MobileTabs() {
                 aria-current={active ? "page" : undefined}
                 className={`flex min-h-14 items-center justify-center px-2 text-sm font-bold ${active ? "text-brand" : "text-ink-soft"}`}
               >
-                <span className={`rounded-full px-3 py-1 ${active ? "bg-brand-tint" : ""}`}>{item.label}</span>
+                <span className={`rounded-full px-3 py-1 ${active ? "bg-brand-tint" : ""}`}>
+                  {item.label}
+                  <NavBadge count={badgeFor(role, item.href, att)} />
+                </span>
               </Link>
             </li>
           );

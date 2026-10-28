@@ -1,15 +1,23 @@
 "use client";
 
 import { usePathname } from "next/navigation";
+import { useEffect } from "react";
+import { useDemo } from "@/lib/store";
 import type { ReactNode } from "react";
 import { MobileTabs, SiteHeader } from "./SiteHeader";
 import { SiteFooter } from "./SiteFooter";
 import { FlowPrompt } from "./FlowPrompt";
-import { PAGE_DESCRIPTIONS, PAGE_TITLES } from "@/lib/steps";
+import { PAGE_DESCRIPTIONS, PAGE_TITLES, roleForPath } from "@/lib/steps";
 
 /** The frame around every page: a header (the role's own, or the public one), the page, and one footer. */
 export function Shell({ children }: { children: ReactNode }) {
   const pathname = usePathname();
+  const { state, actions, hydrated } = useDemo();
+  // Remember which side this person is on, so the start page can offer a one-tap way back to it.
+  const side = roleForPath(pathname);
+  useEffect(() => {
+    if (hydrated && side && state.role !== side) actions.setRole(side);
+  }, [hydrated, side, state.role, actions]);
   // Each page has its own tab title, so a person with several tabs open can tell them apart.
   const clean = pathname.length > 1 ? pathname.replace(/\/+$/, "") : pathname;
   const name = clean.startsWith("/tenant/guides/") ? "How-to guide" : PAGE_TITLES[clean];

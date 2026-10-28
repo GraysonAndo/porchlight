@@ -72,7 +72,7 @@ const chatText = (page) => page.getByRole("log", { name: "Messages" }).innerText
   check("the logo takes either person back to the start, where tenant or owner can be picked again", (await page.getByRole("button", { name: /Tenant/ }).count()) === 1 && (await page.getByRole("button", { name: /Owner/ }).count()) === 1);
   await page.getByRole("button", { name: /Tenant/ }).click();
   await page.waitForURL("**/tenant");
-  check("the tenant side has only Help, My home, and Pay in its tabs", (await page.getByRole("navigation", { name: "Tenant tabs" }).getByRole("link").allInnerTexts()).join() === "Help,My home,Pay");
+  check("the tenant side has only Help, My home, and Pay in its tabs", (await page.getByRole("navigation", { name: "Tenant tabs" }).getByRole("link").allInnerTexts()).map((t) => t.replace(/\s*\d.*$/s, "")).join() === "Help,My home,Pay");
   await page.getByRole("link", { name: "Switch to owner" }).click();
   await page.waitForURL("**/owner");
   check("Switch goes straight to the other side in one click", true);
@@ -80,7 +80,7 @@ const chatText = (page) => page.getByRole("log", { name: "Messages" }).innerText
   await page.getByRole("button", { name: /Owner/ }).click();
   await page.waitForURL("**/owner");
   check("choosing owner opens the owner side", true);
-  check("the owner side has Inbox, Home record, Forecast, and Rent", (await page.getByRole("navigation", { name: "Owner tabs" }).getByRole("link").allInnerTexts()).join() === "Inbox,Home record,Forecast,Rent");
+  check("the owner side has Inbox, Home record, Forecast, and Rent", (await page.getByRole("navigation", { name: "Owner tabs" }).getByRole("link").allInnerTexts()).map((t) => t.replace(/\s*\d.*$/s, "")).join() === "Inbox,Home record,Forecast,Rent");
   check("no console errors on the landing page", errors.length === 0, errors.join(" | "));
   await context.close();
 }
@@ -1157,6 +1157,54 @@ const chatText = (page) => page.getByRole("log", { name: "Messages" }).innerText
   await page.getByText(/Emergency: Fire or electrical safety/).first().waitFor(wait20);
   check("and the owner sees the emergency", true);
   check("no console errors in the model checks", errors.length === 0, errors.join(" | "));
+  await context.close();
+}
+
+// ======================= Fewer clicks: badges, pay from the first screen, answer in place, welcome back =======================
+{
+  const { context, page, errors } = await newPage();
+  await resetApp(page);
+  await page.goto(`${BASE}/`);
+  check("a first visit has no welcome back shortcut", (await page.getByRole("link", { name: /Welcome back/ }).count()) === 0);
+  await page.goto(`${BASE}/owner`);
+  await page.getByRole("link", { name: /Inbox.*1 waiting on you/ }).first().waitFor(wait20);
+  check("the owner's Inbox tab says how many things are waiting, even from other pages", true);
+  await page.goto(`${BASE}/owner/forecast`);
+  await page.getByRole("link", { name: /Inbox.*1 waiting on you/ }).first().waitFor(wait20);
+  check("and the badge follows the owner to every other page", true);
+  await page.goto(`${BASE}/owner`);
+  const quick = page.getByRole("navigation", { name: "Quick links" });
+  await quick.waitFor(wait20);
+  check("the inbox quick links are real buttons-sized links", (await quick.getByRole("link").allInnerTexts()).join() === "Plan a rent increase,Home record,5-year forecast" && (await quick.getByRole("link").first().boundingBox()).height >= 43);
+  await page.goto(`${BASE}/`);
+  await page.getByRole("link", { name: /Welcome back. Continue as the owner/ }).waitFor(wait20);
+  check("a returning visitor gets a one-tap way back to their side", true);
+  await resetApp(page);
+  await page.goto(`${BASE}/tenant`);
+  await page.getByRole("region", { name: "What you owe" }).waitFor(wait20);
+  check("the tenant's first screen says what is owed, with Pay now", /\$3,292\.18/.test(await page.getByRole("region", { name: "What you owe" }).innerText()));
+  await page.getByRole("link", { name: "Pay now" }).first().click();
+  await page.waitForURL("**/tenant/pay");
+  check("Pay now goes straight to paying", true);
+  // Answering in place: the visit time, from the status line, with no hunting for the chat.
+  await resetApp(page);
+  await page.goto(`${BASE}/tenant`);
+  await page.getByRole("button", { name: "My water heater is leaking" }).click();
+  await page.getByText(/near an outlet/).waitFor(wait20);
+  await page.getByRole("button", { name: /^No$/ }).click();
+  await page.goto(`${BASE}/owner`);
+  await page.getByRole("button", { name: "Approve", exact: true }).waitFor(wait20);
+  await page.getByRole("button", { name: "Approve", exact: true }).click();
+  await page.goto(`${BASE}/tenant/home`);
+  await page.getByRole("link", { name: /Help.*1 waiting on you/ }).first().waitFor(wait20);
+  check("the tenant's Help tab says when GoHome is waiting on them, from any page", true);
+  await page.goto(`${BASE}/tenant`);
+  const group = page.getByRole("group", { name: /Is the plumber's time good/ });
+  await group.waitFor(wait20);
+  await group.getByRole("button", { name: "That works" }).click();
+  await page.waitForFunction(() => !document.querySelector('[role=group][aria-label^="Is the plumber"]'));
+  check("one tap on the status line confirms the visit, and the question goes away", (await page.getByRole("link", { name: /Help.*waiting on you/ }).count()) === 0);
+  check("no console errors in the fewer-clicks checks", errors.length === 0, errors.join(" | "));
   await context.close();
 }
 

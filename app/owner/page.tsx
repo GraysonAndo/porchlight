@@ -139,17 +139,17 @@ export default function OwnerHomePage() {
 
           <RentCard />
           <ComingUpCard />
-          <p className="text-sm text-ink-soft">
-            Want the details behind a repair? Open any approval and tap &quot;See the details&quot;, or check the{" "}
-            <Link href="/owner/record" className="font-bold underline underline-offset-4">
-              home record
-            </Link>{" "}
-            and the{" "}
-            <Link href="/owner/forecast" className="font-bold underline underline-offset-4">
+          <nav aria-label="Quick links" className="flex flex-wrap gap-2">
+            <Link href="/owner/rent" className="btn btn-secondary !min-h-11 text-sm">
+              Plan a rent increase
+            </Link>
+            <Link href="/owner/record" className="btn btn-secondary !min-h-11 text-sm">
+              Home record
+            </Link>
+            <Link href="/owner/forecast" className="btn btn-secondary !min-h-11 text-sm">
               5-year forecast
             </Link>
-            .
-          </p>
+          </nav>
         </div>
 
         <div className="space-y-3 lg:sticky lg:top-20">

@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { HomeIcon, KeyIcon, PlayIcon } from "@/components/icons";
 import { LogoMark } from "@/components/Logo";
@@ -35,7 +36,7 @@ function RoleCard({
 
 export default function GatePage() {
   const router = useRouter();
-  const { actions } = useDemo();
+  const { state, actions, hydrated } = useDemo();
 
   function choose(role: "tenant" | "owner") {
     actions.setRole(role);
@@ -49,7 +50,16 @@ export default function GatePage() {
         <h1 className="mt-5 text-5xl font-extrabold leading-none tracking-tight sm:text-7xl">GoHome</h1>
         <p className="mt-3 text-xl text-ink-soft sm:text-2xl">Your home, made easy.</p>
 
-        <p className="mt-10 text-sm font-extrabold uppercase tracking-widest text-ink-soft">I am a</p>
+        {hydrated && state.role && (
+          <Link
+            href={state.role === "tenant" ? "/tenant" : "/owner"}
+            className="btn btn-primary btn-lg mt-8"
+          >
+            Welcome back. Continue as {state.role === "tenant" ? "a tenant" : "the owner"} <span aria-hidden="true">&rarr;</span>
+          </Link>
+        )}
+
+        <p className={`${hydrated && state.role ? "mt-6" : "mt-10"} text-sm font-extrabold uppercase tracking-widest text-ink-soft`}>{hydrated && state.role ? "Or switch to" : "I am a"}</p>
         <div className="mt-3 grid w-full gap-4 sm:grid-cols-2">
           <RoleCard
             icon={<KeyIcon size={26} />}

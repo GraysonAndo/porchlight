@@ -17,14 +17,14 @@ Nothing here claims a legal opinion, a vendor relationship, a customer interview
 
 | Status | Count |
 |---|---:|
-| Fixed | 69 |
+| Fixed | 73 |
 | Verified | 28 |
 | Already resolved | 15 |
 | Roadmap | 1 |
 | Requires human review | 1 |
-| **Total findings** | **114** |
+| **Total findings** | **118** |
 
-Rounds 2, 3 and 4 added R01 to R33 (customer-focused). Findings: 54 original (T01 to T13, O01 to O12, H01 to H13, P01 to P09, S01 to S07), 12 extra quote findings (Q01 to Q12), and 15 accessibility requirements (A01 to A15). The 68 product ideas are in `docs/product-roadmap.md`.
+Rounds 2, 3 and 4 added R01 to R37 (customer-focused). Findings: 54 original (T01 to T13, O01 to O12, H01 to H13, P01 to P09, S01 to S07), 12 extra quote findings (Q01 to Q12), and 15 accessibility requirements (A01 to A15). The 68 product ideas are in `docs/product-roadmap.md`.
 
 ## Tenant flow
 
@@ -181,6 +181,10 @@ These came from walking the product as a stressed tenant on a phone and as an ol
 | R31 | High | Saved data from an older version, or damaged data, could crash the app on load and keep it broken until the browser was cleared by hand (a missing triage, sentinel or timer list, a bad timeline entry, a setting of the wrong type) | Fixed | lib/persist.ts normalizes whatever is saved: it fills in missing parts of the agent's world, drops bad entries and timers, puts wrong-typed settings back to their defaults and starts clean from anything that is not a saved state. lib/store.tsx uses it. tests/persist.test.ts. |
 | R32 | High | A hand pick of a vendor was not checked: an unknown vendor silently became the first vendor in the list (the slightly high one), and a spending limit below the vendor's own quote or not a number was accepted | Fixed | lib/agents/engine.ts ignores a pick that names a vendor nobody asked, has a limit below that vendor's quote, or has no usable time. tests/agents.test.ts (audit round 4). |
 | R33 | Low | The saving counted on the owner's stats used the paper totals, so picking a quote that left out a permit overstated it (the Q01 comparable-scope rule was not applied here) | Fixed | The saving is the highest comparable total minus the pick's comparable total ($625, not $750, for the sample A1 quote). tests/agents.test.ts. |
+| R34 | Medium | Something waiting on a person was only visible on one page: an owner on the Forecast or Rent page could not tell an approval or late rent was waiting, and a tenant on My home could not tell GoHome was waiting for them | Fixed | The owner's Inbox tab and the tenant's Help tab show a red count, spoken as well as shown (lib/attention.ts, components/SiteHeader.tsx), on every page and on the phone tab bar. The rules are pure and tested (tests/attention.test.ts). |
+| R35 | Medium | A tenant who owed rent had to find the Pay tab; the first screen said nothing about money | Fixed | The tenant's Help page opens with what is owed and a Pay now button, one tap to the Pay page. Hidden when nothing is owed. |
+| R36 | Low | Confirming the plumber's time meant finding the chat and its quick replies | Fixed | The Where things stand box has That works and Another time buttons when GoHome is waiting on the visit time, the same event as the chat buttons. |
+| R37 | Low | The start page treated a returning person like a stranger, and the owner's quick links were small text | Fixed | The app remembers which side a person is on, and the start page offers Welcome back, Continue as the owner or a tenant, one tap, with the Tenant and Owner choice still below. The inbox quick links (rent increase, home record, forecast) are button-sized links and the duplicate link on the rent card is gone. |
 
 ## Needs manual verification
 
