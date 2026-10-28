@@ -66,7 +66,7 @@ describe("fuzz: random events never break the agent", () => {
       let cpiEvents = 0;
       let unpaidEvents = 0;
       for (let i = 0; i < 28; i++) {
-        let ev = randomEvent(r, w);
+        const ev = randomEvent(r, w);
         if (r() < 0.12) {
           const t = nextTimerAt(w);
           if (t !== null) {

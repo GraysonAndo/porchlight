@@ -54,7 +54,6 @@ export function mentionsWaterHeater(text: string): boolean {
   return /\bheater\b/i.test(text) && !OTHER_HEATER.test(text);
 }
 
-const SEEDED_HEATER: Rule = { test: /./ };
 
 export function isGasEmergency(text: string): boolean {
   return GAS.test.test(text) || CARBON_MONOXIDE.test.test(text);
