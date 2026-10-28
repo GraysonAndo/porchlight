@@ -606,3 +606,36 @@ describe("audit round 4: a question with a picture guide gets the guide", () => 
     expect(last.actions?.map((a) => a.id)).toContain("askowner");
   });
 });
+
+describe("audit round 4: a hand pick is checked, and the saving uses comparable scope", () => {
+  const atDecision = () => {
+    let w = run(createWorld(), [LEAK, { type: "tenant.text", text: "2" }]);
+    w = advanceTo(w, nextTimerAt(w)!);
+    return w;
+  };
+  const choose = (vendorId: string, notToExceed: number): Ev => ({ type: "owner.choose", vendorId, notToExceed, accessWindow: "Tomorrow, 9:00 to 11:00 AM" });
+
+  it("ignores a pick of a vendor nobody asked, a limit below the vendor's own quote, or a limit that is not a number", () => {
+    for (const bad of [choose("nobody", 2695), choose("willow-glen", 100), choose("willow-glen", NaN), { ...choose("willow-glen", 2695), accessWindow: "  " }]) {
+      const w = send(atDecision(), bad);
+      expect(w.choice).toBeNull();
+    }
+  });
+
+  it("books exactly the vendor and limit the owner chose when they are sound", () => {
+    let w = send(atDecision(), choose("bayside", 3135));
+    expect(w.choice).toMatchObject({ vendorId: "bayside", notToExceed: 3135 });
+    const card = openOwnerMessage(w)!;
+    w = send(w, { type: "owner.tap", msgId: card.id, action: "approve" });
+    const booked = w.timeline.find((e) => e.kind === "tool" && e.tool === "book_vendor");
+    expect(booked && booked.kind === "tool" && booked.title).toMatch(/Bayside/);
+  });
+
+  it("counts what the owner saved against the comparable highest quote, not the paper one", () => {
+    let w = send(atDecision(), choose("a1-rapid", 2310));
+    const card = openOwnerMessage(w)!;
+    w = send(w, { type: "owner.tap", msgId: card.id, action: "approve" });
+    // A1 quoted $2,100 but left out the permit: with it added it is $2,225. The highest, Bayside, is $2,850. So $625, not $750.
+    expect(w.stats.saved).toBe(625);
+  });
+});

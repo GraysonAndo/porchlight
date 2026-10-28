@@ -13,7 +13,7 @@ import { equipmentFor } from "../equipment";
 import { buildForecast } from "../forecast";
 import { addDays, longDate, usd, usdCents, usdRange } from "../format";
 import { ageOf } from "../life";
-import { COLLECTED, PLAN, TYPICAL_REPLACE_COST } from "../plan";
+import { COLLECTED, PLAN, TYPICAL_REPLACE_COST, collectedFor } from "../plan";
 import { compareQuote, percentOverTop, verdictFor } from "../quote";
 import { SAMPLE_QUOTE_TEXT, parseQuoteText } from "../quoteParse";
 import { buildNotice, calculateRent, rentInputsFromForm, startDateFor } from "../rent";
@@ -342,9 +342,15 @@ function handle(w: World, ev: Ev): void {
       return onMarkDone(w);
     case "owner.autoApprove":
       return onAutoApprove(w, ev.limit);
-    case "owner.choose":
-      w.choice = { vendorId: ev.vendorId, notToExceed: ev.notToExceed, accessWindow: ev.accessWindow };
+    case "owner.choose": {
+      // A hand pick must name a vendor GoHome collected a quote from, with a limit that covers that quote. Anything else is
+      // ignored, so a booking can never go to a vendor nobody asked or carry a limit below the vendor's own price.
+      const vendor = VENDORS.find((v) => v.id === ev.vendorId);
+      const okLimit = Number.isFinite(ev.notToExceed) && vendor !== undefined && ev.notToExceed >= vendor.total;
+      if (!vendor || !okLimit || typeof ev.accessWindow !== "string" || ev.accessWindow.trim() === "") return;
+      w.choice = { vendorId: ev.vendorId, notToExceed: Math.round(ev.notToExceed), accessWindow: ev.accessWindow };
       return;
+    }
     case "timer":
       return onTimer(w, ev.id);
   }
@@ -990,7 +996,9 @@ function triageOwnerAction(w: World, action: string): void {
   // approve: the owner's own pick if they chose one by hand, otherwise GoHome's plan
   const pick = w.choice ?? { vendorId: PLAN.vendorId, notToExceed: PLAN.notToExceed, accessWindow: ACCESS_WINDOWS[0] };
   const vendor = VENDORS.find((v) => v.id === pick.vendorId) ?? VENDORS[0];
-  const highest = Math.max(...VENDORS.map((v) => v.total));
+  // The saving is measured on comparable scope, like everywhere else: a quote that leaves out a permit is judged with it added.
+  const adjustedFor = (id: string, fallback: number) => collectedFor(id)?.normalized.adjusted ?? fallback;
+  const highest = Math.max(...VENDORS.map((v) => adjustedFor(v.id, v.total)));
   tool(
     w,
     "gate",
@@ -1019,7 +1027,7 @@ function triageOwnerAction(w: World, action: string): void {
   );
   say(w, "owner", `Approved. Booked ${vendor.name}, limit ${usd(pick.notToExceed)}. I'm telling the tenant and the vendor now. I'll text you when it's done and add the new heater to your record.`);
   w.stats.ownerTaps += 1;
-  w.stats.saved += Math.max(0, highest - vendor.total);
+  w.stats.saved += Math.max(0, highest - adjustedFor(vendor.id, vendor.total));
   w.triage.stage = "booked";
   w.pending = w.pending.filter((p) => p.id !== "owner_nudge");
   const tomorrowAfternoon = MINUTES_PER_DAY + 11 * 60 + 20;

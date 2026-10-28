@@ -63,6 +63,10 @@ Risk reducers from the audit: the owner taps every action, GoHome never holds re
 
 The audit mentions 27.5-year depreciation for residential rental improvements and a $2,500 small-item safe harbor from the IRS. These are unverified. Do not put any tax treatment in the product until a CPA has reviewed each rule.
 
+## 7. Passing card fees on rent to the tenant (found in round 4, not from the original audit)
+
+The sample Pay page adds a card fee of 2.9% plus 30 cents to the tenant's payment and shows it on its own line. Bank transfers are free. On $3,200 of rent that is about $93. Whether California lets a landlord, or software acting for one, charge a tenant a fee for paying rent by card, how it must be disclosed, and whether it can be more than the processor's own cost are **not verified**. Ask the real estate attorney before any real payment screen ships, and consider making the bank option the default or absorbing the fee.
+
 ## What has to happen before any of this goes live
 
 1. A California real estate attorney reviews the rent notice drafts, the exemption wording, the entry notice plan, the deposit plan, and the broker license position.

@@ -17,14 +17,14 @@ Nothing here claims a legal opinion, a vendor relationship, a customer interview
 
 | Status | Count |
 |---|---:|
-| Fixed | 67 |
+| Fixed | 69 |
 | Verified | 28 |
 | Already resolved | 15 |
 | Roadmap | 1 |
 | Requires human review | 1 |
-| **Total findings** | **112** |
+| **Total findings** | **114** |
 
-Rounds 2, 3 and 4 added R01 to R31 (customer-focused). Findings: 54 original (T01 to T13, O01 to O12, H01 to H13, P01 to P09, S01 to S07), 12 extra quote findings (Q01 to Q12), and 15 accessibility requirements (A01 to A15). The 68 product ideas are in `docs/product-roadmap.md`.
+Rounds 2, 3 and 4 added R01 to R33 (customer-focused). Findings: 54 original (T01 to T13, O01 to O12, H01 to H13, P01 to P09, S01 to S07), 12 extra quote findings (Q01 to Q12), and 15 accessibility requirements (A01 to A15). The 68 product ideas are in `docs/product-roadmap.md`.
 
 ## Tenant flow
 
@@ -179,6 +179,8 @@ These came from walking the product as a stressed tenant on a phone and as an ol
 | R29 | High | Triage under-rated more dangers: a shock from an outlet, a stove that will not turn off, a collapse, threats or violence, someone having been inside, heating not working, a broken stair or railing, no running water, and a chirping smoke alarm | Fixed | lib/triage.ts: the first five are emergencies, with 911 first where it applies. Broken stairs and railings and no running water are urgent with the owner alerted, more ways of saying no heat are caught, and a chirping alarm is a low battery to fix soon while a blaring one stays an emergency. tests/triage.test.ts. New safety steps need plumber, electrician and attorney review like the rest. |
 | R30 | Medium | The tenant assistant said I don't know to questions the app can answer: when rent is due, the late fee, a piece of equipment's brand, model, serial or place (all shown on My home), and how to reset a breaker | Fixed | lib/houseQa.ts answers rent due and the late fee from the same lease numbers as the Pay page, and brand, model, serial and place from the home record as recorded at move-in. Warranty terms are still not known and it says so. When a question matches a picture guide, the agent offers the guide before offering to ask the owner. tests/houseQa.test.ts and tests/agents.test.ts. Caveat: the agent reads the move-in record, not an owner's later edits. |
 | R31 | High | Saved data from an older version, or damaged data, could crash the app on load and keep it broken until the browser was cleared by hand (a missing triage, sentinel or timer list, a bad timeline entry, a setting of the wrong type) | Fixed | lib/persist.ts normalizes whatever is saved: it fills in missing parts of the agent's world, drops bad entries and timers, puts wrong-typed settings back to their defaults and starts clean from anything that is not a saved state. lib/store.tsx uses it. tests/persist.test.ts. |
+| R32 | High | A hand pick of a vendor was not checked: an unknown vendor silently became the first vendor in the list (the slightly high one), and a spending limit below the vendor's own quote or not a number was accepted | Fixed | lib/agents/engine.ts ignores a pick that names a vendor nobody asked, has a limit below that vendor's quote, or has no usable time. tests/agents.test.ts (audit round 4). |
+| R33 | Low | The saving counted on the owner's stats used the paper totals, so picking a quote that left out a permit overstated it (the Q01 comparable-scope rule was not applied here) | Fixed | The saving is the highest comparable total minus the pick's comparable total ($625, not $750, for the sample A1 quote). tests/agents.test.ts. |
 
 ## Needs manual verification
 
