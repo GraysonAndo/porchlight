@@ -103,8 +103,11 @@ describe("quoteEvents and bookingEvents", () => {
 describe("isHeaterRequest", () => {
   it("recognizes water heater wording", () => {
     expect(isHeaterRequest("The water heater is leaking")).toBe(true);
-    expect(isHeaterRequest("no hot water")).toBe(true);
+    // No hot water is its own problem: GoHome alerts the owner and gives no do-it-yourself steps, instead of running the leak flow.
+    expect(isHeaterRequest("no hot water")).toBe(false);
     expect(isHeaterRequest("the toilet is clogged")).toBe(false);
+    expect(isHeaterRequest("the tank on my toilet keeps running")).toBe(false);
+    expect(isHeaterRequest("my space heater is making a noise")).toBe(false);
   });
 });
 

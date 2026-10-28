@@ -2,10 +2,12 @@
 
 import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 
+import { demoToday } from "./demoDate";
+
 const subscribeNever = () => () => {};
 
 function todayIso(): string {
-  const d = new Date();
+  const d = demoToday();
   const month = String(d.getMonth() + 1).padStart(2, "0");
   const day = String(d.getDate()).padStart(2, "0");
   return `${d.getFullYear()}-${month}-${day}`;

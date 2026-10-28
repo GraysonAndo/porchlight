@@ -3,6 +3,7 @@
 // the screens keep only the last four digits and a confirmation number.
 
 import { PROPERTY } from "./seed";
+import { demoToday } from "./demoDate";
 
 export type PayMethod = "card" | "bank";
 export type PayKind = "rent" | "utilities";
@@ -30,7 +31,7 @@ export const DIRECT_UTILITIES = "Gas and electric are paid directly to your util
 export const BILL_DUE_DATES: Record<PayKind, string> = { rent: "2026-10-01", utilities: "2026-10-31" };
 
 /** Whole calendar days from today to an ISO date. Negative when the date has passed. `now` is a parameter so this is testable. */
-export function daysUntil(iso: string, now: Date = new Date()): number {
+export function daysUntil(iso: string, now: Date = demoToday()): number {
   const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(iso);
   if (!m) return 0;
   const due = Date.UTC(Number(m[1]), Number(m[2]) - 1, Number(m[3]));
@@ -49,7 +50,7 @@ export interface DueStatus {
 }
 
 /** Where a bill stands against its due date. Only a bill past its date is overdue. */
-export function dueStatus(kind: PayKind, now: Date = new Date()): DueStatus {
+export function dueStatus(kind: PayKind, now: Date = demoToday()): DueStatus {
   const iso = BILL_DUE_DATES[kind];
   const days = daysUntil(iso, now);
   const label = `${MONTH_NAMES[Number(iso.slice(5, 7)) - 1]} ${Number(iso.slice(8, 10))}`;

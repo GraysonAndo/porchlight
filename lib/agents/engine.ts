@@ -16,7 +16,9 @@ import { ageOf } from "../life";
 import { COLLECTED, PLAN, TYPICAL_REPLACE_COST } from "../plan";
 import { compareQuote, percentOverTop, verdictFor } from "../quote";
 import { SAMPLE_QUOTE_TEXT, parseQuoteText } from "../quoteParse";
-import { buildNotice, calculateRent, effectiveDateFor, rentInputsFromForm } from "../rent";
+import { buildNotice, calculateRent, rentInputsFromForm, startDateFor } from "../rent";
+import { demoToday } from "../demoDate";
+import { LEASE_ANNIVERSARY_ISO } from "../houseQa";
 import { answerHouseQuestion, classifyTenantText } from "../houseQa";
 import { recordFromValues } from "./record";
 import {
@@ -93,7 +95,18 @@ export const RECORD_FIELDS: { key: string; label: string; group: "Water heater" 
 ];
 
 /** A sample notice date for the demo. Real use would take today's date. */
-export const SAMPLE_NOTICE_DATE = "2026-10-19";
+/** The notice is dated today, in the sample's own calendar (see lib/demoDate.ts), and the new rent starts at the lease anniversary. */
+function noticeToday(): string {
+  const d = demoToday();
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+}
+
+/** The modest raise GoHome suggests: the usual 5%, never more than the law allows. Worked out, not typed in. */
+function recommendedRent(): number {
+  const { currentRent } = DEFAULT_RENT_FORM;
+  const max = calculateRent(rentInputsFromForm({ ...DEFAULT_RENT_FORM, proposedRent: currentRent })).maxNewRent;
+  return Math.min(Math.round(currentRent * 1.05), Math.floor(max));
+}
 
 // ---------------------------------------------------------------------------
 // World
@@ -1235,6 +1248,8 @@ function quoteOwnerAction(w: World, action: string): void {
 
 function onContractorCounter(w: World, total: number): void {
   if (w.quote.stage !== "sent") return;
+  // A counter that is not a real positive amount is ignored, so the owner is never shown "$NaN" or a price of zero.
+  if (!Number.isFinite(total) || total <= 0) return;
   w.quote.counters += 1;
   w.quote.counterTotal = total;
   hear(w, "contractor", `Thanks for flagging that. We can do ${usd(total)}.`, {
@@ -1285,7 +1300,7 @@ function onLeaseCheck(w: World): void {
     say(w, "owner", `I am holding the rent increase check. ${RENT_MONTH} rent has not come in yet, and that comes first. Send a reminder or mark it paid, then ask me again.`, { silent: true });
     return;
   }
-  const proposed = 3360;
+  const proposed = recommendedRent();
   const result = calculateRent(rentInputsFromForm({ ...DEFAULT_RENT_FORM, proposedRent: proposed }));
   tool(w, "sentinel", "scan_leases", "code", "Checked lease dates", "1200 Example Court: lease anniversary December 14, 2026. Last increase December 2024, about 22 months ago. 0 increases in the last 12 months.");
   tool(w, "sentinel", "fetch_cpi", "code", "Used a sample inflation figure", "No live lookup was made. 3.0% is a placeholder, so confirm your area's figure on the rent page before sending anything.");
@@ -1303,8 +1318,9 @@ function onLeaseCheck(w: World): void {
     address: PROPERTY.address,
     currentRent: DEFAULT_RENT_FORM.currentRent,
     newRent: proposed,
-    noticeDate: SAMPLE_NOTICE_DATE,
+    noticeDate: noticeToday(),
     noticeDays: result.noticeDays,
+    startDate: LEASE_ANNIVERSARY_ISO,
   });
   tool(w, "sentinel", "build_notice", "code", "Built the notice", "A plain-language notice from a template, stamped as a draft. The AI does not decide what is legal.");
   w.sentinel = { stage: "awaiting_owner", proposed };
@@ -1323,7 +1339,7 @@ function onLeaseCheck(w: World): void {
             value: w.cpiConfirmed ? `${result.capPercent.toFixed(1)}% (${usdCents(result.maxNewRent)})` : `Needs your inflation figure first (sample: ${result.capPercent.toFixed(1)}%, ${usdCents(result.maxNewRent)})`,
             tone: w.cpiConfirmed ? undefined : "caution",
           },
-          { label: "Suggested", value: `5% (${usd(3360)})`, tone: "good" },
+          { label: "Suggested", value: `5% (${usd(proposed)})`, tone: "good" },
           { label: "Notice period", value: `${result.noticeDays} days` },
           { label: "Sent by", value: "Certified mail, with proof" },
           ...(w.rentPaid ? [] : [{ label: "Heads up", value: `${RENT_MONTH} rent has not come in yet`, tone: "caution" as const }]),
@@ -1335,7 +1351,7 @@ function onLeaseCheck(w: World): void {
       attachment: { title: "Draft rent notice", body: notice },
       actions: w.cpiConfirmed
         ? [
-            { id: "rent5", label: `Mail at 5% (${usd(3360)})` },
+            { id: "rent5", label: `Mail at 5% (${usd(proposed)})` },
             { id: "rentmax", label: `Mail at max (${usd(result.maxNewRent)})` },
             { id: "renthold", label: "Hold" },
           ]
@@ -1353,10 +1369,11 @@ function sentinelOwnerAction(w: World, action: string): void {
     return;
   }
   const max = calculateRent(rentInputsFromForm({ ...DEFAULT_RENT_FORM, proposedRent: DEFAULT_RENT_FORM.currentRent })).maxNewRent;
-  const newRent = action === "rentmax" ? max : 3360;
+  const newRent = action === "rentmax" ? max : recommendedRent();
   const check = calculateRent(rentInputsFromForm({ ...DEFAULT_RENT_FORM, proposedRent: newRent }));
   if (!check.withinCap) return;
-  const effective = effectiveDateFor(SAMPLE_NOTICE_DATE, check.noticeDays);
+  const mailedOn = noticeToday();
+  const effective = startDateFor("increase", mailedOn, check.noticeDays, LEASE_ANNIVERSARY_ISO);
   tool(w, "gate", "approval_gate", "human", "Owner approved the notice", `One tap approved ${usdCents(newRent)} (${check.increasePercent.toFixed(1)}%), within the ${check.capPercent.toFixed(1)}% cap.`);
   tool(
     w,
@@ -1368,20 +1385,21 @@ function sentinelOwnerAction(w: World, action: string): void {
   );
   record(
     w,
-    { "lease.notice": `Mailed ${longDate(SAMPLE_NOTICE_DATE)}, new rent ${usdCents(newRent)} from ${longDate(effective)}` },
+    { "lease.notice": `Mailed ${longDate(mailedOn)}, new rent ${usdCents(newRent)} from ${longDate(effective)}` },
     `Rent notice mailed for ${usdCents(newRent)}`,
   );
   say(w, "owner", `Done. Notice mailed certified for ${usdCents(newRent)}, effective ${longDate(effective)} (${check.noticeDays} days). I'll text you when it's delivered and save proof of service.`);
   w.stats.ownerTaps += 1;
   w.sentinel.stage = "mailed";
   w.sentinel.proposed = newRent;
+  w.sentinel.mailedOn = mailedOn;
   later(w, 2 * MINUTES_PER_DAY, "notice_delivered");
 }
 
 function noticeDelivered(w: World): void {
   if (w.sentinel.stage !== "mailed") return;
   w.sentinel.stage = "delivered";
-  const delivered = addDays(SAMPLE_NOTICE_DATE, 3);
+  const delivered = addDays(w.sentinel.mailedOn ?? noticeToday(), 3);
   tool(w, "sentinel", "track_delivery", "action", "Notice delivered", `Certified mail shows delivered ${longDate(delivered)}. Proof of service saved to the house record.`);
   record(w, { "lease.notice": `Delivered ${longDate(delivered)}, proof saved` }, "Rent notice delivered. Proof of service saved.");
   say(w, "owner", `Delivered ${longDate(delivered)}. Proof of service is saved in your house record.`, { silent: true });

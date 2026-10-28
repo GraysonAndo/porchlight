@@ -464,6 +464,27 @@ describe("final defect list: chat behavior", () => {
   });
 });
 
+describe("audit round 4: one set of dates and numbers", () => {
+  it("mails the rent notice to start at the lease anniversary, the same day the rent page uses", () => {
+    let w = run(createWorld(), [{ type: "rent.paid", paid: true }, { type: "rent.cpi", confirmed: true }, { type: "cron.lease" }]);
+    const card = openOwnerMessage(w)!;
+    expect(card.card?.kind).toBe("lease");
+    expect(card.actions?.map((a) => a.id)).toContain("rent5");
+    w = send(w, { type: "owner.tap", msgId: card.id, action: "rent5" });
+    const done = w.timeline.filter((e): e is Msg => e.kind === "msg" && e.party === "owner" && /Notice mailed certified/.test(e.text)).at(-1)!;
+    expect(done.text).toMatch(/effective December 14, 2026/);
+    expect(done.text).toMatch(/\$3,360\.00/);
+    expect(w.sentinel.mailedOn).toMatch(/^2026-10-\d\d$/);
+  });
+
+  it("ignores a counter-offer that is not a real amount", () => {
+    let w = run(createWorld(), [LEAK, { type: "tenant.text", text: "2" }, { type: "contractor.quote" }]);
+    const before = w.timeline.length;
+    for (const total of [NaN, 0, -10, Infinity]) w = send(w, { type: "contractor.counter", total });
+    expect(w.timeline.length).toBe(before);
+  });
+});
+
 describe("audit round 3: the agent does not wait on people", () => {
   const texts = (w: World, party: "tenant" | "owner", dir: "in" | "out") =>
     msgs(w)

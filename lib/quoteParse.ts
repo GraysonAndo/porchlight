@@ -31,7 +31,7 @@ function toNumber(sign: string, whole: string, cents: string | undefined): numbe
 function cleanLabel(raw: string): string {
   return raw
     .replace(/[.…_]{2,}/g, " ")
-    .replace(/[:\-\u2013\u2014|\t]+\s*$/g, "")
+    .replace(/[:=\-\u2013\u2014|\t]+\s*$/g, "")
     .replace(/\s+/g, " ")
     .replace(/^[\s\-*•\d.)(]+(?=[A-Za-z])/, "")
     .trim();
@@ -49,6 +49,11 @@ export function lineIdFor(label: string): string {
   if (/unit|water heater|heater|tank|equipment|material/.test(l)) return "unit";
   return `other-${l.replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "").slice(0, 24) || "line"}`;
 }
+
+/** A bare small number after one of these is a detail of the job (a size, a warranty, a page), not a price. */
+const SPEC_TAIL = /\b(size|capacity|gallons?|gal|qty|quantity|warranty|years?|yrs?|months?|days?|hours?|hrs|zip|btu|psi|seer|rating|volts?|amps?|pressure|version|of|for)\s*:?$/i;
+/** A line that begins like this is about the paper, not the work, so a bare number on it is not money. */
+const SPEC_HEAD = /^(model|serial|sku|part|page|ref|item|qty|quantity|zip)\b/i;
 
 const TOTAL_LABEL = /^(grand\s+)?total(\s+due)?|amount due|balance due|quote total|total price/i;
 const SUBTOTAL_LABEL = /^sub\s*-?\s*total/i;
@@ -83,6 +88,10 @@ export function parseQuoteText(text: string): ParsedQuote {
     }
     // Phone numbers and quote numbers look like money. Ignore lines whose label is just that.
     if (/^(quote|estimate|invoice|ref|phone|tel|license|lic)\b/i.test(label)) continue;
+    // A number with no dollar sign, no cents and no thousands comma, after a size, a warranty length, a page or a model, is a
+    // detail of the job. Reading it as money would pad the total and raise a false mismatch warning.
+    const looksLikeMoney = /\$/.test(line) || money[3] !== undefined || money[2].includes(",");
+    if (!looksLikeMoney && (SPEC_HEAD.test(label) || (amount < 100 && SPEC_TAIL.test(label)))) continue;
 
     lines.push({ id: lineIdFor(label), label, amount });
   }

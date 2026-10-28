@@ -23,7 +23,7 @@ interface Rule {
 }
 
 const GAS: Rule = {
-  test: /(smell|smells|smelling|odor|odour|whiff|hiss|hissing)[^.]{0,30}\bgas\b|\bgas\b[^.]{0,30}(smell|smells|odor|odour|leak|leaking|hiss)|rotten egg|sulfur|sulphur/i,
+  test: /^\s*gas\s*[!?.]*\s*$|(smell|smells|smelling|odor|odour|whiff|hiss|hissing)[^.]{0,30}\bgas\b|\bgas\b[^.]{0,30}(smell|smells|odor|odour|leak|leaking|hiss)|rotten egg|sulfur|sulphur/i,
 };
 // Carbon monoxide: the alarm, or dizziness and headaches near a gas appliance.
 const CARBON_MONOXIDE: Rule = {
@@ -36,7 +36,25 @@ const FLOODING: Rule = {
   test: /flood(ing|ed)?\b|burst pipe|pipe (burst|broke)|water (is )?(pouring|gushing|everywhere)|gushing|sewage|sewer (backup|back up)/i,
 };
 
-const SEEDED_HEATER: Rule = { test: /water heater|hot water heater|\bheater\b|\btank\b/i };
+// Someone trying to get in, or already in, is a police matter first. Nothing here is a do-it-yourself fix.
+const SECURITY: Rule = {
+  test: /break(ing|s)?[\s-]?in\b|broke in|broken into|burglar|burglary|intruder|prowler|trespass|someone (is )?(trying to get|getting|got) in|being robbed|robbery|stalker|threatening me/i,
+};
+// Water meeting wiring is a shock and fire risk, not a plumbing problem first.
+const WATER_AND_ELECTRIC: Rule = {
+  test: /(water|leak|leaking|leaks|dripping|drips|dripped|wet|soaked|flood(ing|ed)?)[^.]{0,40}(light fixture|ceiling light|ceiling fan|outlet|socket|breaker|electrical panel|fuse box|wiring)|(light fixture|ceiling light|ceiling fan|outlet|socket|breaker|electrical panel|fuse box|wiring)[^.]{0,40}(water|leak|leaking|leaks|dripping|drips|wet|soaked|flood)/i,
+};
+const NO_HOT_WATER: Rule = { test: /no hot water|without hot water|hot water (is )?(out|off|gone|not working)|(won'?t|doesn'?t|not) (get|gets|getting|run|running) hot|only (cold|lukewarm) water|water (is )?(only )?(cold|lukewarm)/i };
+
+/** Words that mean a space heater or a wall heater, which is not the water heater the demo is about. */
+const OTHER_HEATER = /space heater|baseboard|portable heater|electric heater|wall heater|heat lamp|radiant|towel (warmer|heater)/i;
+/** A water heater problem, not a toilet tank or a space heater. */
+export function mentionsWaterHeater(text: string): boolean {
+  if (/water heater|hot water (heater|tank)|water tank|tankless/i.test(text)) return true;
+  return /\bheater\b/i.test(text) && !OTHER_HEATER.test(text);
+}
+
+const SEEDED_HEATER: Rule = { test: /./ };
 
 export function isGasEmergency(text: string): boolean {
   return GAS.test.test(text) || CARBON_MONOXIDE.test.test(text);
@@ -219,6 +237,38 @@ export function triageText(description: string): TriageResult {
     });
   }
 
+  if (SECURITY.test.test(text)) {
+    return emergency({
+      category: "Security",
+      summary: "Someone getting in, or trying to, is a police matter first. Treat this as an emergency.",
+      likelyCause: "A break-in or someone who should not be there. It is not a repair problem.",
+      safetySteps: [
+        "If you are in danger, get to a safe place and call 911. Do not confront anyone.",
+        "If you cannot leave safely, lock yourself in a room with a phone and stay quiet until help comes.",
+        "Do not go back in or clean up until the police say it is safe.",
+        "Tell GoHome once you are safe so your landlord can arrange a lock repair.",
+      ],
+      tenantQuestions: ["Are you and everyone with you safe?", "Did you call 911?", "Is a door, window, or lock damaged?"],
+      suggestedTrade: "Police (911), then a locksmith",
+    });
+  }
+
+  if (WATER_AND_ELECTRIC.test.test(text)) {
+    return emergency({
+      category: "Fire or electrical safety",
+      summary: "Water near wiring, lights, or outlets can cause a shock or a fire. Treat this as an emergency.",
+      likelyCause: "A leak that has reached electrical parts, often from the floor above or the roof. It needs an electrician and a plumber.",
+      safetySteps: [
+        "Stay away from the wet area and do not touch any light, switch, outlet, or fixture that is wet or near water.",
+        "If you can reach the breaker panel without stepping in water, switch off the power to that area.",
+        "If you see sparks, smoke, or smell burning, get everyone out and call 911.",
+        "Do not use that light or outlet again until it has been checked.",
+      ],
+      tenantQuestions: ["Is water dripping from a light or a ceiling fan?", "Can you reach the breaker panel without standing in water?", "Did you call 911 if you saw sparks or smoke?"],
+      suggestedTrade: "Licensed electrician, then a plumber",
+    });
+  }
+
   if (FLOODING.test.test(text)) {
     return emergency({
       category: "Plumbing",
@@ -278,7 +328,22 @@ export function triageText(description: string): TriageResult {
     };
   }
 
-  if (SEEDED_HEATER.test.test(text)) return seededHeaterTriage();
+  if (NO_HOT_WATER.test.test(text) && !mentionsWaterHeater(text)) {
+    return {
+      category: "Plumbing",
+      urgency: "urgent",
+      summary: "There is no hot water. In California hot water counts as a basic need, so the owner has been alerted.",
+      likelyCause: "A water heater problem, such as a pilot light, a thermostat, a tripped breaker, or a failed part. A technician has to find which.",
+      // No do-it-yourself steps: water heaters are often gas appliances and should not be opened by a tenant.
+      safetySteps: [],
+      tenantQuestions: ["Is there no hot water anywhere, or just at one tap?", "Do you smell gas or anything burning near the water heater?", "Is there any water on the floor near the water heater?"],
+      suggestedTrade: "Licensed plumber",
+      confidence: 0.7,
+      alertOwnerNow: true,
+    };
+  }
+
+  if (mentionsWaterHeater(text)) return seededHeaterTriage();
 
   const category = CATEGORIES.find((c) => c.test.test(text));
   const name = category?.name ?? "General maintenance";

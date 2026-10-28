@@ -3,6 +3,7 @@
 
 import { addDays, longDate } from "./format";
 import { LEASE_ANNIVERSARY_ISO } from "./houseQa";
+import { demoToday } from "./demoDate";
 import { BILL_DUE_DATES, daysUntil } from "./payments";
 
 export interface ComingUpItem {
@@ -24,7 +25,7 @@ export interface ComingUpInput {
   noticeDays?: number;
 }
 
-export function comingUp({ now = new Date(), utilitiesPaid, noticeDays = 30 }: ComingUpInput): ComingUpItem[] {
+export function comingUp({ now = demoToday(), utilitiesPaid, noticeDays = 30 }: ComingUpInput): ComingUpItem[] {
   const items: Omit<ComingUpItem, "inDays">[] = [];
   if (!utilitiesPaid) {
     items.push({ id: "utilities", date: BILL_DUE_DATES.utilities, title: "Water and trash is due", detail: "Your tenant pays this in the app. GoHome records it when it comes in." });

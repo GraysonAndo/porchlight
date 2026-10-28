@@ -17,14 +17,14 @@ Nothing here claims a legal opinion, a vendor relationship, a customer interview
 
 | Status | Count |
 |---|---:|
-| Fixed | 56 |
+| Fixed | 64 |
 | Verified | 28 |
 | Already resolved | 15 |
 | Roadmap | 1 |
 | Requires human review | 1 |
-| **Total findings** | **101** |
+| **Total findings** | **109** |
 
-Rounds 2 and 3 added R01 to R20 (customer-focused). Findings: 54 original (T01 to T13, O01 to O12, H01 to H13, P01 to P09, S01 to S07), 12 extra quote findings (Q01 to Q12), and 15 accessibility requirements (A01 to A15). The 68 product ideas are in `docs/product-roadmap.md`.
+Rounds 2, 3 and 4 added R01 to R28 (customer-focused). Findings: 54 original (T01 to T13, O01 to O12, H01 to H13, P01 to P09, S01 to S07), 12 extra quote findings (Q01 to Q12), and 15 accessibility requirements (A01 to A15). The 68 product ideas are in `docs/product-roadmap.md`.
 
 ## Tenant flow
 
@@ -142,7 +142,7 @@ Rounds 2 and 3 added R01 to R20 (customer-focused). Findings: 54 original (T01 t
 | A14 | Low | Duplicated step numbers | Verified | See Q12. |
 | A15 | Medium | Every visible control performs its advertised action | Verified | scripts/e2e.mjs, scripts/final-list.mjs and scripts/walkthrough.mjs click through every control on the main flows. Not every control on every state was clicked, so this is broad, not exhaustive. |
 
-## Rounds 2 and 3: customer-focused findings
+## Rounds 2 to 4: customer-focused findings and model problems
 
 These came from walking the product as a stressed tenant on a phone and as an older owner who is not technical. IDs start with R.
 
@@ -168,6 +168,14 @@ These came from walking the product as a stressed tenant on a phone and as an ol
 | R18 | Low | The owner had no view of what GoHome was keeping track of | Fixed | Coming up card in the inbox: water bill due date, last day to send a rent notice for the anniversary, and the anniversary, all from the same sources as the other pages. tests/comingUp.test.ts and scripts/e2e.mjs cover it. |
 | R19 | Medium | The rent page asked for five fields and five checkboxes before the owner could act | Fixed | The lease facts and exemption checks fold away while they match the lease, with a one-line summary, and open by themselves when something needs a look. The inflation check and the proposed rent stay up front. scripts/e2e.mjs checks the folded default, the one-tap confirm and the folded checks. |
 | R20 | Low | Pay and the repair detail pages jumped at load (layout shift 0.395 and 0.108) | Fixed | Pay holds its height until saved data loads, and repair pages hold the space of the sample note. Needs a fresh Lighthouse run to confirm the numbers; see the A09 note. |
+| R21 | High | The sample decayed as the real calendar moved: water and trash turned overdue on Nov 1, rent grew to 100 days late, and Coming up emptied after Dec 14 | Fixed | lib/demoDate.ts holds the sample's own today inside Oct 5 to Oct 30, 2026. Bill status, Coming up and the rent page's dates use it. tests/demoDate.test.ts checks the story is the same on any real day. |
+| R22 | High | Two sources of truth for the rent notice: the agent mailed it dated Oct 19 (in the past) and effective Nov 18, while the rent page and Coming up say Dec 14, and the suggested rent was typed in as 3360 | Fixed | The agent dates the notice today in the sample's calendar, starts the new rent at the lease anniversary, remembers the mailing day for the delivery date, and works the 5% suggestion out instead of typing it. tests/agents.test.ts (audit round 4). |
+| R23 | Medium | A contractor counter-offer of NaN, zero or a negative number was accepted and shown to the owner as $NaN | Fixed | onContractorCounter ignores amounts that are not real and positive. Found by the new random-event test (tests/fuzz.test.ts). Covered in tests/agents.test.ts. |
+| R24 | High | The quote recommendation could claim a fair price and a license for a pick that had neither, said more when it meant less, and ignored how soon a vendor can come on an urgent leak (the Q05 decision-factor part was never built) | Fixed | lib/recommend.ts says what is true of the pick, fixes the comparison wording, and for an urgent job takes an eligible quote that comes at least a day sooner when it costs no more than 5% extra. It never overrides a license or a fair price. tests/recommend.test.ts. |
+| R25 | High | The quote reader treated job details as prices: Tank size 40, Warranty 6, Quantity 1, Page 1 of 2 and a model year became dollar lines, padding the total and raising a false mismatch warning | Fixed | lib/quoteParse.ts skips a bare small number after a size, a warranty length, a page, a quantity or a model, and keeps real lines such as Unit 40 gal 780. tests/quoteParse.test.ts. |
+| R26 | High | Triage missed safety wording: someone breaking in, a bare gas message, water at a light fixture or outlet, and no hot water. It also took a toilet tank or a space heater for the water heater and ran the leak flow | Fixed | lib/triage.ts adds a security emergency (911 first), treats a bare gas message as a possible leak, treats water meeting wiring as an emergency, raises no hot water to urgent with no do-it-yourself steps, and only reads real water heater wording as the heater. tests/triage.test.ts. The new safety wording needs plumber and attorney review like the rest. |
+| R27 | Low | The repair or replace rules printed Infinity or NaN when a life span or a cost was zero or missing | Fixed | lib/decision.ts treats those as unknown and triggers nothing from them. tests/decision.test.ts. |
+| R28 | Medium | The agent engine had no stress test | Fixed | tests/fuzz.test.ts runs 600 seeded random conversations (6,000 when FUZZ_SEEDS is set) against the invariants: no crash, unique ids, tenant never told prices, no duplicate bookings or reminders, stages never go backwards, the lease card never offers to mail before the inflation figure is confirmed. |
 
 ## Needs manual verification
 

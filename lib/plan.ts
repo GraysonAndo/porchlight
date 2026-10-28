@@ -1,7 +1,7 @@
 // GoHome's plan for the water heater job: the quotes it collected, how each
 // one checks out, and which one it would book. Plain code (lib/recommend.ts).
 
-import { checkCandidates, recommendQuote, type CheckedCandidate, type Recommendation } from "./recommend";
+import { availabilityDaysFrom, checkCandidates, recommendQuote, type CheckedCandidate, type Recommendation } from "./recommend";
 import { QUOTES, VENDORS, WATER_HEATER_JOB } from "./seed";
 
 export const COLLECTED: CheckedCandidate[] = checkCandidates(
@@ -10,11 +10,13 @@ export const COLLECTED: CheckedCandidate[] = checkCandidates(
     vendorName: quote.vendorName,
     quote,
     license: VENDORS.find((v) => v.id === quote.vendorId)?.license ?? null,
+    availabilityDays: availabilityDaysFrom(VENDORS.find((v) => v.id === quote.vendorId)?.details.availability),
   })),
   WATER_HEATER_JOB,
 );
 
-const recommendation = recommendQuote(COLLECTED);
+// A leaking water heater is urgent, so an earlier visit counts when two quotes are close in price.
+const recommendation = recommendQuote(COLLECTED, { urgent: true });
 if (!recommendation) throw new Error("The demo needs at least one collected quote");
 
 export const PLAN: Recommendation = recommendation;

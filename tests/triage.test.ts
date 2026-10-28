@@ -178,3 +178,40 @@ describe("triage covers the cases the QA report raised", () => {
     expect(Object.values(URGENCY_LABEL)).toEqual(["EMERGENCY", "SOON", "ROUTINE"]);
   });
 });
+
+describe("triage: safety wording that used to slip through", () => {
+  const level = (t: string) => triageText(t).urgency;
+  it("treats a break-in as an emergency, with police first and no repair steps", () => {
+    for (const t of ["someone is trying to break in", "I think there is an intruder", "my place was broken into", "a burglar got in"]) {
+      expect(level(t)).toBe("emergency");
+      expect(triageText(t).category).toBe("Security");
+      expect(triageText(t).safetySteps.join(" ")).toMatch(/911/);
+    }
+  });
+
+  it("treats a bare gas message as a possible gas leak, to be safe", () => {
+    expect(level("gas")).toBe("emergency");
+    expect(level("Gas!")).toBe("emergency");
+    expect(level("my gas bill is too high")).not.toBe("emergency");
+  });
+
+  it("treats water at a light, a fan, an outlet or the wiring as an emergency", () => {
+    for (const t of ["water is coming through the ceiling light fixture", "the ceiling fan is dripping water", "there is a leak by the breaker panel", "the outlet in the garage is wet"]) {
+      expect(level(t)).toBe("emergency");
+      expect(triageText(t).category).toBe("Fire or electrical safety");
+    }
+  });
+
+  it("raises no hot water to urgent, without do-it-yourself steps", () => {
+    const r = triageText("we have no hot water");
+    expect(r.urgency).toBe("urgent");
+    expect(r.safetySteps).toEqual([]);
+    expect(r.alertOwnerNow).toBe(true);
+  });
+
+  it("does not mistake a toilet tank or a space heater for the water heater", () => {
+    expect(triageText("the toilet tank keeps running").summary).not.toMatch(/water heater/i);
+    expect(triageText("my space heater smells weird and stopped working").summary).not.toMatch(/water heater/i);
+    expect(triageText("the water heater is leaking from the bottom").summary).toMatch(/water heater/i);
+  });
+});
