@@ -31,9 +31,9 @@ const STEPS: Step[] = [
     wait: 6500,
   },
   {
-    label: "The tenant follows two safe steps and taps Done.",
+    label: "The tenant gets two safe steps and a picture guide. GoHome does not wait for them: it is already lining up plumbers.",
     path: "/tenant",
-    run: () => actions.agentSend({ type: "tenant.text", text: "done", shown: "Done" }),
+    run: () => {},
     wait: 5500,
   },
   {

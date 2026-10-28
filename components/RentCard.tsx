@@ -2,7 +2,6 @@
 
 // The owner's view of rent and utilities: what has come in, how, and a way to record rent paid some other way.
 
-import Link from "next/link";
 import { CheckIcon } from "./icons";
 import { Badge, Card } from "./ui";
 import { longDate } from "@/lib/format";
@@ -52,7 +51,7 @@ export function RentCard() {
           );
         })}
       </ul>
-      {!paid && (
+      {!paid && !dueStatus("rent").overdue && (
         <div className="mt-3 space-y-1">
           <button type="button" className="btn btn-secondary" onClick={() => actions.setRentPaid(true)}>
             Mark rent as paid
@@ -65,12 +64,7 @@ export function RentCard() {
           Undo
         </button>
       )}
-      <p className="mt-3 text-sm text-ink-soft">
-        Payments are sample data: no real money moves.{" "}
-        <Link href="/owner/rent" className="font-bold underline underline-offset-4">
-          Plan a rent increase
-        </Link>
-      </p>
+      <p className="mt-3 text-sm text-ink-soft">Payments are sample data: no real money moves.</p>
     </Card>
   );
 }

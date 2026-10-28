@@ -15,7 +15,7 @@ const jakarta = Plus_Jakarta_Sans({
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en" className={jakarta.variable}>
-      <body className="flex min-h-screen flex-col">
+      <body className="flex min-h-dvh flex-col">
         <StoreProvider>
           <a
             href="#main"

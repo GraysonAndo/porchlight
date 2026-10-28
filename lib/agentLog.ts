@@ -5,7 +5,7 @@
 
 import { guideById } from "./homeGuides";
 import { monthYear } from "./format";
-import { urgencyWord } from "./triage";
+import { mentionsWaterHeater, urgencyWord } from "./triage";
 import { SAMPLE_PHOTO_PATH } from "./seed";
 import { agentEventsFor, scenarioById, type AgentEvent } from "./scenario";
 import type { Approval, Photo, TriageResult, WaterHeaterRecord } from "./types";
@@ -15,7 +15,7 @@ const T2 = "4:08 AM";
 const T3 = "4:10 AM";
 
 export function isHeaterRequest(description: string): boolean {
-  return /water heater|hot water|\bheater\b/i.test(description);
+  return mentionsWaterHeater(description);
 }
 
 /**

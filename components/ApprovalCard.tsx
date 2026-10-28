@@ -78,13 +78,13 @@ export function ApprovalCard({ msg, onTap }: { msg: Msg; onTap: (msgId: string, 
           )}
           {card?.kind === "decision" && (
             <p className="flex flex-wrap gap-x-4 gap-y-1 text-sm font-bold">
-              <Link href="/owner/book" className="underline underline-offset-4">
+              <Link href="/owner/book" className="inline-flex min-h-11 items-center underline underline-offset-4">
                 Pick another vendor, limit, or time
               </Link>
-              <Link href="/owner/quote" className="underline underline-offset-4">
+              <Link href="/owner/quote" className="inline-flex min-h-11 items-center underline underline-offset-4">
                 See all the quotes
               </Link>
-              <Link href="/owner/decide" className="underline underline-offset-4">
+              <Link href="/owner/decide" className="inline-flex min-h-11 items-center underline underline-offset-4">
                 Why replace and not repair
               </Link>
             </p>

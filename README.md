@@ -32,6 +32,7 @@ Other commands:
 | `npm run build` | Production build |
 | `node scripts/walkthrough.mjs` | Walks every screen at 390x844 and 1280x800, saves screenshots, checks layout (needs the app running) |
 | `node scripts/a11y.mjs` | Accessibility and responsive check on 19 pages at 360, 390 and 1280 wide: names, tap targets, text size, contrast, headings, focus ring, horizontal scroll, plus the guide, approval card and emergency states (needs the app running). Not Lighthouse and not a real device |
+| `node scripts/phone.mjs` | Phone-style checks in an emulated browser: a 320px phone, a landscape phone, text zoomed to 200%, and real touch taps through the first tenant steps (needs the app running). Emulation only, not iOS Safari or a real phone |
 | `node scripts/e2e.mjs` | Behavior checks: the landing page, both sides and what each can see, the guides, reload, Reset, `?reset=1`, blocked localStorage, feedback notes, old links (needs the app running) |
 
 The two scripts use Playwright with the preinstalled Chromium (never run `playwright install`). Set `BASE_URL` if the app is not on port 3000.
@@ -83,7 +84,7 @@ The app is fully static and makes no network requests at runtime. The font (Plus
 - *Decisions that were left open:* CPI stays a labeled sample number (no network in this build) with a link to the BLS figure; local ordinances stay a warning; the 30 or 60 day rule is for ending a tenancy, not for rent increases, so it is not asked; the product keeps the name GoHome.
 
 **Review round 8.** Fixes from a full walk-through as both sides:
-- *Tenant:* the safety question is asked before anything is logged as "not an emergency"; buttons read Yes, No, Done, Help; finishing the water shut-off guide counts as Done; the guide and the log agree on the steps; the guide says a closed valve makes a T; it asks for a photo of the drip; no copy assumes it is night; web chat no longer says "Delivered"; tenants no longer see serial or lot numbers; "where" is described by the garage door, not a compass point.
+- *Tenant:* the safety question is asked before anything is logged as "not an emergency"; buttons read Yes, No, and Help; GoHome does not wait for a Done tap, it starts on the plumber as soon as the safe steps are sent; the guide and the log agree on the steps; the guide says a closed valve makes a T; it asks for a photo of the drip; no copy assumes it is night; web chat no longer says "Delivered"; tenants no longer see serial or lot numbers; "where" is described by the garage door, not a compass point.
 - *Owner:* late rent is the first card in the Inbox (money owed comes before approvals) with a reminder that texts the tenant the late fee from the lease, and the tenant's My home shows the same late status; vendors are named in full; the repair or replace rule runs before the vendor pick and only calls the tank leaking when a photo shows it; the activity feed is grouped by job with finished jobs folded away; counter-offer cards have real titles; times from an earlier day say so.
 - *Record, forecast, rent:* life bars are full at the typical life and say how far past; the forecast has a cash check ("you would be short in 2026"), takes a booked heater out of the plan, and no longer shows a warning icon for things that are only due within five years; the recommended 5% raise is the primary button and the exemption (an individual owner of a single family home) is spelled out with a draft notice; the last increase is December 2024, which fits the December anniversary.
 - *Navigation:* Switch goes straight to the other side; both footers have the same links; the welcome page has no current tab.
@@ -102,7 +103,7 @@ Who does what, shown with a small chip on every step in the owner's activity pan
 | Chip | Meaning |
 | --- | --- |
 | AI | Reads photos and writes text. |
-| Plain code | Decides prices, rules, thresholds, and the legal cap, from hand-checked tables. Screens say "Plain code, not AI." next to those numbers. |
+| Fixed rule | Decides prices, rules, thresholds, and the legal cap, from hand-checked tables. Screens say "A fixed rule, not AI." next to those numbers. (In the code this engine is still called `code`.) |
 | GoHome acts | Sends, books, and notifies, inside limits the owner set. |
 | A person taps | Nothing is spent without this. |
 

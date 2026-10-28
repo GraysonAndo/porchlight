@@ -13,10 +13,12 @@ import { equipmentFor } from "../equipment";
 import { buildForecast } from "../forecast";
 import { addDays, longDate, usd, usdCents, usdRange } from "../format";
 import { ageOf } from "../life";
-import { COLLECTED, PLAN, TYPICAL_REPLACE_COST } from "../plan";
+import { COLLECTED, PLAN, TYPICAL_REPLACE_COST, collectedFor } from "../plan";
 import { compareQuote, percentOverTop, verdictFor } from "../quote";
 import { SAMPLE_QUOTE_TEXT, parseQuoteText } from "../quoteParse";
-import { buildNotice, calculateRent, effectiveDateFor, rentInputsFromForm } from "../rent";
+import { buildNotice, calculateRent, rentInputsFromForm, startDateFor } from "../rent";
+import { demoToday } from "../demoDate";
+import { LEASE_ANNIVERSARY_ISO } from "../houseQa";
 import { answerHouseQuestion, classifyTenantText } from "../houseQa";
 import { recordFromValues } from "./record";
 import {
@@ -93,7 +95,18 @@ export const RECORD_FIELDS: { key: string; label: string; group: "Water heater" 
 ];
 
 /** A sample notice date for the demo. Real use would take today's date. */
-export const SAMPLE_NOTICE_DATE = "2026-10-19";
+/** The notice is dated today, in the sample's own calendar (see lib/demoDate.ts), and the new rent starts at the lease anniversary. */
+function noticeToday(): string {
+  const d = demoToday();
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+}
+
+/** The modest raise GoHome suggests: the usual 5%, never more than the law allows. Worked out, not typed in. */
+function recommendedRent(): number {
+  const { currentRent } = DEFAULT_RENT_FORM;
+  const max = calculateRent(rentInputsFromForm({ ...DEFAULT_RENT_FORM, proposedRent: currentRent })).maxNewRent;
+  return Math.min(Math.round(currentRent * 1.05), Math.floor(max));
+}
 
 // ---------------------------------------------------------------------------
 // World
@@ -329,9 +342,15 @@ function handle(w: World, ev: Ev): void {
       return onMarkDone(w);
     case "owner.autoApprove":
       return onAutoApprove(w, ev.limit);
-    case "owner.choose":
-      w.choice = { vendorId: ev.vendorId, notToExceed: ev.notToExceed, accessWindow: ev.accessWindow };
+    case "owner.choose": {
+      // A hand pick must name a vendor GoHome collected a quote from, with a limit that covers that quote. Anything else is
+      // ignored, so a booking can never go to a vendor nobody asked or carry a limit below the vendor's own price.
+      const vendor = VENDORS.find((v) => v.id === ev.vendorId);
+      const okLimit = Number.isFinite(ev.notToExceed) && vendor !== undefined && ev.notToExceed >= vendor.total;
+      if (!vendor || !okLimit || typeof ev.accessWindow !== "string" || ev.accessWindow.trim() === "") return;
+      w.choice = { vendorId: ev.vendorId, notToExceed: Math.round(ev.notToExceed), accessWindow: ev.accessWindow };
       return;
+    }
     case "timer":
       return onTimer(w, ev.id);
   }
@@ -596,6 +615,15 @@ function onTenantText(w: World, raw: string, shown?: string): void {
     return logOtherProblem(w, text, triage, true);
   }
 
+  // The tenant did not have to finish the steps for GoHome to carry on, so Help and Done can still arrive later.
+  if (["quotes_pending", "decision_sent", "booked"].includes(stage)) {
+    if (/^\s*help\s*$/i.test(text)) return sendHelpGuide(w, false);
+    if (/^\s*done\s*$/i.test(text)) {
+      say(w, "tenant", "Great, thanks. There is nothing else for you to do. I'm still on the plumber and I'll text you.");
+      return;
+    }
+  }
+
   switch (stage) {
     case "idle":
     case "closed":
@@ -641,6 +669,17 @@ function answerQuestion(w: World, text: string): void {
       ? `Source: ${reply.source ?? "house record"}. Only data on file is used, so nothing is made up.`
       : "The answer is not in the house record or lease, so GoHome did not guess.",
   );
+  // When the answer is not on file but a picture guide fits the question, offer the guide before offering to bother the owner.
+  const guideId = reply.known ? null : guideForText(text);
+  const guide = guideId ? guideById(guideId) : undefined;
+  if (guide) {
+    tool(w, "triage", "send_guide", "code", "Offered a picture guide", `The question matched the hand-written guide "${guide.title}". General safety information, not professional advice.`);
+    say(w, "tenant", `I don't have that in your house record, but I do have a picture guide that should help: ${guide.title} (${guide.time}).`, {
+      guide: guide.id,
+      actions: [{ id: "askowner", label: `Ask ${PROPERTY.owner}`, text: `Please ask ${PROPERTY.owner}` }],
+    });
+    return;
+  }
   say(w, "tenant", reply.answer, {
     actions: reply.known ? undefined : [{ id: "askowner", label: `Ask ${PROPERTY.owner}`, text: `Please ask ${PROPERTY.owner}` }],
   });
@@ -771,35 +810,34 @@ function answerElectrical(w: World, text: string): void {
   say(
     w,
     "tenant",
-    `Good. Two quick steps for your ${heaterLabel(w)}:\n${numbered(steps)}\nNot sure how? Tap Show me how for a picture guide made for your exact heater, or tap Help. Don't touch the heater if you're standing in water, and never touch the gas valve. If you smell gas, leave and call 911. Tap Done when you're finished.${photoAsk}`,
+    `Good. Two quick steps for your ${heaterLabel(w)}:\n${numbered(steps)}\nNot sure how? Tap Show me how for a picture guide made for your exact heater, or tap Help. Don't touch the heater if you're standing in water, and never touch the gas valve. If you smell gas, leave and call 911.${photoAsk}\nI am already getting a plumber lined up, so you do not need to wait for me or call anyone. I will text you the plumber's name and time.`,
     {
       guide: "heater-water-off",
-      actions: [
-        { id: "done", label: "Done", text: "done" },
-        { id: "help", label: "Help", text: "help" },
-      ],
+      actions: [{ id: "help", label: "Help", text: "help" }],
     },
   );
   tool(w, "triage", "notify_owner", "action", "Sent a silent heads-up to the owner", "Urgency is soon, not an emergency, so there is no phone call. The owner gets a quiet text instead.");
-  say(
-    w,
-    "owner",
-    `Water heater leak at ${PROPERTY.address}. The tenant has the steps to turn off the water to the heater and has not confirmed yet. Gas is left to a licensed plumber. I'm lining up quotes. Nothing needed from you yet.`,
-    { silent: true },
-  );
+  // The plumber does not depend on the tenant finishing the steps, so GoHome keeps going and nobody has to tap Done.
+  tool(w, "triage", "keep_going", "code", "Did not wait for the tenant", "Finding a plumber does not depend on the steps being finished, so GoHome started right away. The tenant can still ask for help at any time.");
+  dispatch(w, false);
+}
+
+/** The tenant asked for help with the steps: send the picture guide again, in words. */
+function sendHelpGuide(w: World, askForDone: boolean): void {
+  const guide = guideForStep("Turn off the water supply valve to the heater.", {});
+  const body = guide
+    ? `${guide.title} (${guide.time}):\n${numbered(guide.steps.slice(0, 4))}\nStop and get help if: ${guide.stopIf[0] ?? "anything looks unsafe"}`
+    : "Find the shut-off valve on the cold water pipe above the heater and turn the handle at a right angle to the pipe.";
+  tool(w, "triage", "send_guide", "code", "Sent the guide for this exact heater", `Hand-written guide for the ${heaterLabel(w)} from the home record. General safety information, not professional advice.`);
+  say(w, "tenant", body, {
+    guide: "heater-water-off",
+    ...(askForDone ? { actions: [{ id: "done", label: "Done", text: "done" }] } : {}),
+  });
 }
 
 function afterSteps(w: World, text: string): void {
   if (/\bhelp\b/i.test(text)) {
-    const guide = guideForStep("Turn off the water supply valve to the heater.", {});
-    const body = guide
-      ? `${guide.title} (${guide.time}):\n${numbered(guide.steps.slice(0, 4))}\nStop and get help if: ${guide.stopIf[0] ?? "anything looks unsafe"}`
-      : "Find the shut-off valve on the cold water pipe above the heater and turn the handle crosswise to the pipe.";
-    tool(w, "triage", "send_guide", "code", "Sent the guide for this exact heater", `Hand-written guide for the ${heaterLabel(w)} from the home record. General safety information, not professional advice.`);
-    say(w, "tenant", body, {
-      guide: "heater-water-off",
-      actions: [{ id: "done", label: "Done", text: "done" }],
-    });
+    sendHelpGuide(w, true);
     return;
   }
 
@@ -814,7 +852,7 @@ function onTenantPhoto(w: World, photo: PhotoKind): void {
 }
 
 /** Work out the facts from the home record, check vendors, and ask for quotes. */
-function dispatch(w: World): void {
+function dispatch(w: World, tellTenant = true): void {
   const heater = EQUIPMENT[0];
   const year = heaterYear(w);
   const age = ageOf({ installYear: year });
@@ -838,11 +876,11 @@ function dispatch(w: World): void {
     `Standing permission: GoHome may request quotes. It may not book, negotiate, or spend without a tap. Sent the address and the house record${hasTenantPhoto(w) ? ", plus the tenant's photo" : ""}.`,
   );
 
-  say(w, "tenant", "All set. Your landlord has been told. You don't need to call anyone. I'll text you the plumber's name and time. I'm watching this and will keep you posted.");
+  if (tellTenant) say(w, "tenant", "All set. Your landlord has been told. You don't need to call anyone. I'll text you the plumber's name and time. I'm watching this and will keep you posted.");
   say(
     w,
     "owner",
-    `From your house record: ${heaterLabel(w)}, 40 gal gas, made March 2015, ${age} years old (typical life ${heater.typicalLifeYears}*). Warranty expired*. I asked 3 vendors for quotes and I'll send you one decision when they're in.\n*Illustrative placeholder, not market data`,
+    `Water heater leak at ${PROPERTY.address}. The tenant has the steps to turn off the water to the heater. Gas is left to a licensed plumber.\nFrom your house record: ${heaterLabel(w)}, 40 gal gas, made March 2015, ${age} years old (typical life ${heater.typicalLifeYears}*). Warranty expired*. I asked 3 vendors for quotes and I'll send you one decision when they're in.\n*Illustrative placeholder, not market data`,
     { silent: true },
   );
   w.triage.stage = "quotes_pending";
@@ -958,7 +996,9 @@ function triageOwnerAction(w: World, action: string): void {
   // approve: the owner's own pick if they chose one by hand, otherwise GoHome's plan
   const pick = w.choice ?? { vendorId: PLAN.vendorId, notToExceed: PLAN.notToExceed, accessWindow: ACCESS_WINDOWS[0] };
   const vendor = VENDORS.find((v) => v.id === pick.vendorId) ?? VENDORS[0];
-  const highest = Math.max(...VENDORS.map((v) => v.total));
+  // The saving is measured on comparable scope, like everywhere else: a quote that leaves out a permit is judged with it added.
+  const adjustedFor = (id: string, fallback: number) => collectedFor(id)?.normalized.adjusted ?? fallback;
+  const highest = Math.max(...VENDORS.map((v) => adjustedFor(v.id, v.total)));
   tool(
     w,
     "gate",
@@ -987,7 +1027,7 @@ function triageOwnerAction(w: World, action: string): void {
   );
   say(w, "owner", `Approved. Booked ${vendor.name}, limit ${usd(pick.notToExceed)}. I'm telling the tenant and the vendor now. I'll text you when it's done and add the new heater to your record.`);
   w.stats.ownerTaps += 1;
-  w.stats.saved += Math.max(0, highest - vendor.total);
+  w.stats.saved += Math.max(0, highest - adjustedFor(vendor.id, vendor.total));
   w.triage.stage = "booked";
   w.pending = w.pending.filter((p) => p.id !== "owner_nudge");
   const tomorrowAfternoon = MINUTES_PER_DAY + 11 * 60 + 20;
@@ -1227,6 +1267,8 @@ function quoteOwnerAction(w: World, action: string): void {
 
 function onContractorCounter(w: World, total: number): void {
   if (w.quote.stage !== "sent") return;
+  // A counter that is not a real positive amount is ignored, so the owner is never shown "$NaN" or a price of zero.
+  if (!Number.isFinite(total) || total <= 0) return;
   w.quote.counters += 1;
   w.quote.counterTotal = total;
   hear(w, "contractor", `Thanks for flagging that. We can do ${usd(total)}.`, {
@@ -1277,7 +1319,7 @@ function onLeaseCheck(w: World): void {
     say(w, "owner", `I am holding the rent increase check. ${RENT_MONTH} rent has not come in yet, and that comes first. Send a reminder or mark it paid, then ask me again.`, { silent: true });
     return;
   }
-  const proposed = 3360;
+  const proposed = recommendedRent();
   const result = calculateRent(rentInputsFromForm({ ...DEFAULT_RENT_FORM, proposedRent: proposed }));
   tool(w, "sentinel", "scan_leases", "code", "Checked lease dates", "1200 Example Court: lease anniversary December 14, 2026. Last increase December 2024, about 22 months ago. 0 increases in the last 12 months.");
   tool(w, "sentinel", "fetch_cpi", "code", "Used a sample inflation figure", "No live lookup was made. 3.0% is a placeholder, so confirm your area's figure on the rent page before sending anything.");
@@ -1295,8 +1337,9 @@ function onLeaseCheck(w: World): void {
     address: PROPERTY.address,
     currentRent: DEFAULT_RENT_FORM.currentRent,
     newRent: proposed,
-    noticeDate: SAMPLE_NOTICE_DATE,
+    noticeDate: noticeToday(),
     noticeDays: result.noticeDays,
+    startDate: LEASE_ANNIVERSARY_ISO,
   });
   tool(w, "sentinel", "build_notice", "code", "Built the notice", "A plain-language notice from a template, stamped as a draft. The AI does not decide what is legal.");
   w.sentinel = { stage: "awaiting_owner", proposed };
@@ -1315,7 +1358,7 @@ function onLeaseCheck(w: World): void {
             value: w.cpiConfirmed ? `${result.capPercent.toFixed(1)}% (${usdCents(result.maxNewRent)})` : `Needs your inflation figure first (sample: ${result.capPercent.toFixed(1)}%, ${usdCents(result.maxNewRent)})`,
             tone: w.cpiConfirmed ? undefined : "caution",
           },
-          { label: "Suggested", value: `5% (${usd(3360)})`, tone: "good" },
+          { label: "Suggested", value: `5% (${usd(proposed)})`, tone: "good" },
           { label: "Notice period", value: `${result.noticeDays} days` },
           { label: "Sent by", value: "Certified mail, with proof" },
           ...(w.rentPaid ? [] : [{ label: "Heads up", value: `${RENT_MONTH} rent has not come in yet`, tone: "caution" as const }]),
@@ -1327,7 +1370,7 @@ function onLeaseCheck(w: World): void {
       attachment: { title: "Draft rent notice", body: notice },
       actions: w.cpiConfirmed
         ? [
-            { id: "rent5", label: `Mail at 5% (${usd(3360)})` },
+            { id: "rent5", label: `Mail at 5% (${usd(proposed)})` },
             { id: "rentmax", label: `Mail at max (${usd(result.maxNewRent)})` },
             { id: "renthold", label: "Hold" },
           ]
@@ -1345,10 +1388,11 @@ function sentinelOwnerAction(w: World, action: string): void {
     return;
   }
   const max = calculateRent(rentInputsFromForm({ ...DEFAULT_RENT_FORM, proposedRent: DEFAULT_RENT_FORM.currentRent })).maxNewRent;
-  const newRent = action === "rentmax" ? max : 3360;
+  const newRent = action === "rentmax" ? max : recommendedRent();
   const check = calculateRent(rentInputsFromForm({ ...DEFAULT_RENT_FORM, proposedRent: newRent }));
   if (!check.withinCap) return;
-  const effective = effectiveDateFor(SAMPLE_NOTICE_DATE, check.noticeDays);
+  const mailedOn = noticeToday();
+  const effective = startDateFor("increase", mailedOn, check.noticeDays, LEASE_ANNIVERSARY_ISO);
   tool(w, "gate", "approval_gate", "human", "Owner approved the notice", `One tap approved ${usdCents(newRent)} (${check.increasePercent.toFixed(1)}%), within the ${check.capPercent.toFixed(1)}% cap.`);
   tool(
     w,
@@ -1360,20 +1404,21 @@ function sentinelOwnerAction(w: World, action: string): void {
   );
   record(
     w,
-    { "lease.notice": `Mailed ${longDate(SAMPLE_NOTICE_DATE)}, new rent ${usdCents(newRent)} from ${longDate(effective)}` },
+    { "lease.notice": `Mailed ${longDate(mailedOn)}, new rent ${usdCents(newRent)} from ${longDate(effective)}` },
     `Rent notice mailed for ${usdCents(newRent)}`,
   );
   say(w, "owner", `Done. Notice mailed certified for ${usdCents(newRent)}, effective ${longDate(effective)} (${check.noticeDays} days). I'll text you when it's delivered and save proof of service.`);
   w.stats.ownerTaps += 1;
   w.sentinel.stage = "mailed";
   w.sentinel.proposed = newRent;
+  w.sentinel.mailedOn = mailedOn;
   later(w, 2 * MINUTES_PER_DAY, "notice_delivered");
 }
 
 function noticeDelivered(w: World): void {
   if (w.sentinel.stage !== "mailed") return;
   w.sentinel.stage = "delivered";
-  const delivered = addDays(SAMPLE_NOTICE_DATE, 3);
+  const delivered = addDays(w.sentinel.mailedOn ?? noticeToday(), 3);
   tool(w, "sentinel", "track_delivery", "action", "Notice delivered", `Certified mail shows delivered ${longDate(delivered)}. Proof of service saved to the house record.`);
   record(w, { "lease.notice": `Delivered ${longDate(delivered)}, proof saved` }, "Rent notice delivered. Proof of service saved.");
   say(w, "owner", `Delivered ${longDate(delivered)}. Proof of service is saved in your house record.`, { silent: true });

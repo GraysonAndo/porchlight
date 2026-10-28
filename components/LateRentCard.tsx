@@ -36,9 +36,14 @@ export function LateRentCard() {
         <button type="button" className="btn btn-ghost w-full sm:w-auto" onClick={() => actions.setRentPaid(true)}>
           Mark as paid
         </button>
+        {!reminded && !state.prefs.ownerAutoRemind && (
+          <button type="button" className="btn btn-ghost w-full sm:w-auto" onClick={() => actions.setPref("ownerAutoRemind", true)}>
+            Remind late tenants for me from now on
+          </button>
+        )}
       </div>
       <p className="mt-2 text-sm text-ink-soft">
-        {reminded ? `${PROPERTY.tenant} was texted what is owed and the late fee.` : "One tap texts your tenant what is owed. Use Mark as paid if they paid another way, like a check."}
+        {reminded ? `${PROPERTY.tenant} was texted what is owed and the late fee.${state.prefs.ownerAutoRemind ? " GoHome sent it for you, as you asked." : ""}` : state.prefs.ownerAutoRemind ? "GoHome is sending the reminder for you now." : "One tap texts your tenant what is owed, or let GoHome do it for you from now on. Use Mark as paid if they paid another way, like a check."}
       </p>
     </section>
   );

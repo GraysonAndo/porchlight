@@ -51,6 +51,9 @@ const EQUIPMENT_WORDS: { id: string; re: RegExp; name: string }[] = [
   { id: "roof", re: /roof/, name: "roof" },
 ];
 
+/** What the sample lease says about a late payment, from the same numbers the late rent card and the Pay page use. */
+const LATE_TERMS = `Rent paid after a ${PROPERTY.graceDays}-day grace period has a ${usd(PROPERTY.lateFee)} late fee.`;
+
 export function answerHouseQuestion(question: string, facts: HouseFacts): QaAnswer {
   const q = question.toLowerCase().trim();
   if (!q) return { known: true, answer: "Ask me anything about your home or your lease.", source: null };
@@ -64,6 +67,11 @@ export function answerHouseQuestion(question: string, facts: HouseFacts): QaAnsw
     return dontKnow(`how to reach ${PROPERTY.owner} by phone or email`);
   }
 
+  // The lease terms GoHome does have: when rent is due and what a late payment costs.
+  if (has(q, /late fee|late charge|grace period|late payment/)) {
+    return { known: true, answer: LATE_TERMS, source: "Lease on file" };
+  }
+
   // Rent
   if (has(q, /rent/)) {
     if (has(q, /paid|pay|payment|received|late/)) {
@@ -75,7 +83,7 @@ export function answerHouseQuestion(question: string, facts: HouseFacts): QaAnsw
         source: "Rent status",
       };
     }
-    if (has(q, /when|due|date|day/)) return dontKnow("what day rent is due");
+    if (has(q, /when|due|date|day/)) return { known: true, answer: `Rent of ${usd(PROPERTY.rent)} is due on the 1st of each month. ${LATE_TERMS}`, source: "Lease on file" };
     if (has(q, /increase|raise|go(es|ing)? up/)) {
       return { known: false, answer: `I don't know about any rent change. Nothing about one is on file. Any rent notice would come from ${PROPERTY.owner} in writing.`, source: null };
     }
@@ -130,7 +138,13 @@ export function answerHouseQuestion(question: string, facts: HouseFacts): QaAnsw
     if (!w.re.test(q)) continue;
     const item = EQUIPMENT.find((e) => e.id === w.id);
     if (!item) break;
-    if (has(q, /brand|make|model|serial|warrant/)) return dontKnow(`the brand, model, or warranty for the ${w.name}`);
+    if (has(q, /warrant/)) return dontKnow(`the warranty terms for the ${w.name}`);
+    // The same record the My home page shows, as it was recorded at move-in.
+    if (has(q, /brand|make|who made|model|serial/)) {
+      const serial = has(q, /serial/) ? `, serial number ${item.serial.replace(/^lot\s*/i, "")}` : "";
+      return { known: true, answer: `The ${w.name} is a ${item.brand} ${item.model}${serial}, as recorded at move-in.`, source: item.source };
+    }
+    if (has(q, /where|located|location|find/)) return { known: true, answer: `The ${w.name} is ${item.location.charAt(0).toLowerCase()}${item.location.slice(1)}.`, source: item.source };
     return {
       known: true,
       answer: `The ${w.name} was installed in ${item.installYear}, so it is about ${ageOf(item)} years old. A typical life is about ${item.typicalLifeYears} years (a placeholder number).`,

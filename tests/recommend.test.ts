@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { checkCandidates, missingLines, recommendQuote, type Candidate } from "../lib/recommend";
+import { availabilityDaysFrom, checkCandidates, missingLines, recommendQuote, type Candidate } from "../lib/recommend";
 import { A1_QUOTE, BAYSIDE_QUOTE, QUOTES, VENDORS, WATER_HEATER_JOB, WILLOW_QUOTE } from "../lib/seed";
 
 const candidates: Candidate[] = VENDORS.map((v) => ({
@@ -102,5 +102,55 @@ describe("scope-adjusted comparison", () => {
     const lic = VENDORS.map((v) => v.license).filter(Boolean);
     expect(new Set(lic).size).toBe(lic.length);
     expect(lic.every((l) => /fictional/.test(l!))).toBe(true);
+  });
+});
+
+describe("recommendQuote tells the truth about its pick", () => {
+  const quote = (vendorId: string, total: number) => ({ ...WILLOW_QUOTE, vendorId, vendorName: vendorId, total, lines: WILLOW_QUOTE.lines.map((l) => ({ ...l })) });
+  const cand = (vendorId: string, total: number, license: string | null, availabilityDays?: number | null): Candidate => ({ vendorId, vendorName: vendorId, license, quote: quote(vendorId, total), availabilityDays });
+
+  it("does not claim a fair price and a license when nothing passed", () => {
+    const checked = checkCandidates([cand("a", 3400, null), cand("b", 3600, null)], WATER_HEATER_JOB);
+    const rec = recommendQuote(checked)!;
+    expect(rec.reasons[0]).toMatch(/No quote passed every check/);
+    expect(rec.reasons[0]).not.toMatch(/fair price from a vendor that shows a license/);
+    expect(rec.reasons[0]).toMatch(/Get another quote/);
+  });
+
+  it("says the license is missing when a fair quote with no license is the closest", () => {
+    const checked = checkCandidates([cand("a", 2300, null), cand("b", 3600, "CSLB #1")], WATER_HEATER_JOB);
+    const rec = recommendQuote(checked)!;
+    expect(rec.vendorId).toBe("a");
+    expect(rec.reasons[0]).toMatch(/no license number is shown/);
+  });
+
+  it("for an urgent job, takes a visit a day sooner when it costs only a little more", () => {
+    const checked = checkCandidates([cand("slow", 2300, "CSLB #1", 2), cand("fast", 2380, "CSLB #2", 1)], WATER_HEATER_JOB);
+    const rec = recommendQuote(checked, { urgent: true })!;
+    expect(rec.vendorId).toBe("fast");
+    expect(rec.reasons.join(" ")).toMatch(/1 day sooner/);
+    expect(rec.reasons.join(" ")).toMatch(/\$80 more/);
+  });
+
+  it("keeps the cheapest when the sooner one costs more than the small margin, or the job is not urgent", () => {
+    const checked = checkCandidates([cand("slow", 2300, "CSLB #1", 2), cand("fast", 2500, "CSLB #2", 1)], WATER_HEATER_JOB);
+    expect(recommendQuote(checked, { urgent: true })!.vendorId).toBe("slow");
+    const close = checkCandidates([cand("slow", 2300, "CSLB #1", 2), cand("fast", 2380, "CSLB #2", 1)], WATER_HEATER_JOB);
+    expect(recommendQuote(close)!.vendorId).toBe("slow");
+  });
+
+  it("never lets a sooner visit override a license or a fair price", () => {
+    const checked = checkCandidates([cand("slow", 2300, "CSLB #1", 2), cand("fast", 2350, null, 0)], WATER_HEATER_JOB);
+    expect(recommendQuote(checked, { urgent: true })!.vendorId).toBe("slow");
+  });
+});
+
+describe("availabilityDaysFrom", () => {
+  it("reads the vendor's own words, and leaves the unknown unknown", () => {
+    expect(availabilityDaysFrom("Today, 3:00 PM")).toBe(0);
+    expect(availabilityDaysFrom("Tomorrow, 9:00 to 11:00 AM")).toBe(1);
+    expect(availabilityDaysFrom("In 2 days, 9:00 to 11:00 AM")).toBe(2);
+    expect(availabilityDaysFrom("Next week")).toBeNull();
+    expect(availabilityDaysFrom(null)).toBeNull();
   });
 });

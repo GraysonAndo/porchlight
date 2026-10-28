@@ -136,3 +136,36 @@ TOTAL $1,900.00`;
     expect(q.mismatch).toBeNull();
   });
 });
+
+describe("parseQuoteText does not read job details as prices", () => {
+  const text = `Acme Plumbing
+Tank size: 40
+Warranty: 6
+Quantity 1
+Capacity 40 gal
+Unit  780.00
+Labor 4 hours @ $150/hr = $600
+Permit 150
+Page 1 of 2
+Valid for 30
+Model HL-40G 2026
+Total $1,530`;
+
+  it("keeps only the real price lines", () => {
+    const q = parseQuoteText(text);
+    expect(q.lines.map((l) => [l.label, l.amount])).toEqual([
+      ["Unit", 780],
+      ["Labor 4 hours @ $150/hr", 600],
+      ["Permit", 150],
+    ]);
+    expect(q.sumOfLines).toBe(1530);
+    expect(q.mismatch).toBeNull();
+    expect(q.warnings.join(" ")).not.toMatch(/difference/);
+  });
+
+  it("still reads a plain permit and a unit line that mentions its size", () => {
+    const q = parseQuoteText("Unit 40 gal 780\nPermit 75\nTotal 855");
+    expect(q.lines.map((l) => l.amount)).toEqual([780, 75]);
+    expect(q.mismatch).toBeNull();
+  });
+});

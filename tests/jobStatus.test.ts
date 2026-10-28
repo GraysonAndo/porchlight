@@ -19,6 +19,13 @@ describe("jobStatus", () => {
     expect(jobStatus(base({ request: heater, triage }), T0)).toBe("quoted");
   });
 
+  it("is new while the tenant is still being asked about the problem, before any quotes exist", () => {
+    for (const stage of ["asked_electrical", "steps_given", "quotes_pending"] as const) {
+      const agent = { ...INITIAL_STATE.agent, triage: { ...INITIAL_STATE.agent.triage, stage } };
+      expect(jobStatus(base({ request: heater, triage, agent }), T0)).toBe("new");
+    }
+  });
+
   it("is new for a request that has no quotes, like a clogged toilet", () => {
     expect(jobStatus(base({ request: { ...heater, description: "The toilet is clogged" }, triage: { ...triage } }), T0)).toBe("new");
   });

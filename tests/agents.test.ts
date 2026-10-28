@@ -175,7 +175,7 @@ describe("loop 1: the 4 AM triage and dispatch", () => {
 
   it("answers HELP with a hand-written guide", () => {
     const w = run(createWorld(), [LEAK, { type: "tenant.text", text: "2" }, { type: "tenant.text", text: "help" }]);
-    expect(w.triage.stage).toBe("steps_given");
+    expect(w.triage.stage).toBe("quotes_pending");
     expect(toolNames(w)).toContain("send_guide");
   });
 
@@ -430,7 +430,7 @@ describe("final defect list: chat behavior", () => {
     const w = run(createWorld(), [LEAK_EV, { type: "tenant.text", text: "2" }]);
     const owner = texts(w, "owner", "out").join("\n");
     expect(owner).not.toMatch(/water and gas are being shut off|Tenant is safe/i);
-    expect(owner).toMatch(/has not confirmed|lining up/i);
+    expect(owner).toMatch(/asked 3 vendors for quotes/i);
   });
 
   it("the gas answer does not ask for a reply before the tenant is outside", () => {
@@ -444,7 +444,7 @@ describe("final defect list: chat behavior", () => {
   it("a quick reply shows its label in the chat while the engine still reads its code", () => {
     const w = run(createWorld(), [LEAK_EV, { type: "tenant.text", text: "2", shown: "No" }]);
     expect(texts(w, "tenant", "in")).toContain("No");
-    expect(w.triage.stage).toBe("steps_given");
+    expect(w.triage.stage).toBe("quotes_pending");
   });
 
   it("a different problem while a repair is open is its own request", () => {
@@ -461,6 +461,65 @@ describe("final defect list: chat behavior", () => {
     const w = run(createWorld(), [LEAK_EV, { type: "tenant.text", text: "2" }]);
     const after = send(w, { type: "tenant.text", text: "done" });
     expect(texts(after, "tenant", "out").at(-1) ?? "").not.toMatch(/separate request/i);
+  });
+});
+
+describe("audit round 4: one set of dates and numbers", () => {
+  it("mails the rent notice to start at the lease anniversary, the same day the rent page uses", () => {
+    let w = run(createWorld(), [{ type: "rent.paid", paid: true }, { type: "rent.cpi", confirmed: true }, { type: "cron.lease" }]);
+    const card = openOwnerMessage(w)!;
+    expect(card.card?.kind).toBe("lease");
+    expect(card.actions?.map((a) => a.id)).toContain("rent5");
+    w = send(w, { type: "owner.tap", msgId: card.id, action: "rent5" });
+    const done = w.timeline.filter((e): e is Msg => e.kind === "msg" && e.party === "owner" && /Notice mailed certified/.test(e.text)).at(-1)!;
+    expect(done.text).toMatch(/effective December 14, 2026/);
+    expect(done.text).toMatch(/\$3,360\.00/);
+    expect(w.sentinel.mailedOn).toMatch(/^2026-10-\d\d$/);
+  });
+
+  it("ignores a counter-offer that is not a real amount", () => {
+    let w = run(createWorld(), [LEAK, { type: "tenant.text", text: "2" }, { type: "contractor.quote" }]);
+    const before = w.timeline.length;
+    for (const total of [NaN, 0, -10, Infinity]) w = send(w, { type: "contractor.counter", total });
+    expect(w.timeline.length).toBe(before);
+  });
+});
+
+describe("audit round 3: the agent does not wait on people", () => {
+  const texts = (w: World, party: "tenant" | "owner", dir: "in" | "out") =>
+    msgs(w)
+      .filter((m) => m.party === party && m.dir === dir)
+      .map((m) => m.text);
+
+  it("starts on the plumber as soon as the safe steps are sent, without waiting for Done", () => {
+    const w = run(createWorld(), [LEAK, { type: "tenant.text", text: "2" }]);
+    expect(w.triage.stage).toBe("quotes_pending");
+    expect(toolNames(w)).toEqual(expect.arrayContaining(["pick_safety_steps", "keep_going", "request_quotes"]));
+    expect(w.pending.map((p) => p.id)).toContain("quotes_in");
+  });
+
+  it("sends the steps and the plumber news in one message, not two", () => {
+    const w = run(createWorld(), [LEAK, { type: "tenant.text", text: "2" }]);
+    const out = texts(w, "tenant", "out");
+    expect(out.filter((t) => /Two quick steps/.test(t))).toHaveLength(1);
+    expect(out.at(-1)).toMatch(/already getting a plumber lined up/i);
+    expect(out.some((t) => /^All set\./.test(t))).toBe(false);
+  });
+
+  it("answers a late Done kindly, and a late Help with the guide, without starting anything twice", () => {
+    let w = run(createWorld(), [LEAK, { type: "tenant.text", text: "2" }]);
+    const requests = toolNames(w).filter((n) => n === "request_quotes").length;
+    w = send(w, { type: "tenant.text", text: "done" });
+    expect(texts(w, "tenant", "out").at(-1)).toMatch(/nothing else for you to do/i);
+    w = send(w, { type: "tenant.text", text: "help" });
+    expect(toolNames(w)).toContain("send_guide");
+    expect(toolNames(w).filter((n) => n === "request_quotes")).toHaveLength(requests);
+    expect(w.triage.stage).toBe("quotes_pending");
+  });
+
+  it("does not ask the tenant to tap Done at all", () => {
+    const w = run(createWorld(), [LEAK, { type: "tenant.text", text: "2" }]);
+    expect(texts(w, "tenant", "out").join("\n")).not.toMatch(/Tap Done/);
   });
 });
 
@@ -491,7 +550,7 @@ describe("review round 8: the safety question comes first", () => {
     expect(last.actions?.map((a) => a.label)).toEqual(["Yes", "No"]);
     const steps = run(createWorld(), [LEAK_EV, { type: "tenant.text", text: "2" }]);
     const msg = [...steps.timeline].reverse().find((e) => e.kind === "msg" && e.dir === "out" && e.party === "tenant") as Msg;
-    expect(msg.actions?.map((a) => a.label)).toEqual(["Done", "Help"]);
+    expect(msg.actions?.map((a) => a.label)).toEqual(["Help"]);
   });
 
   it("nothing in the copy assumes it is night", () => {
@@ -535,5 +594,48 @@ describe("audit: overdue rent and the rent cap", () => {
   it("offers the mailing amounts once it is confirmed", () => {
     const w = send(run(createWorld(), [{ type: "rent.paid", paid: true }, { type: "rent.cpi", confirmed: true }]), { type: "cron.lease" });
     expect(openOwnerMessage(w)!.actions?.map((a) => a.id)).toEqual(["rent5", "rentmax", "renthold"]);
+  });
+});
+
+describe("audit round 4: a question with a picture guide gets the guide", () => {
+  it("offers the breaker guide for how to reset a breaker, instead of just saying it does not know", () => {
+    const w = send(createWorld(), { type: "tenant.text", text: "How do I reset my breaker?" });
+    const last = w.timeline.filter((e): e is Msg => e.kind === "msg" && e.party === "tenant" && e.dir === "out").at(-1)!;
+    expect(last.guide).toBe("breaker-reset");
+    expect(last.text).toMatch(/picture guide/);
+    expect(last.actions?.map((a) => a.id)).toContain("askowner");
+  });
+});
+
+describe("audit round 4: a hand pick is checked, and the saving uses comparable scope", () => {
+  const atDecision = () => {
+    let w = run(createWorld(), [LEAK, { type: "tenant.text", text: "2" }]);
+    w = advanceTo(w, nextTimerAt(w)!);
+    return w;
+  };
+  const choose = (vendorId: string, notToExceed: number): Ev => ({ type: "owner.choose", vendorId, notToExceed, accessWindow: "Tomorrow, 9:00 to 11:00 AM" });
+
+  it("ignores a pick of a vendor nobody asked, a limit below the vendor's own quote, or a limit that is not a number", () => {
+    for (const bad of [choose("nobody", 2695), choose("willow-glen", 100), choose("willow-glen", NaN), { ...choose("willow-glen", 2695), accessWindow: "  " }]) {
+      const w = send(atDecision(), bad);
+      expect(w.choice).toBeNull();
+    }
+  });
+
+  it("books exactly the vendor and limit the owner chose when they are sound", () => {
+    let w = send(atDecision(), choose("bayside", 3135));
+    expect(w.choice).toMatchObject({ vendorId: "bayside", notToExceed: 3135 });
+    const card = openOwnerMessage(w)!;
+    w = send(w, { type: "owner.tap", msgId: card.id, action: "approve" });
+    const booked = w.timeline.find((e) => e.kind === "tool" && e.tool === "book_vendor");
+    expect(booked && booked.kind === "tool" && booked.title).toMatch(/Bayside/);
+  });
+
+  it("counts what the owner saved against the comparable highest quote, not the paper one", () => {
+    let w = send(atDecision(), choose("a1-rapid", 2310));
+    const card = openOwnerMessage(w)!;
+    w = send(w, { type: "owner.tap", msgId: card.id, action: "approve" });
+    // A1 quoted $2,100 but left out the permit: with it added it is $2,225. The highest, Bayside, is $2,850. So $625, not $750.
+    expect(w.stats.saved).toBe(625);
   });
 });

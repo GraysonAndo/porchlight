@@ -3,7 +3,7 @@
 //
 // Usage: BASE_URL=http://localhost:3000 node scripts/e2e.mjs
 
-import { launch, watchErrors, BASE } from "./browser.mjs";
+import { launch, watchErrors, BASE, openLease } from "./browser.mjs";
 
 let failed = 0;
 function check(name, ok, detail = "") {
@@ -67,7 +67,12 @@ const chatText = (page) => page.getByRole("log", { name: "Messages" }).innerText
   await page.getByRole("button", { name: /Tenant/ }).click();
   await page.waitForURL("**/tenant");
   check("choosing tenant opens the tenant side", true);
-  check("the tenant side has only Help, My home, and Pay in its tabs", (await page.getByRole("navigation", { name: "Tenant tabs" }).getByRole("link").allInnerTexts()).join() === "Help,My home,Pay");
+  await page.getByRole("link", { name: /GoHome, back to the start/ }).click();
+  await page.waitForURL(`${BASE}/`);
+  check("the logo takes either person back to the start, where tenant or owner can be picked again", (await page.getByRole("button", { name: /Tenant/ }).count()) === 1 && (await page.getByRole("button", { name: /Owner/ }).count()) === 1);
+  await page.getByRole("button", { name: /Tenant/ }).click();
+  await page.waitForURL("**/tenant");
+  check("the tenant side has only Help, My home, and Pay in its tabs", (await page.getByRole("navigation", { name: "Tenant tabs" }).getByRole("link").allInnerTexts()).map((t) => t.replace(/\s*\d.*$/s, "")).join() === "Help,My home,Pay");
   await page.getByRole("link", { name: "Switch to owner" }).click();
   await page.waitForURL("**/owner");
   check("Switch goes straight to the other side in one click", true);
@@ -75,7 +80,7 @@ const chatText = (page) => page.getByRole("log", { name: "Messages" }).innerText
   await page.getByRole("button", { name: /Owner/ }).click();
   await page.waitForURL("**/owner");
   check("choosing owner opens the owner side", true);
-  check("the owner side has Inbox, Home record, Forecast, and Rent", (await page.getByRole("navigation", { name: "Owner tabs" }).getByRole("link").allInnerTexts()).join() === "Inbox,Home record,Forecast,Rent");
+  check("the owner side has Inbox, Home record, Forecast, and Rent", (await page.getByRole("navigation", { name: "Owner tabs" }).getByRole("link").allInnerTexts()).map((t) => t.replace(/\s*\d.*$/s, "")).join() === "Inbox,Home record,Forecast,Rent");
   check("no console errors on the landing page", errors.length === 0, errors.join(" | "));
   await context.close();
 }
@@ -108,8 +113,8 @@ const chatText = (page) => page.getByRole("log", { name: "Messages" }).innerText
   check("the guide never tells the tenant to touch gas", !/turn the gas|gas valve to|pilot|relight/i.test(await dialog.innerText()) || /Do not touch the gas control/.test(await dialog.innerText()));
   check("the guide says when to stop and get help", (await dialog.getByText("Stop and get help if:").count()) === 1);
   await dialog.getByRole("button", { name: "Done" }).click();
-  await page.getByRole("button", { name: "Done", exact: true }).click();
-  await page.getByText(/I'm watching this/).waitFor(wait20);
+  check("the chat never asks the tenant to tap Done, because GoHome does not wait", (await page.getByRole("button", { name: "Done", exact: true }).count()) === 0 && !/Tap Done/.test(await chatText(page)));
+  await page.getByText(/getting a plumber lined up/).first().waitFor(wait20);
   const chat = await chatText(page);
   check("the tenant is never asked for a photo of a label", !/sticker|silver|label photo/i.test(chat));
   check("the tenant never sees a price or a quote", !/\$\d|\bquote/i.test(chat), chat.slice(0, 100));
@@ -123,7 +128,7 @@ const chatText = (page) => page.getByRole("log", { name: "Messages" }).innerText
   const card = await page.getByLabel(/Needs your OK: Replace the water heater/).innerText();
   check("the owner card shows price, limit, saving, and visit", ["$2,450", "$2,695", "$400", "9:00"].every((t) => card.includes(t)), card.slice(0, 120));
   await page.getByText(/Bayside Plumbing and Heating: slightly high/).waitFor(wait20);
-  check("the owner's agent panel shows every check, with who did it", (await count(page, "Plain code")) > 0 && (await count(page, /Willow Glen Water Heater Co\.: fair/)) > 0);
+  check("the owner's agent panel shows every check, with who did it", (await count(page, "Fixed rule")) > 0 && (await count(page, /Willow Glen Water Heater Co\.: fair/)) > 0);
   await tabs(page, /Texts from GoHome/).click();
   check("the owner can read the texts GoHome sent", (await count(page, /DECISION NEEDED|Water heater leak at/)) > 0);
   await tabs(page, /What GoHome is doing/).click();
@@ -159,6 +164,7 @@ const chatText = (page) => page.getByRole("log", { name: "Messages" }).innerText
   await page.goto(`${BASE}/tenant/home`);
 
   // The record and the plan updated themselves.
+  await page.getByText("HL-40G-NX").first().waitFor(wait20);
   check("My home shows the new heater model, and the serial is only inside Details", (await count(page, "HL-40G-NX")) > 0 && (await count(page, "HL-40G-NG")) === 0 && (await page.getByText("26J0007-A").filter({ visible: true }).count()) === 0);
   await page.goto(`${BASE}/owner/record`);
   await page.getByText("New, added automatically").waitFor(wait20);
@@ -283,6 +289,7 @@ const chatText = (page) => page.getByRole("log", { name: "Messages" }).innerText
 
   // Rent
   await page.goto(`${BASE}/owner/rent`);
+  await openLease(page);
   check("the rent page says California only and names AB 1482", (await count(page, "California only, for now")) > 0 && (await count(page, "AB 1482")) > 0);
   await page.locator("#current-rent").fill("");
   await page.getByText("Fill in the numbers to see the result").waitFor(wait20);
@@ -311,6 +318,7 @@ const chatText = (page) => page.getByRole("log", { name: "Messages" }).innerText
   await page.getByRole("button", { name: "Reset sample data" }).click();
   await page.getByRole("button", { name: "Yes, reset" }).click();
   await page.goto(`${BASE}/owner/rent`);
+  await openLease(page);
   check("Reset restores the rent numbers and checkboxes", (await page.locator("#proposed-rent").inputValue()) === "3360" && !(await page.getByLabel("The tenant was given the required written exemption notice.").isChecked()));
   check("no console errors on the owner side", errors.length === 0, errors.join(" | "));
   await context.close();
@@ -325,7 +333,7 @@ const chatText = (page) => page.getByRole("log", { name: "Messages" }).innerText
   await page.getByRole("button", { name: "Check my lease dates" }).click();
   await page.getByText(/holding the rent increase check/).filter({ visible: true }).first().waitFor(wait20);
   check("the lease check is held while the rent is unpaid", true);
-  await page.getByRole("button", { name: "Mark rent as paid" }).first().click();
+  await page.getByRole("button", { name: "Mark as paid" }).first().click();
   await page.getByRole("button", { name: "Check my lease dates" }).click();
   await page.getByText(/Legal maximum/).filter({ visible: true }).first().waitFor(wait20);
   check("once rent is settled and the inflation figure confirmed, the owner gets the legal cap", true);
@@ -577,8 +585,6 @@ const chatText = (page) => page.getByRole("log", { name: "Messages" }).innerText
   await prompt.getByRole("button", { name: /Act as the tenant: No, nothing electrical/ }).waitFor(wait20);
   check("the prompt shows what the tenant sees", (await prompt.getByText("The tenant sees").count()) === 1);
   await prompt.getByRole("button", { name: /Act as the tenant: No, nothing electrical/ }).click();
-  await prompt.getByRole("button", { name: /Act as the tenant: Done/ }).waitFor(wait20);
-  await prompt.getByRole("button", { name: /Act as the tenant: Done/ }).click();
   await page.getByRole("button", { name: "Approve", exact: true }).waitFor(wait20);
   check("acting as the tenant brings the owner's approval card", true);
 
@@ -604,8 +610,6 @@ const chatText = (page) => page.getByRole("log", { name: "Messages" }).innerText
   await page.getByRole("button", { name: "My water heater is leaking" }).click();
   await page.getByText(/near an outlet/).waitFor(wait20);
   await page.getByRole("button", { name: /^No$/ }).click();
-  await page.getByRole("button", { name: "Done", exact: true }).waitFor(wait20);
-  await page.getByRole("button", { name: "Done", exact: true }).click();
   await prompt.getByRole("button", { name: /Act as the owner: Approve/ }).waitFor(wait20);
   check("the tenant sees that the owner has a plan, with a button to act as the owner", (await prompt.getByText("The owner sees").count()) === 1);
   await prompt.getByRole("button", { name: /Act as the owner: Approve/ }).click();
@@ -621,6 +625,7 @@ const chatText = (page) => page.getByRole("log", { name: "Messages" }).innerText
   const { context, page, errors } = await newPage();
   await resetApp(page);
   await page.goto(`${BASE}/owner/rent`);
+  await openLease(page);
   const out = () => page.locator("main").innerText();
 
   // 1: money is rounded to the cent.
@@ -669,8 +674,9 @@ const chatText = (page) => page.getByRole("log", { name: "Messages" }).innerText
   await page.getByLabel(/I checked this inflation figure for my area/).check();
   check("late rent also holds the suggestion back", (await page.getByRole("button", { name: /^Recommended:/ }).count()) === 0);
   await page.goto(`${BASE}/owner`);
-  await page.getByRole("button", { name: "Mark rent as paid" }).first().click();
+  await page.getByRole("button", { name: "Mark as paid" }).first().click();
   await page.goto(`${BASE}/owner/rent`);
+  await openLease(page);
   check("the rent page starts from the lease", (await count(page, "From your lease")) > 0 && (await count(page, "$3,200.00 a month")) > 0 && (await count(page, "December 14, 2026")) > 0);
   await page.locator("#proposed-rent").fill("3300");
   await page.getByRole("button", { name: /^Recommended: \$3,360\.00/ }).click();
@@ -688,6 +694,7 @@ const chatText = (page) => page.getByRole("log", { name: "Messages" }).innerText
   await page.getByText(/Your owner sent you a notice by mail/).waitFor(wait20);
   check("the tenant is texted about the notice", true);
   await page.goto(`${BASE}/owner/rent`);
+  await openLease(page);
   check("a sent notice stays sent after a reload", (await page.getByRole("button", { name: "Notice sent" }).count()) === 1);
 
   // 12: plain words, no raw keys.
@@ -1035,6 +1042,169 @@ const chatText = (page) => page.getByRole("log", { name: "Messages" }).innerText
     }, path);
     check(`text spacing and dashes on ${path}`, bad.length === 0, bad.join(" || "));
   }
+  await context.close();
+}
+
+// ======================= Customer ease: emergency line, where things stand, one mark-paid, repair record =======================
+{
+  const { context, page, errors } = await newPage({ viewport: { width: 390, height: 844 } });
+  await resetApp(page);
+  await page.goto(`${BASE}/tenant`);
+  check("the tenant's Help page always has a Call 911 button, before anything is typed", (await page.getByRole("link", { name: "Call 911" }).count()) === 1 && (await page.locator('a[href="tel:911"]').first().boundingBox()).height >= 43);
+  check("the chat box has a short prompt that fits a phone", (await page.locator("#tenant-msg").getAttribute("placeholder")) === "What is wrong?");
+  await page.getByRole("button", { name: "My water heater is leaking" }).click();
+  await page.getByText(/near an outlet/).waitFor(wait20);
+  check("a reported problem shows where things stand, in plain words", (await page.getByRole("heading", { name: "Where things stand" }).count()) === 1 && (await page.getByText("GoHome asked you a safety question").count()) >= 1);
+  await page.goto(`${BASE}/owner`);
+  const current = await page.getByRole("list", { name: "Job status" }).locator("li[aria-current=step]").innerText();
+  check("the owner's job tracker does not say Quoted while the tenant is still being asked a safety question", /New/.test(current) && !/Quoted/.test(current), current);
+  check("an overdue rent has one Mark as paid button, not two", (await page.getByRole("button", { name: /Mark (rent )?as paid/ }).count()) === 1);
+  await page.goto(`${BASE}/owner/record`);
+  const href = await page.getByRole("link", { name: "Download the repair record" }).getAttribute("href");
+  const body = decodeURIComponent(href.split(",").slice(1).join(","));
+  check("the repair record downloads as text with dates and the real steps", /^REPAIR RECORD/.test(body) && /WATER HEATER REPAIR/.test(body) && /20\d\d/.test(body) && /Opened a case/.test(body), body.slice(0, 200));
+  await resetApp(page);
+  await page.goto(`${BASE}/owner/record`);
+  check("with nothing reported there is no download and no made-up history", (await page.getByRole("link", { name: "Download the repair record" }).count()) === 0 && (await count(page, "Nothing has happened yet")) === 1);
+  check("no console errors in the customer ease checks", errors.length === 0, errors.join(" | "));
+  await context.close();
+}
+
+// ======================= Less work for people: no Done, a skip-the-tap offer, a handled count =======================
+{
+  const { context, page, errors } = await newPage();
+  await resetApp(page);
+  await page.goto(`${BASE}/`);
+  check("the welcome page explains how it works in three steps", (await page.getByRole("heading", { name: "How it works" }).count()) === 1 && (await page.getByRole("listitem").filter({ hasText: "The owner taps once" }).count()) === 1);
+  await page.goto(`${BASE}/tenant`);
+  await page.getByRole("button", { name: "My water heater is leaking" }).click();
+  await page.getByText(/near an outlet/).waitFor(wait20);
+  await page.getByRole("button", { name: /^No$/ }).click();
+  await page.getByText(/already getting a plumber lined up/).waitFor(wait20);
+  check("after the safety answer GoHome starts on the plumber without any other tap", (await page.getByRole("button", { name: "Done", exact: true }).count()) === 0);
+  await page.goto(`${BASE}/owner`);
+  await page.getByRole("button", { name: "Approve", exact: true }).waitFor(wait20);
+  check("the owner is told how many steps GoHome handled on its own", (await count(page, /GoHome has handled \d+ steps? on its own/)) > 0);
+  check("no skip-the-tap offer before the first approval", (await page.getByRole("heading", { name: "Want to skip this tap next time?" }).count()) === 0);
+  await page.getByRole("button", { name: "Approve", exact: true }).click();
+  await page.getByRole("heading", { name: "Want to skip this tap next time?" }).waitFor(wait20);
+  await page.getByRole("button", { name: "Yes, up to $1,500" }).click();
+  check("choosing an amount confirms it and keeps emergencies ringing", (await count(page, /book repairs of \$1,500 or less on its own/)) > 0 && (await count(page, /Emergencies still ring you/)) > 0);
+  await page.goto(`${BASE}/owner/settings`);
+  await page.waitForFunction(() => document.querySelector("#auto-approve")?.value === "1500", null, { timeout: 20000 }).catch(() => {});
+  check("the same amount is now the setting", (await page.locator("#auto-approve").inputValue()) === "1500");
+  await page.goto(`${BASE}/owner`);
+  check("the offer does not come back once answered", (await page.getByRole("heading", { name: "Want to skip this tap next time?" }).count()) === 0);
+  // The owner's inbox lists the dates GoHome is tracking, from the same sources as the other pages.
+  await page.getByRole("heading", { name: "Coming up" }).waitFor(wait20);
+  const coming = await page.getByRole("heading", { name: "Coming up" }).locator("xpath=ancestor::section").innerText();
+  check("Coming up lists the water bill, the last day to send a rent notice, and the lease anniversary", /Water and trash is due/.test(coming) && /Last day to send a rent notice/.test(coming) && /November 14, 2026/.test(coming) && /December 14, 2026/.test(coming), coming);
+  // The rent page keeps the lease facts folded and asks for the inflation check in place.
+  await resetApp(page);
+  await page.goto(`${BASE}/owner/rent`);
+  await page.getByText("From your lease").first().waitFor(wait20);
+  check("the lease facts and exemption checks are folded away until needed", !(await page.locator("#current-rent").isVisible()));
+  check("the sample figure can be confirmed from the lease card in one tap", (await page.getByRole("button", { name: /^I checked my area: use 3%/ }).count()) === 1);
+  await page.getByRole("button", { name: /^I checked my area: use 3%/ }).click();
+  check("that tap is the same setting as the checkbox", await page.getByLabel(/I checked this inflation figure for my area/).isChecked());
+  check("and the verdict moves on", (await count(page, "OK to send: within the yearly limit")) > 0);
+  await openLease(page);
+  await page.getByLabel("The tenant was given the required written exemption notice.").check();
+  check("opening the folded section reaches the exemption checks", await page.getByLabel("The tenant was given the required written exemption notice.").isChecked());
+  check("no console errors in the less-work checks", errors.length === 0, errors.join(" | "));
+  await context.close();
+}
+
+// ======================= The owner can let GoHome remind late tenants =======================
+{
+  const { context, page, errors } = await newPage();
+  await resetApp(page);
+  await page.goto(`${BASE}/owner`);
+  await page.getByRole("button", { name: "Send a reminder" }).waitFor(wait20);
+  check("by default nothing is sent without the owner: the reminder waits for a tap", (await page.getByRole("button", { name: "Send a reminder" }).isEnabled()) && (await count(page, "GoHome is sending the reminder for you now")) === 0);
+  await page.getByRole("button", { name: "Remind late tenants for me from now on" }).click();
+  await page.getByRole("button", { name: "Reminder sent" }).waitFor(wait20);
+  check("after the owner opts in, GoHome sends it on its own and says so", (await count(page, /GoHome sent it for you, as you asked/)) > 0);
+  await page.goto(`${BASE}/owner/settings`);
+  check("the same choice is a switch in Settings", (await page.getByRole("switch", { name: "Remind late tenants for me" }).getAttribute("aria-checked")) === "true");
+  await page.getByText("See what the weekly email would say").click();
+  const email = await page.locator("details", { hasText: "See what the weekly email would say" }).innerText();
+  check("the weekly email preview is built from the real log and dates", /This week at 1200 Example Court/.test(email) && /handled \d+ steps? on its own/.test(email) && /Coming up:/.test(email) && /Lease anniversary/.test(email), email);
+  await page.goto(`${BASE}/tenant`);
+  await page.getByText(/Friendly reminder/).first().waitFor(wait20);
+  check("the tenant was texted the reminder, with the late fee from the lease", /Friendly reminder/.test(await chatText(page)) && /\$50 late fee/.test(await chatText(page)), (await chatText(page)).slice(0, 300));
+  check("no console errors with automatic reminders", errors.length === 0, errors.join(" | "));
+  await context.close();
+}
+
+// ======================= The model: questions answered, dangers taken seriously =======================
+{
+  const { context, page, errors } = await newPage();
+  await resetApp(page);
+  await page.goto(`${BASE}/tenant`);
+  await textAgent(page, "When is my rent due?");
+  await page.getByText(/due on the 1st of each month/).first().waitFor(wait20);
+  check("the tenant is told when rent is due and what a late payment costs", /\$50 late fee/.test(await chatText(page)));
+  await textAgent(page, "What brand is the furnace?");
+  await page.getByText(/Cedarline CF-80-100/).first().waitFor(wait20);
+  check("the tenant is told an item's brand and model from the home record", true);
+  await resetApp(page);
+  await page.goto(`${BASE}/tenant`);
+  await textAgent(page, "I got shocked by the outlet");
+  await page.getByText(/sounds like an emergency/i).first().waitFor(wait20);
+  check("a shock from an outlet is treated as an emergency", true);
+  await page.goto(`${BASE}/owner`);
+  await page.getByText(/Emergency: Fire or electrical safety/).first().waitFor(wait20);
+  check("and the owner sees the emergency", true);
+  check("no console errors in the model checks", errors.length === 0, errors.join(" | "));
+  await context.close();
+}
+
+// ======================= Fewer clicks: badges, pay from the first screen, answer in place, welcome back =======================
+{
+  const { context, page, errors } = await newPage();
+  await resetApp(page);
+  await page.goto(`${BASE}/`);
+  check("a first visit has no welcome back shortcut", (await page.getByRole("link", { name: /Welcome back/ }).count()) === 0);
+  await page.goto(`${BASE}/owner`);
+  await page.getByRole("link", { name: /Inbox.*1 waiting on you/ }).first().waitFor(wait20);
+  check("the owner's Inbox tab says how many things are waiting, even from other pages", true);
+  await page.goto(`${BASE}/owner/forecast`);
+  await page.getByRole("link", { name: /Inbox.*1 waiting on you/ }).first().waitFor(wait20);
+  check("and the badge follows the owner to every other page", true);
+  await page.goto(`${BASE}/owner`);
+  const quick = page.getByRole("navigation", { name: "Quick links" });
+  await quick.waitFor(wait20);
+  check("the inbox quick links are real buttons-sized links", (await quick.getByRole("link").allInnerTexts()).join() === "Plan a rent increase,Home record,5-year forecast" && (await quick.getByRole("link").first().boundingBox()).height >= 43);
+  await page.goto(`${BASE}/`);
+  await page.getByRole("link", { name: /Welcome back. Continue as the owner/ }).waitFor(wait20);
+  check("a returning visitor gets a one-tap way back to their side", true);
+  await resetApp(page);
+  await page.goto(`${BASE}/tenant`);
+  await page.getByRole("region", { name: "What you owe" }).waitFor(wait20);
+  check("the tenant's first screen says what is owed, with Pay now", /\$3,292\.18/.test(await page.getByRole("region", { name: "What you owe" }).innerText()));
+  await page.getByRole("link", { name: "Pay now" }).first().click();
+  await page.waitForURL("**/tenant/pay");
+  check("Pay now goes straight to paying", true);
+  // Answering in place: the visit time, from the status line, with no hunting for the chat.
+  await resetApp(page);
+  await page.goto(`${BASE}/tenant`);
+  await page.getByRole("button", { name: "My water heater is leaking" }).click();
+  await page.getByText(/near an outlet/).waitFor(wait20);
+  await page.getByRole("button", { name: /^No$/ }).click();
+  await page.goto(`${BASE}/owner`);
+  await page.getByRole("button", { name: "Approve", exact: true }).waitFor(wait20);
+  await page.getByRole("button", { name: "Approve", exact: true }).click();
+  await page.goto(`${BASE}/tenant/home`);
+  await page.getByRole("link", { name: /Help.*1 waiting on you/ }).first().waitFor(wait20);
+  check("the tenant's Help tab says when GoHome is waiting on them, from any page", true);
+  await page.goto(`${BASE}/tenant`);
+  const group = page.getByRole("group", { name: /Is the plumber's time good/ });
+  await group.waitFor(wait20);
+  await group.getByRole("button", { name: "That works" }).click();
+  await page.waitForFunction(() => !document.querySelector('[role=group][aria-label^="Is the plumber"]'));
+  check("one tap on the status line confirms the visit, and the question goes away", (await page.getByRole("link", { name: /Help.*waiting on you/ }).count()) === 0);
+  check("no console errors in the fewer-clicks checks", errors.length === 0, errors.join(" | "));
   await context.close();
 }
 

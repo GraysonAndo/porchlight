@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { HomeIcon, KeyIcon, PlayIcon } from "@/components/icons";
 import { LogoMark } from "@/components/Logo";
@@ -35,7 +36,7 @@ function RoleCard({
 
 export default function GatePage() {
   const router = useRouter();
-  const { actions } = useDemo();
+  const { state, actions, hydrated } = useDemo();
 
   function choose(role: "tenant" | "owner") {
     actions.setRole(role);
@@ -49,7 +50,16 @@ export default function GatePage() {
         <h1 className="mt-5 text-5xl font-extrabold leading-none tracking-tight sm:text-7xl">GoHome</h1>
         <p className="mt-3 text-xl text-ink-soft sm:text-2xl">Your home, made easy.</p>
 
-        <p className="mt-10 text-sm font-extrabold uppercase tracking-widest text-ink-soft">I am a</p>
+        {hydrated && state.role && (
+          <Link
+            href={state.role === "tenant" ? "/tenant" : "/owner"}
+            className="btn btn-primary btn-lg mt-8"
+          >
+            Welcome back. Continue as {state.role === "tenant" ? "a tenant" : "the owner"} <span aria-hidden="true">&rarr;</span>
+          </Link>
+        )}
+
+        <p className={`${hydrated && state.role ? "mt-6" : "mt-10"} text-sm font-extrabold uppercase tracking-widest text-ink-soft`}>{hydrated && state.role ? "Or switch to" : "I am a"}</p>
         <div className="mt-3 grid w-full gap-4 sm:grid-cols-2">
           <RoleCard
             icon={<KeyIcon size={26} />}
@@ -64,6 +74,27 @@ export default function GatePage() {
             onClick={() => choose("owner")}
           />
         </div>
+
+        <section aria-labelledby="how-heading" className="mt-8 w-full text-left">
+          <h2 id="how-heading" className="text-center text-sm font-extrabold uppercase tracking-widest text-ink-soft">
+            How it works
+          </h2>
+          <ol className="mt-3 grid gap-3 sm:grid-cols-3">
+            {[
+              ["A tenant texts a problem", "GoHome already knows the home, so it gives safe steps made for the exact equipment."],
+              ["GoHome does the legwork", "It lines up plumbers, checks each quote, and sets a spending limit. Nobody waits on a phone call."],
+              ["The owner taps once", "Or lets GoHome book small repairs on its own, under a limit the owner picks."],
+            ].map(([title, body], i) => (
+              <li key={title} className="rounded-2xl border border-line bg-white p-4">
+                <span aria-hidden="true" className="mb-2 flex h-8 w-8 items-center justify-center rounded-full bg-brand-tint text-sm font-extrabold text-brand">
+                  {i + 1}
+                </span>
+                <p className="font-extrabold">{title}</p>
+                <p className="mt-1 text-sm text-ink-soft">{body}</p>
+              </li>
+            ))}
+          </ol>
+        </section>
 
         <div className="mt-8 w-full rounded-2xl border border-line bg-white p-5">
           <p className="font-extrabold">Just want to see it work?</p>

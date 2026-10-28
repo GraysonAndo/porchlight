@@ -6,6 +6,8 @@ import { AgentPanel } from "@/components/AgentPanel";
 import { Thread } from "@/components/Thread";
 import { useAgent } from "@/lib/agents/useAgent";
 import { requestsFor } from "@/lib/agents/views";
+import { useDemo } from "@/lib/store";
+import { BILLS, dueStatus, money } from "@/lib/payments";
 
 const STARTERS = [
   { label: "My water heater is leaking", text: "water heater is leaking all over the garage" },
@@ -20,6 +22,13 @@ export default function TenantPage() {
   const requests = requestsFor({ ...agent.world, timeline: agent.visible });
   const via = agent.textUpdates.tenant ? "text" : "app";
   const [view, setView] = useState<"chat" | "activity">("chat");
+  const { state, hydrated } = useDemo();
+  // What the tenant owes, so paying is one tap from the first screen instead of a search through the tabs.
+  const paidKinds = new Set(state.payments.map((p) => p.kind));
+  if (state.rentPaidAt) paidKinds.add("rent");
+  const dueCents = BILLS.filter((b) => !paidKinds.has(b.kind)).reduce((sum, b) => sum + b.cents, 0);
+  const rentLate = !paidKinds.has("rent") && dueStatus("rent").overdue;
+  const needsTime = agent.world.triage.stage === "booked" && !agent.world.triage.tenantConfirmed;
 
   return (
     <div className="space-y-4">
@@ -33,19 +42,49 @@ export default function TenantPage() {
         </p>
       </div>
 
-      {requests.length > 1 && (
+      <p className="flex flex-wrap items-center gap-x-3 gap-y-1 rounded-2xl border border-urgent/40 bg-urgent-tint px-4 py-2 text-sm font-bold text-ink">
+        <span>Fire, gas smell, or someone hurt? Get out first and call</span>
+        <a href="tel:911" aria-label="Call 911" className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-lg bg-urgent px-4 font-extrabold text-white">
+          911
+        </a>
+        <span>. Then tell GoHome.</span>
+      </p>
+
+      {hydrated && dueCents > 0 && (
+        <section aria-label="What you owe" className={`flex flex-wrap items-center justify-between gap-3 rounded-2xl border-2 px-4 py-3 ${rentLate ? "border-urgent bg-urgent-tint" : "border-line bg-white"}`}>
+          <p className="font-bold">
+            You owe {money(dueCents)}.{" "}
+            <span className={rentLate ? "text-urgent" : "text-ink-soft"}>{rentLate ? `Rent is ${dueStatus("rent").text}` : "Due this month."}</span>
+          </p>
+          <Link href="/tenant/pay" className="btn btn-primary !min-h-11">
+            Pay now
+          </Link>
+        </section>
+      )}
+
+      {requests.length > 0 && (
         <section aria-labelledby="requests-heading" className="card !p-4">
           <h2 id="requests-heading" className="text-lg font-extrabold">
-            Your requests
+            {requests.length === 1 ? "Where things stand" : "Your requests"}
           </h2>
-          <ul className="mt-1 divide-y divide-line">
+          <ul className="mt-1 divide-y divide-line" aria-live="polite">
             {requests.map((r) => (
               <li key={r.id} className="flex flex-wrap items-baseline justify-between gap-x-4 py-1.5 text-sm">
                 <span className="font-bold">{r.title}</span>
-                <span className="text-ink-soft">{r.status}</span>
+                <span className="font-bold text-ink-soft">{r.status}</span>
               </li>
             ))}
           </ul>
+          {needsTime && (
+            <div className="mt-3 flex flex-wrap gap-2" role="group" aria-label="Is the plumber's time good?">
+              <button type="button" aria-label="That works: confirm the visit time" className="btn btn-primary !min-h-11" onClick={() => agent.send({ type: "tenant.text", text: "1", shown: "That works" })}>
+                That works
+              </button>
+              <button type="button" aria-label="Another time: ask for a different visit time" className="btn btn-secondary !min-h-11" onClick={() => agent.send({ type: "tenant.text", text: "2", shown: "Another time" })}>
+                Another time
+              </button>
+            </div>
+          )}
         </section>
       )}
 
@@ -83,7 +122,7 @@ export default function TenantPage() {
             party="tenant"
             msgs={msgs}
             typing={agent.typingFor("tenant")}
-            placeholder="Tell GoHome what is wrong"
+            placeholder="What is wrong?"
             onSend={(text, shown) => agent.send({ type: "tenant.text", text, shown })}
             onPhoto={(photo) => agent.send({ type: "tenant.photo", photo })}
             photoLabels={[["leak", "Photo of the problem"]]}

@@ -23,20 +23,43 @@ interface Rule {
 }
 
 const GAS: Rule = {
-  test: /(smell|smells|smelling|odor|odour|whiff|hiss|hissing)[^.]{0,30}\bgas\b|\bgas\b[^.]{0,30}(smell|smells|odor|odour|leak|leaking|hiss)|rotten egg|sulfur|sulphur/i,
+  test: /^\s*gas\s*[!?.]*\s*$|(smell|smells|smelling|odor|odour|whiff|hiss|hissing)[^.]{0,30}\bgas\b|\bgas\b[^.]{0,30}(smell|smells|odor|odour|leak|leaking|hiss)|rotten egg|sulfur|sulphur/i,
 };
 // Carbon monoxide: the alarm, or dizziness and headaches near a gas appliance.
 const CARBON_MONOXIDE: Rule = {
   test: /carbon monoxide|\bco (alarm|detector)|co alarm|(dizzy|dizziness|lightheaded|light-headed|nauseous|nausea|headache)[^.]{0,60}(gas|fumes|furnace|heater|stove|alarm)|(gas|fumes|furnace|heater|stove|alarm)[^.]{0,60}(dizzy|dizziness|lightheaded|light-headed|nauseous|nausea|headache)/i,
 };
 const FIRE_OR_SPARKS: Rule = {
-  test: /\bfire\b|\bsmoke\b|smoking|burning smell|smells?( like)?( something)? burning|something (is )?burning|sparks?\b|sparking|arc(ing)?\b|melted (outlet|plug|wire)/i,
+  test: /\bfire\b|\bsmoke\b|smoking|burning smell|smells?( like)?( something)? burning|something (is )?burning|sparks?\b|sparking|arc(ing)?\b|melted (outlet|plug|wire)|shock(ed)?\b|electrocut|zapped|(stove|oven|burner|range)[^.]{0,30}(won'?t (turn|shut) off|stuck on|will not turn off|can'?t turn off|left on)/i,
 };
 const FLOODING: Rule = {
   test: /flood(ing|ed)?\b|burst pipe|pipe (burst|broke)|water (is )?(pouring|gushing|everywhere)|gushing|sewage|sewer (backup|back up)/i,
 };
 
-const SEEDED_HEATER: Rule = { test: /water heater|hot water heater|\bheater\b|\btank\b/i };
+// Someone trying to get in, or already in, is a police matter first. Nothing here is a do-it-yourself fix.
+const SECURITY: Rule = {
+  test: /break(ing|s)?[\s-]?in\b|broke in|broken into|burglar|burglary|intruder|prowler|trespass|someone (is )?(trying to get|getting|got) in|someone (has been|was|came|is) (in|inside|into) (my|the|our) (apartment|home|house|unit|place|room)|being robbed|robbery|stalker|\bthreat(s|en|ens|ening)?\b|violen(t|ce)|assault|attacked|\bweapon|\bgun\b/i,
+};
+// Water meeting wiring is a shock and fire risk, not a plumbing problem first.
+const WATER_AND_ELECTRIC: Rule = {
+  test: /(water|leak|leaking|leaks|dripping|drips|dripped|wet|soaked|flood(ing|ed)?)[^.]{0,40}(light fixture|ceiling light|ceiling fan|outlet|socket|breaker|electrical panel|fuse box|wiring)|(light fixture|ceiling light|ceiling fan|outlet|socket|breaker|electrical panel|fuse box|wiring)[^.]{0,40}(water|leak|leaking|leaks|dripping|drips|wet|soaked|flood)/i,
+};
+// Part of the building that could let someone fall or could fall on someone.
+const COLLAPSE: Rule = { test: /ceiling (collapsed|fell|caved|came down)|collapsed (ceiling|roof|wall|floor|balcony|stairs?)|roof (collapsed|caved)|floor (collapsed|caved)|balcony (collapsed|fell)|wall (collapsed|fell)/i };
+const FALL_HAZARD: Rule = { test: /(stairs?|staircase|railing|handrail|banister|balcony|deck|porch step|step)[^.]{0,40}(broken|broke|loose|wobbl|rotten|rotting|collaps|came off|fell off|missing|cracked|unsafe|giving way)|(broken|loose|rotten|missing|unsafe)[^.]{0,20}(stairs?|staircase|railing|handrail|banister|balcony|deck)/i };
+// A short chirp about once a minute is a low battery. A loud alarm that keeps going is not, and goes to the fire rule.
+const ALARM_CHIRP: Rule = { test: /(smoke|fire|co|carbon monoxide)?\s*(detector|alarm)[^.]{0,30}chirp|chirp[^.]{0,30}(detector|alarm)/i };
+const NO_WATER: Rule = { test: /\bno (running )?water\b(?! heater)(?!.*hot)|water (is |has )?(off|out|gone)\b|no water pressure|water pressure (is )?(gone|zero|nothing)/i };
+const NO_HOT_WATER: Rule = { test: /no hot water|without hot water|hot water (is )?(out|off|gone|not working)|(won'?t|doesn'?t|not) (get|gets|getting|run|running) hot|only (cold|lukewarm) water|water (is )?(only )?(cold|lukewarm)/i };
+
+/** Words that mean a space heater or a wall heater, which is not the water heater the demo is about. */
+const OTHER_HEATER = /space heater|baseboard|portable heater|electric heater|wall heater|heat lamp|radiant|towel (warmer|heater)/i;
+/** A water heater problem, not a toilet tank or a space heater. */
+export function mentionsWaterHeater(text: string): boolean {
+  if (/water heater|hot water (heater|tank)|water tank|tankless/i.test(text)) return true;
+  return /\bheater\b/i.test(text) && !OTHER_HEATER.test(text);
+}
+
 
 export function isGasEmergency(text: string): boolean {
   return GAS.test.test(text) || CARBON_MONOXIDE.test.test(text);
@@ -52,7 +75,7 @@ function emergency(partial: Omit<TriageResult, "urgency" | "confidence" | "sugge
 
 const TOILET_OVERFLOW: Rule = { test: /toilet[^.]{0,50}(overflow|overflowing|spilling|running over|will not stop|won'?t stop)|overflow(ing)?[^.]{0,20}toilet/i };
 
-const NO_HEAT: Rule = { test: /no heat|without heat|heat (is )?(out|off|not working)|furnace (is )?(out|off|not (working|heating))|heater (is )?(not|n't) (working|heating)|house is freezing|freezing in (here|the house)/i };
+const NO_HEAT: Rule = { test: /no heat|without heat|heat (is )?(out|off|not working)|heating (is |has )?(out|off|not working|isn'?t working|broke|broken|stopped)|(furnace|heating|heater|heat) (is )?(out|off|not (working|heating|coming on))|(furnace|heating|heater|heat)[^.]{0,12}(isn'?t|doesn'?t|won'?t|stopped)[^.]{0,12}(work|heat|come on|turn on|start)|house is freezing|freezing in (here|the house)/i };
 
 const GENERIC_QUESTIONS = [
   "When did this start, and is it getting worse?",
@@ -199,6 +222,40 @@ export function triageText(description: string): TriageResult {
     });
   }
 
+  if (ALARM_CHIRP.test.test(text) && !/going off|blaring|loud|screaming|smell|smoke in|see smoke|fire/i.test(text)) {
+    return {
+      category: "Smoke or CO alarm",
+      urgency: "urgent",
+      summary: "A chirping alarm usually means a low backup battery. California requires working smoke and carbon monoxide alarms, so it should be fixed soon.",
+      likelyCause: "A low backup battery or an alarm that is at the end of its life. If it is a loud alarm that keeps going, that is different: leave and call 911.",
+      safetySteps: [
+        "If the alarm is loud and keeps going, or you see smoke or smell gas or burning, get everyone out and call 911.",
+        "A short chirp about once a minute is usually a low battery. If the alarm is easy to reach, replace the battery with the type printed on it.",
+        "Do not remove an alarm and leave the home without one.",
+      ],
+      tenantQuestions: ["Is it a short chirp about once a minute, or a loud alarm that keeps going?", "Is it a smoke alarm, a carbon monoxide alarm, or a combined one?", "Do you see smoke or smell anything?"],
+      suggestedTrade: "Handyperson or electrician",
+      confidence: 0.7,
+      alertOwnerNow: true,
+    };
+  }
+
+  if (COLLAPSE.test.test(text)) {
+    return emergency({
+      category: "Structural safety",
+      summary: "Part of the building has fallen or given way. Treat this as an emergency.",
+      likelyCause: "Water damage, rot, or a failed support. It needs a contractor and may need the city to look at it.",
+      safetySteps: [
+        "Get everyone away from the area and out of the room or building if it feels unsafe.",
+        "If anyone is hurt or trapped, call 911.",
+        "Do not go back under or onto the damaged part. Keep children and pets away.",
+        "If there is water, wires, or dust, do not touch them. Tell GoHome once you are safe.",
+      ],
+      tenantQuestions: ["Is anyone hurt or trapped?", "Is everyone out of the room?", "Is there water, a wire, or a gas smell near it?"],
+      suggestedTrade: "911 if anyone is hurt, then a licensed contractor",
+    });
+  }
+
   if (FIRE_OR_SPARKS.test.test(text)) {
     return emergency({
       category: "Fire or electrical safety",
@@ -216,6 +273,38 @@ export function triageText(description: string): TriageResult {
         "Did you call 911 or the fire department?",
       ],
       suggestedTrade: "Fire department if there is fire, then a licensed electrician",
+    });
+  }
+
+  if (SECURITY.test.test(text)) {
+    return emergency({
+      category: "Security",
+      summary: "Someone getting in, or trying to, is a police matter first. Treat this as an emergency.",
+      likelyCause: "A break-in or someone who should not be there. It is not a repair problem.",
+      safetySteps: [
+        "If you are in danger, get to a safe place and call 911. Do not confront anyone.",
+        "If you cannot leave safely, lock yourself in a room with a phone and stay quiet until help comes.",
+        "Do not go back in or clean up until the police say it is safe.",
+        "Tell GoHome once you are safe so your landlord can arrange a lock repair.",
+      ],
+      tenantQuestions: ["Are you and everyone with you safe?", "Did you call 911?", "Is a door, window, or lock damaged?"],
+      suggestedTrade: "Police (911), then a locksmith",
+    });
+  }
+
+  if (WATER_AND_ELECTRIC.test.test(text)) {
+    return emergency({
+      category: "Fire or electrical safety",
+      summary: "Water near wiring, lights, or outlets can cause a shock or a fire. Treat this as an emergency.",
+      likelyCause: "A leak that has reached electrical parts, often from the floor above or the roof. It needs an electrician and a plumber.",
+      safetySteps: [
+        "Stay away from the wet area and do not touch any light, switch, outlet, or fixture that is wet or near water.",
+        "If you can reach the breaker panel without stepping in water, switch off the power to that area.",
+        "If you see sparks, smoke, or smell burning, get everyone out and call 911.",
+        "Do not use that light or outlet again until it has been checked.",
+      ],
+      tenantQuestions: ["Is water dripping from a light or a ceiling fan?", "Can you reach the breaker panel without standing in water?", "Did you call 911 if you saw sparks or smoke?"],
+      suggestedTrade: "Licensed electrician, then a plumber",
     });
   }
 
@@ -278,7 +367,50 @@ export function triageText(description: string): TriageResult {
     };
   }
 
-  if (SEEDED_HEATER.test.test(text)) return seededHeaterTriage();
+  if (FALL_HAZARD.test.test(text)) {
+    return {
+      category: "Safety hazard",
+      urgency: "urgent",
+      summary: `Something someone could fall from or through is damaged: "${snippet(text)}". It should be fixed soon, and nobody should use it until then.`,
+      likelyCause: "A loose, rotten, or broken stair, railing, or balcony. A contractor has to look at it.",
+      safetySteps: ["Do not lean on it or put weight on it. Keep children and pets away.", "Use another way in and out if there is one.", "If someone has already fallen or is hurt, call 911."],
+      tenantQuestions: ["Is anyone hurt?", "Can people still use another way in and out?", "Is it loose, rotten, or completely broken?"],
+      suggestedTrade: "Licensed contractor",
+      confidence: 0.72,
+      alertOwnerNow: true,
+    };
+  }
+
+  if (NO_WATER.test.test(text)) {
+    return {
+      category: "Plumbing",
+      urgency: "urgent",
+      summary: "There is no running water. Water is a basic need, so the owner has been alerted.",
+      likelyCause: "A closed or failed shut-off valve, a broken main, or a utility or building problem. A plumber has to find which.",
+      safetySteps: [],
+      tenantQuestions: ["Is the water out at every tap, or just one?", "Is it out for neighbors too?", "Do you hear water running anywhere, or see water on the floor?"],
+      suggestedTrade: "Licensed plumber",
+      confidence: 0.7,
+      alertOwnerNow: true,
+    };
+  }
+
+  if (NO_HOT_WATER.test.test(text) && !mentionsWaterHeater(text)) {
+    return {
+      category: "Plumbing",
+      urgency: "urgent",
+      summary: "There is no hot water. In California hot water counts as a basic need, so the owner has been alerted.",
+      likelyCause: "A water heater problem, such as a pilot light, a thermostat, a tripped breaker, or a failed part. A technician has to find which.",
+      // No do-it-yourself steps: water heaters are often gas appliances and should not be opened by a tenant.
+      safetySteps: [],
+      tenantQuestions: ["Is there no hot water anywhere, or just at one tap?", "Do you smell gas or anything burning near the water heater?", "Is there any water on the floor near the water heater?"],
+      suggestedTrade: "Licensed plumber",
+      confidence: 0.7,
+      alertOwnerNow: true,
+    };
+  }
+
+  if (mentionsWaterHeater(text)) return seededHeaterTriage();
 
   const category = CATEGORIES.find((c) => c.test.test(text));
   const name = category?.name ?? "General maintenance";

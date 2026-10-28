@@ -12,7 +12,8 @@ import { ageOf } from "./life";
 import { money as moneyText } from "./payments";
 import { syncFromWorld } from "./agents/sync";
 import type { Ev } from "./agents/types";
-import { DEFAULT_RENT_FORM, EQUIPMENT, INITIAL_STATE, NEW_HEATER_RECORD } from "./seed";
+import { normalizeState } from "./persist";
+import { EQUIPMENT, INITIAL_STATE, NEW_HEATER_RECORD } from "./seed";
 import type {
   Approval,
   DemoState,
@@ -57,22 +58,7 @@ function readStorage(): DemoState {
     const raw = window.localStorage.getItem(STORAGE_KEY);
     lastRaw = raw;
     if (!raw) return INITIAL_STATE;
-    const parsed = JSON.parse(raw) as Partial<DemoState>;
-    return {
-      ...INITIAL_STATE,
-      ...parsed,
-      rent: { ...DEFAULT_RENT_FORM, ...(parsed.rent ?? {}) },
-      textUpdates: { ...INITIAL_STATE.textUpdates, ...(parsed.textUpdates ?? {}) },
-      prefs: { ...INITIAL_STATE.prefs, ...(parsed.prefs ?? {}) },
-      payments: Array.isArray(parsed.payments) ? parsed.payments : [],
-      rentNotice: parsed.rentNotice ?? null,
-      rentNoticeLog: Array.isArray(parsed.rentNoticeLog) ? parsed.rentNoticeLog : parsed.rentNotice ? [parsed.rentNotice] : [],
-      extraEquipment: Array.isArray(parsed.extraEquipment) ? parsed.extraEquipment : [],
-      guideProgress: parsed.guideProgress && typeof parsed.guideProgress === "object" ? parsed.guideProgress : {},
-      equipmentEdits: parsed.equipmentEdits && typeof parsed.equipmentEdits === "object" ? parsed.equipmentEdits : {},
-      agent: parsed.agent && Array.isArray(parsed.agent.timeline) ? { ...INITIAL_STATE.agent, ...parsed.agent } : INITIAL_STATE.agent,
-      feedback: Array.isArray(parsed.feedback) ? parsed.feedback : [],
-    };
+    return normalizeState(JSON.parse(raw));
   } catch {
     return INITIAL_STATE;
   }

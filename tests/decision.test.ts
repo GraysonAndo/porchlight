@@ -101,3 +101,15 @@ describe("decideRepairOrReplace", () => {
     });
   });
 });
+
+describe("decideRepairOrReplace with numbers that make no sense", () => {
+  it("never prints Infinity or NaN, and never triggers a rule it cannot measure", () => {
+    const r = decideRepairOrReplace({ item: "Water heater", ageYears: 5, typicalLifeYears: 0, repairCost: 100, replaceCost: 0, failureMode: "other" });
+    const text = JSON.stringify(r);
+    expect(text).not.toMatch(/Infinity|NaN|null/);
+    expect(r.checks.find((c) => c.id === "age")!.triggered).toBe(false);
+    expect(r.checks.find((c) => c.id === "cost")!.triggered).toBe(false);
+    expect(r.recommendation).toBe("repair");
+    expect(r.checks[0].detail).toContain("unknown");
+  });
+});

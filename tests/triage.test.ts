@@ -178,3 +178,85 @@ describe("triage covers the cases the QA report raised", () => {
     expect(Object.values(URGENCY_LABEL)).toEqual(["EMERGENCY", "SOON", "ROUTINE"]);
   });
 });
+
+describe("triage: safety wording that used to slip through", () => {
+  const level = (t: string) => triageText(t).urgency;
+  it("treats a break-in as an emergency, with police first and no repair steps", () => {
+    for (const t of ["someone is trying to break in", "I think there is an intruder", "my place was broken into", "a burglar got in"]) {
+      expect(level(t)).toBe("emergency");
+      expect(triageText(t).category).toBe("Security");
+      expect(triageText(t).safetySteps.join(" ")).toMatch(/911/);
+    }
+  });
+
+  it("treats a bare gas message as a possible gas leak, to be safe", () => {
+    expect(level("gas")).toBe("emergency");
+    expect(level("Gas!")).toBe("emergency");
+    expect(level("my gas bill is too high")).not.toBe("emergency");
+  });
+
+  it("treats water at a light, a fan, an outlet or the wiring as an emergency", () => {
+    for (const t of ["water is coming through the ceiling light fixture", "the ceiling fan is dripping water", "there is a leak by the breaker panel", "the outlet in the garage is wet"]) {
+      expect(level(t)).toBe("emergency");
+      expect(triageText(t).category).toBe("Fire or electrical safety");
+    }
+  });
+
+  it("raises no hot water to urgent, without do-it-yourself steps", () => {
+    const r = triageText("we have no hot water");
+    expect(r.urgency).toBe("urgent");
+    expect(r.safetySteps).toEqual([]);
+    expect(r.alertOwnerNow).toBe(true);
+  });
+
+  it("does not mistake a toilet tank or a space heater for the water heater", () => {
+    expect(triageText("the toilet tank keeps running").summary).not.toMatch(/water heater/i);
+    expect(triageText("my space heater smells weird and stopped working").summary).not.toMatch(/water heater/i);
+    expect(triageText("the water heater is leaking from the bottom").summary).toMatch(/water heater/i);
+  });
+});
+
+describe("triage: more safety wording that used to be under-rated", () => {
+  const r = (t: string) => triageText(t);
+  it("treats a shock, a stove that will not turn off, and a collapse as emergencies", () => {
+    for (const t of ["I got shocked by the outlet", "the stove won't turn off", "the oven is stuck on and smells hot", "the ceiling collapsed in the bedroom", "part of the balcony collapsed"]) {
+      expect(r(t).urgency).toBe("emergency");
+    }
+  });
+
+  it("treats threats, violence and someone having been inside as a security emergency", () => {
+    for (const t of ["my neighbor is yelling threats", "I think someone has been in my apartment", "there is a man with a gun outside", "I was attacked in the hallway"]) {
+      expect(r(t).urgency).toBe("emergency");
+      expect(r(t).category).toBe("Security");
+    }
+  });
+
+  it("raises a broken stair or railing and no water to urgent, with the owner alerted", () => {
+    for (const t of ["the stairs are broken", "the balcony railing is loose", "stair rail came off", "we have no running water", "no water at all"]) {
+      expect(r(t).urgency).toBe("urgent");
+      expect(r(t).alertOwnerNow).toBe(true);
+    }
+  });
+
+  it("catches more ways to say there is no heat", () => {
+    for (const t of ["heating isn't working", "the heating stopped working", "the furnace won't come on", "heat is not working"]) {
+      expect(r(t).category).toBe("HVAC");
+      expect(r(t).urgency).toBe("urgent");
+    }
+  });
+
+  it("calls a chirping alarm a low battery to fix soon, but a blaring one an emergency", () => {
+    const chirp = r("the smoke detector keeps chirping");
+    expect(chirp.urgency).toBe("urgent");
+    expect(chirp.category).toBe("Smoke or CO alarm");
+    expect(chirp.safetySteps.join(" ")).toMatch(/911/);
+    expect(r("the smoke alarm is going off and I smell smoke").urgency).toBe("emergency");
+    expect(r("the carbon monoxide alarm is going off").urgency).toBe("emergency");
+  });
+
+  it("keeps ordinary problems ordinary", () => {
+    for (const t of ["the dishwasher is making a noise", "the faucet drips a little", "a light bulb burned out", "I turned the water off at the valve"]) {
+      expect(r(t).urgency).not.toBe("emergency");
+    }
+  });
+});

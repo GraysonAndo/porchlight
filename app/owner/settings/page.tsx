@@ -4,7 +4,12 @@ import { PhoneField } from "@/components/PhoneField";
 import { ResetButton } from "@/components/ResetButton";
 import { SwitchRow } from "@/components/Switch";
 import { TextUpdatesToggle } from "@/components/TextUpdates";
+import { useAgent } from "@/lib/agents/useAgent";
+import { activityFor } from "@/lib/agents/views";
+import { comingUp } from "@/lib/comingUp";
+import { dueStatus } from "@/lib/payments";
 import { PROPERTY } from "@/lib/seed";
+import { weeklySummaryLines } from "@/lib/weeklySummary";
 import { useDemo } from "@/lib/store";
 
 function Section({ id, title, children }: { id: string; title: string; children: React.ReactNode }) {
@@ -19,7 +24,18 @@ function Section({ id, title, children }: { id: string; title: string; children:
 }
 
 export default function OwnerSettingsPage() {
-  const { state, actions } = useDemo();
+  const { state, actions, hydrated } = useDemo();
+  const agent = useAgent();
+  const rentPaid = state.rentPaidAt !== null || state.payments.some((p) => p.kind === "rent");
+  const waiting = agent.msgsFor("owner").filter((m) => m.dir === "out" && m.actions && !m.usedAction).length + (!rentPaid && dueStatus("rent").overdue ? 1 : 0);
+  const summary = hydrated
+    ? weeklySummaryLines({
+        address: PROPERTY.address,
+        activity: activityFor("owner", agent.visible),
+        coming: comingUp({ utilitiesPaid: state.payments.some((p) => p.kind === "utilities") }),
+        waitingOnOwner: waiting,
+      })
+    : [];
 
   return (
     <div className="mx-auto max-w-2xl space-y-5">
@@ -58,6 +74,17 @@ export default function OwnerSettingsPage() {
             onChange={(v) => actions.setPref("ownerEmail", v)}
           />
         </div>
+        <details className="mt-3 rounded-xl bg-cream px-4">
+          <summary className="flex min-h-11 cursor-pointer items-center font-bold">See what the weekly email would say</summary>
+          <div className="space-y-1 pb-3 text-sm">
+            {summary.map((line, i) => (
+              <p key={i} className={i === 0 ? "font-extrabold" : ""}>
+                {line}
+              </p>
+            ))}
+            <p className="hint">Built from your activity log right now. This sample does not send real emails.</p>
+          </div>
+        </details>
         <p className="hint">These settings are saved on this device. This sample does not place real calls or send real emails.</p>
       </Section>
 
@@ -87,6 +114,14 @@ export default function OwnerSettingsPage() {
               ? "Every booking waits for your tap. Move the slider to let small repairs through."
               : `A repair quoted at ${`$${state.prefs.ownerAutoApprove.toLocaleString("en-US")}`} or less is booked for you, and you see it in the activity feed. Anything over that still waits for your tap. Emergencies always ring you.`}
           </p>
+        </div>
+        <div className="mb-4">
+          <SwitchRow
+            title="Remind late tenants for me"
+            description="When rent is late past the grace period, GoHome texts your tenant what is owed and the late fee from your lease, once, and tells you after. Off means it waits for your tap."
+            on={state.prefs.ownerAutoRemind}
+            onChange={(v) => actions.setPref("ownerAutoRemind", v)}
+          />
         </div>
         <ul className="space-y-2 text-sm">
           <li>

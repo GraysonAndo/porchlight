@@ -88,6 +88,7 @@ export default function RentPage() {
   const [copied, setCopied] = useState<"" | "yes" | "no">("");
   const noticeDate = dateOverride ?? today;
   // A box that has been cleared is not a number. The result waits instead of using an old value.
+  const [leaseOpen, setLeaseOpen] = useState(false);
   const [empty, setEmpty] = useState({ current: false, cpi: false, proposed: false, increases: false, prior: false });
   const markEmpty = (key: "current" | "cpi" | "proposed" | "increases" | "prior") => (isEmpty: boolean) =>
     setEmpty((e) => (e[key] === isEmpty ? e : { ...e, [key]: isEmpty }));
@@ -146,6 +147,19 @@ export default function RentPage() {
       : `This increase is within the yearly limit in Civil Code section 1947.12 (5% plus local inflation, never more than ${MAX_CAP_PERCENT}%).`,
   });
   const ready = missing.length === 0 && !rentOdd && !cpiOdd && Boolean(noticeDate);
+  // The lease facts stay folded while they are what the lease says. They open by themselves when something needs a look.
+  const leaseNeedsLook =
+    form.currentRent !== PROPERTY.rent ||
+    form.increasesInLast12Months > 0 ||
+    !form.singleFamilyOrCondo ||
+    !form.notCorporateOwned ||
+    form.exemptionNoticeGiven ||
+    form.leaseExemptionWording ||
+    form.buildingUnder15Years ||
+    empty.current ||
+    empty.increases ||
+    empty.prior ||
+    rentLooksTooHigh(form.currentRent);
   // No dollar maximum is final until the owner has checked the inflation figure for their own area.
   const capKnown = form.cpiConfirmed;
   const lateRent = !state.rentPaidAt && !state.payments.some((pay) => pay.kind === "rent") && dueStatus("rent").overdue;
@@ -277,6 +291,24 @@ export default function RentPage() {
               </button>
             </div>
           </div>
+        ) : ready && !capKnown && !blockedByCount && !rentOdd ? (
+          <div className="mt-3 space-y-2 rounded-xl bg-caution-tint p-3">
+            <p className="font-bold text-caution-ink">
+              One thing first: check the inflation figure for your area. GoHome shows no dollar maximum until you do. The figure here is {form.cpiPercent}%, a sample, not a live lookup (find the real one at the{" "}
+              <a href="https://www.bls.gov/cpi/" className="underline underline-offset-4" target="_blank" rel="noreferrer">
+                U.S. Bureau of Labor Statistics
+              </a>
+              ).
+            </p>
+            <div className="flex flex-col gap-2 sm:flex-row">
+              <button type="button" className="btn btn-primary" onClick={() => actions.setRent({ cpiConfirmed: true })}>
+                I checked my area: use {form.cpiPercent}%
+              </button>
+              <a href="#cpi" className="btn btn-secondary">
+                Change the figure
+              </a>
+            </div>
+          </div>
         ) : (
           ready && blockedByCount && <p className="mt-3 rounded-xl bg-urgent-tint p-3 font-bold text-urgent">No suggestion: a third increase in 12 months is not allowed.</p>
         )}
@@ -293,17 +325,6 @@ export default function RentPage() {
         <Card title="Your numbers">
           <p className="hint mb-3">Every number here is needed. The check boxes are optional.</p>
           <div className="space-y-5">
-            <NumberField
-              id="current-rent"
-              label="Current rent per month"
-              prefix="$"
-              step="any"
-              min={0}
-              value={form.currentRent}
-              onChange={(v) => actions.setRent({ currentRent: roundToCents(v) })}
-              onEmptyChange={markEmpty("current")}
-              invalid={empty.current || rentLooksTooHigh(form.currentRent)}
-            />
             <NumberField
               id="cpi"
               label="Local inflation rate (CPI), percent"
@@ -343,6 +364,29 @@ export default function RentPage() {
               invalid={empty.proposed || rentLooksTooHigh(form.proposedRent)}
             />
 
+            <details
+              className="rounded-xl bg-cream px-4"
+              open={leaseOpen || leaseNeedsLook}
+              onToggle={(e) => setLeaseOpen(e.currentTarget.open)}
+            >
+              <summary className="flex min-h-11 cursor-pointer flex-col justify-center py-2 font-bold">
+                Lease facts and exemption checks
+                <span className="block text-sm font-normal text-ink-soft">
+                  {usdCents(form.currentRent)} a month, {form.increasesInLast12Months === 0 ? "no increases in the last 12 months" : `${form.increasesInLast12Months} increase${form.increasesInLast12Months === 1 ? "" : "s"} in the last 12 months`}, filled in from your lease. Open to change.
+                </span>
+              </summary>
+              <div className="space-y-5 pb-4 pt-2">
+            <NumberField
+              id="current-rent"
+              label="Current rent per month"
+              prefix="$"
+              step="any"
+              min={0}
+              value={form.currentRent}
+              onChange={(v) => actions.setRent({ currentRent: roundToCents(v) })}
+              onEmptyChange={markEmpty("current")}
+              invalid={empty.current || rentLooksTooHigh(form.currentRent)}
+            />
             <NumberField
               id="increases"
               label="Rent increases already given in the last 12 months"
@@ -412,6 +456,8 @@ export default function RentPage() {
                 The building is less than 15 years old.
               </Check>
             </fieldset>
+              </div>
+            </details>
           </div>
         </Card>
 

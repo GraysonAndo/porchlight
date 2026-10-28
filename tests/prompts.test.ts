@@ -25,9 +25,7 @@ describe("live preview prompts", () => {
     let w = createWorld();
     w = tap(w, "owner"); // the tenant reports the leak
     w = tap(w, "owner"); // the tenant answers the safety question
-    expect(w.triage.stage).toBe("steps_given");
-    w = tap(w, "owner"); // the tenant finishes the steps
-    expect(w.triage.stage).toBe("quotes_pending");
+    expect(w.triage.stage).toBe("quotes_pending"); // GoHome does not wait for the steps to be finished
     w = advanceTo(w, nextTimerAt(w)!);
     expect(w.triage.stage).toBe("decision_sent");
     w = tap(w, "tenant"); // acting as the owner, from the tenant's screen
@@ -43,8 +41,7 @@ describe("live preview prompts", () => {
     const ownerSide = flowPromptFor("tenant", w)!;
     expect(ownerSide.preview?.who).toBe("The owner sees");
     expect(ownerSide.preview?.text).toMatch(/Water heater leak/);
-    const ready = run(w, [{ type: "tenant.text", text: "done" }]);
-    const quoted = advanceTo(ready, nextTimerAt(ready)!);
+    const quoted = advanceTo(w, nextTimerAt(w)!);
     const tenantSide = flowPromptFor("owner", quoted)!;
     expect(tenantSide.preview?.who).toBe("The tenant sees");
     expect(tenantSide.preview?.text).toMatch(/choosing a plumber/i);
@@ -67,7 +64,7 @@ describe("live preview prompts", () => {
 
   it("points a tenant to the pay page once the job is done and rent is unpaid", () => {
     let w = createWorld();
-    for (let i = 0; i < 3; i++) w = tap(w, "owner");
+    for (let i = 0; i < 2; i++) w = tap(w, "owner");
     w = advanceTo(w, nextTimerAt(w)!);
     w = tap(w, "tenant");
     w = tap(w, "owner");
@@ -79,7 +76,7 @@ describe("live preview prompts", () => {
 
   it("offers a contractor quote, then the lease check, once the repair is finished", () => {
     let w = createWorld();
-    for (let i = 0; i < 3; i++) w = tap(w, "owner");
+    for (let i = 0; i < 2; i++) w = tap(w, "owner");
     w = advanceTo(w, nextTimerAt(w)!);
     w = tap(w, "tenant");
     w = tap(w, "owner");

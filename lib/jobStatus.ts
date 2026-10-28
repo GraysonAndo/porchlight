@@ -24,7 +24,7 @@ export const JOB_STATUSES: { id: JobStatus; label: string; detail: string }[] = 
 ];
 
 export function jobStatus(
-  state: Pick<DemoState, "request" | "triage" | "approval" | "jobCompletedAt">,
+  state: Pick<DemoState, "request" | "triage" | "approval" | "jobCompletedAt" | "agent">,
   nowMs: number,
 ): JobStatus {
   if (state.jobCompletedAt) return "done";
@@ -32,6 +32,8 @@ export function jobStatus(
     const sent = Date.parse(state.approval.sentAt);
     return Number.isFinite(sent) && nowMs - sent < APPROVED_MS ? "approved" : "booked";
   }
+  // A live report that is still being asked about, or still waiting on quotes, has no quotes to show yet.
+  if (["asked_electrical", "steps_given", "quotes_pending"].includes(state.agent.triage.stage)) return "new";
   // Until someone reports a problem, the sample water heater request is waiting with its quotes.
   const heaterJob = state.request === null || isHeaterJob(state.request.description, state.triage);
   return heaterJob ? "quoted" : "new";

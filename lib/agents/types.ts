@@ -150,6 +150,8 @@ export interface World {
   sentinel: {
     stage: SentinelStage;
     proposed: number;
+    /** The date the notice was mailed (YYYY-MM-DD), so the delivery date counts from the real mailing day */
+    mailedOn?: string;
   };
   stats: {
     ownerTaps: number;

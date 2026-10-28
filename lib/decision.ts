@@ -46,17 +46,20 @@ export const COST_THRESHOLD = 0.5;
 // Tolerance so values like 7.2 / 9 still count as exactly 80%.
 const EPSILON = 1e-9;
 
+/** top over bottom, or NaN when there is nothing sensible to divide by. NaN never triggers a rule and never prints as a percent. */
 function ratio(top: number, bottom: number): number {
-  return bottom > 0 ? top / bottom : Number.POSITIVE_INFINITY;
+  return bottom > 0 && Number.isFinite(top) && Number.isFinite(bottom) ? top / bottom : Number.NaN;
 }
+
+const percentText = (r: number) => (Number.isFinite(r) ? `${Math.round(r * 100)}%` : "unknown");
 
 export function decideRepairOrReplace(input: DecisionInput): DecisionResult {
   const { item, ageYears, typicalLifeYears, repairCost, replaceCost, failureMode } = input;
 
   const ageRatio = ratio(ageYears, typicalLifeYears);
   const costRatio = ratio(repairCost, replaceCost);
-  const agePercentOfLife = Math.round(ageRatio * 100);
-  const repairPercentOfReplace = Math.round(costRatio * 100);
+  const agePercentOfLife = Number.isFinite(ageRatio) ? Math.round(ageRatio * 100) : 0;
+  const repairPercentOfReplace = Number.isFinite(costRatio) ? Math.round(costRatio * 100) : 0;
 
   const ageTriggered = ageRatio + EPSILON >= AGE_THRESHOLD;
   const costTriggered = costRatio + EPSILON >= COST_THRESHOLD;
@@ -67,13 +70,13 @@ export function decideRepairOrReplace(input: DecisionInput): DecisionResult {
       id: "age",
       rule: "Replace if the age is 80% or more of the typical life.",
       triggered: ageTriggered,
-      detail: `Age ${ageYears} years is ${agePercentOfLife}% of the typical life of ${typicalLifeYears} years.`,
+      detail: `Age ${ageYears} years is ${percentText(ageRatio)} of the typical life of ${typicalLifeYears} years.`,
     },
     {
       id: "cost",
       rule: "Replace if the repair costs 50% or more of a new one.",
       triggered: costTriggered,
-      detail: `The repair estimate is ${repairPercentOfReplace}% of the replacement cost.`,
+      detail: `The repair estimate is ${percentText(costRatio)} of the replacement cost.`,
     },
     {
       id: "tank-leak",
