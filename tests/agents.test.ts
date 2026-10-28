@@ -596,3 +596,13 @@ describe("audit: overdue rent and the rent cap", () => {
     expect(openOwnerMessage(w)!.actions?.map((a) => a.id)).toEqual(["rent5", "rentmax", "renthold"]);
   });
 });
+
+describe("audit round 4: a question with a picture guide gets the guide", () => {
+  it("offers the breaker guide for how to reset a breaker, instead of just saying it does not know", () => {
+    const w = send(createWorld(), { type: "tenant.text", text: "How do I reset my breaker?" });
+    const last = w.timeline.filter((e): e is Msg => e.kind === "msg" && e.party === "tenant" && e.dir === "out").at(-1)!;
+    expect(last.guide).toBe("breaker-reset");
+    expect(last.text).toMatch(/picture guide/);
+    expect(last.actions?.map((a) => a.id)).toContain("askowner");
+  });
+});

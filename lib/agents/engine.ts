@@ -663,6 +663,17 @@ function answerQuestion(w: World, text: string): void {
       ? `Source: ${reply.source ?? "house record"}. Only data on file is used, so nothing is made up.`
       : "The answer is not in the house record or lease, so GoHome did not guess.",
   );
+  // When the answer is not on file but a picture guide fits the question, offer the guide before offering to bother the owner.
+  const guideId = reply.known ? null : guideForText(text);
+  const guide = guideId ? guideById(guideId) : undefined;
+  if (guide) {
+    tool(w, "triage", "send_guide", "code", "Offered a picture guide", `The question matched the hand-written guide "${guide.title}". General safety information, not professional advice.`);
+    say(w, "tenant", `I don't have that in your house record, but I do have a picture guide that should help: ${guide.title} (${guide.time}).`, {
+      guide: guide.id,
+      actions: [{ id: "askowner", label: `Ask ${PROPERTY.owner}`, text: `Please ask ${PROPERTY.owner}` }],
+    });
+    return;
+  }
   say(w, "tenant", reply.answer, {
     actions: reply.known ? undefined : [{ id: "askowner", label: `Ask ${PROPERTY.owner}`, text: `Please ask ${PROPERTY.owner}` }],
   });

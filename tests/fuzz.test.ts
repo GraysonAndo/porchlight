@@ -16,6 +16,8 @@ const TEXTS = [
   "How much is my rent?", "The toilet is clogged and overflowing", "", "   ", "x".repeat(2000), "<script>alert(1)</script>", "0", "99",
   "Can I have a dog?", "We have no heat and it is freezing", "the sink is clogged and backing up", "is it an emergency", "stop", "😀",
   "When is my lease up?", "water near the outlet", "1\n2", "approve", "call me", "cancel",
+  "I got shocked by the outlet", "the stairs are broken", "no water at all", "someone is trying to break in", "the ceiling collapsed", "the smoke detector keeps chirping", "the stove won't turn off",
+  "How do I reset my breaker?", "When is rent due?", "What brand is the furnace?", "heating isn't working", "no hot water",
 ];
 const OWNER_TEXTS = ["approve", "1", "2", "no", "yes", "Check my lease and rent", "A contractor sent me a quote", "", "help", "stop"];
 

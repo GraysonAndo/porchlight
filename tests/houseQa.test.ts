@@ -27,11 +27,15 @@ describe("tenant Q&A: answers only from the data on file", () => {
     expect(a.source).toBe("Lease on file");
   });
 
-  it("says it does not know what day rent is due, because that is not on file", () => {
-    const a = answerHouseQuestion("What day is rent due?", none);
-    expect(a.known).toBe(false);
-    expect(a.answer).toMatch(/I don't know/);
-    expect(a.answer).toContain(PROPERTY.owner);
+  it("answers when rent is due and what a late payment costs, from the same lease numbers the Pay page uses", () => {
+    const due = answerHouseQuestion("What day is rent due?", none);
+    expect(due.known).toBe(true);
+    expect(due.answer).toMatch(/due on the 1st/);
+    expect(due.answer).toContain(`$${PROPERTY.lateFee} late fee`);
+    expect(due.answer).toContain(`${PROPERTY.graceDays}-day grace period`);
+    const fee = answerHouseQuestion("How much is the late fee?", none);
+    expect(fee.known).toBe(true);
+    expect(fee.answer).toContain(`$${PROPERTY.lateFee}`);
   });
 
   it("reports the demo rent status", () => {
@@ -64,9 +68,16 @@ describe("tenant Q&A: answers only from the data on file", () => {
     expect(renew.answer).toMatch(/don't have that decision/);
   });
 
-  it("answers other equipment from the inspection and gives no brand or warranty", () => {
+  it("answers other equipment from the record, with its brand, model and place, and never invents a warranty", () => {
     expect(answerHouseQuestion("How old is the furnace?", none).answer).toMatch(/installed in 2012/);
-    expect(answerHouseQuestion("What brand is the dishwasher?", none).known).toBe(false);
+    const brand = answerHouseQuestion("What brand is the dishwasher?", none);
+    expect(brand.known).toBe(true);
+    expect(brand.answer).toMatch(/Brightwell BW-DW24/);
+    expect(answerHouseQuestion("What is the furnace serial number?", none).answer).toMatch(/12F3391-B/);
+    expect(answerHouseQuestion("Where is the furnace?", none).answer).toMatch(/hall closet/i);
+    const warranty = answerHouseQuestion("Is the dishwasher under warranty?", none);
+    expect(warranty.known).toBe(false);
+    expect(warranty.answer).toMatch(/warranty/);
   });
 
   it.each([

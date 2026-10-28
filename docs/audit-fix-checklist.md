@@ -17,14 +17,14 @@ Nothing here claims a legal opinion, a vendor relationship, a customer interview
 
 | Status | Count |
 |---|---:|
-| Fixed | 64 |
+| Fixed | 66 |
 | Verified | 28 |
 | Already resolved | 15 |
 | Roadmap | 1 |
 | Requires human review | 1 |
-| **Total findings** | **109** |
+| **Total findings** | **111** |
 
-Rounds 2, 3 and 4 added R01 to R28 (customer-focused). Findings: 54 original (T01 to T13, O01 to O12, H01 to H13, P01 to P09, S01 to S07), 12 extra quote findings (Q01 to Q12), and 15 accessibility requirements (A01 to A15). The 68 product ideas are in `docs/product-roadmap.md`.
+Rounds 2, 3 and 4 added R01 to R30 (customer-focused). Findings: 54 original (T01 to T13, O01 to O12, H01 to H13, P01 to P09, S01 to S07), 12 extra quote findings (Q01 to Q12), and 15 accessibility requirements (A01 to A15). The 68 product ideas are in `docs/product-roadmap.md`.
 
 ## Tenant flow
 
@@ -176,6 +176,8 @@ These came from walking the product as a stressed tenant on a phone and as an ol
 | R26 | High | Triage missed safety wording: someone breaking in, a bare gas message, water at a light fixture or outlet, and no hot water. It also took a toilet tank or a space heater for the water heater and ran the leak flow | Fixed | lib/triage.ts adds a security emergency (911 first), treats a bare gas message as a possible leak, treats water meeting wiring as an emergency, raises no hot water to urgent with no do-it-yourself steps, and only reads real water heater wording as the heater. tests/triage.test.ts. The new safety wording needs plumber and attorney review like the rest. |
 | R27 | Low | The repair or replace rules printed Infinity or NaN when a life span or a cost was zero or missing | Fixed | lib/decision.ts treats those as unknown and triggers nothing from them. tests/decision.test.ts. |
 | R28 | Medium | The agent engine had no stress test | Fixed | tests/fuzz.test.ts runs 600 seeded random conversations (6,000 when FUZZ_SEEDS is set) against the invariants: no crash, unique ids, tenant never told prices, no duplicate bookings or reminders, stages never go backwards, the lease card never offers to mail before the inflation figure is confirmed. |
+| R29 | High | Triage under-rated more dangers: a shock from an outlet, a stove that will not turn off, a collapse, threats or violence, someone having been inside, heating not working, a broken stair or railing, no running water, and a chirping smoke alarm | Fixed | lib/triage.ts: the first five are emergencies, with 911 first where it applies. Broken stairs and railings and no running water are urgent with the owner alerted, more ways of saying no heat are caught, and a chirping alarm is a low battery to fix soon while a blaring one stays an emergency. tests/triage.test.ts. New safety steps need plumber, electrician and attorney review like the rest. |
+| R30 | Medium | The tenant assistant said I don't know to questions the app can answer: when rent is due, the late fee, a piece of equipment's brand, model, serial or place (all shown on My home), and how to reset a breaker | Fixed | lib/houseQa.ts answers rent due and the late fee from the same lease numbers as the Pay page, and brand, model, serial and place from the home record as recorded at move-in. Warranty terms are still not known and it says so. When a question matches a picture guide, the agent offers the guide before offering to ask the owner. tests/houseQa.test.ts and tests/agents.test.ts. Caveat: the agent reads the move-in record, not an owner's later edits. |
 
 ## Needs manual verification
 
