@@ -1137,6 +1137,29 @@ const chatText = (page) => page.getByRole("log", { name: "Messages" }).innerText
   await context.close();
 }
 
+// ======================= The model: questions answered, dangers taken seriously =======================
+{
+  const { context, page, errors } = await newPage();
+  await resetApp(page);
+  await page.goto(`${BASE}/tenant`);
+  await textAgent(page, "When is my rent due?");
+  await page.getByText(/due on the 1st of each month/).first().waitFor(wait20);
+  check("the tenant is told when rent is due and what a late payment costs", /\$50 late fee/.test(await chatText(page)));
+  await textAgent(page, "What brand is the furnace?");
+  await page.getByText(/Cedarline CF-80-100/).first().waitFor(wait20);
+  check("the tenant is told an item's brand and model from the home record", true);
+  await resetApp(page);
+  await page.goto(`${BASE}/tenant`);
+  await textAgent(page, "I got shocked by the outlet");
+  await page.getByText(/sounds like an emergency/i).first().waitFor(wait20);
+  check("a shock from an outlet is treated as an emergency", true);
+  await page.goto(`${BASE}/owner`);
+  await page.getByText(/Emergency: Fire or electrical safety/).first().waitFor(wait20);
+  check("and the owner sees the emergency", true);
+  check("no console errors in the model checks", errors.length === 0, errors.join(" | "));
+  await context.close();
+}
+
 // ======================= A slow AI never hangs a page =======================
 {
   const { context, page, errors } = await newPage();
