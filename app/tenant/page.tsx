@@ -77,10 +77,10 @@ export default function TenantPage() {
           </ul>
           {needsTime && (
             <div className="mt-3 flex flex-wrap gap-2" role="group" aria-label="Is the plumber's time good?">
-              <button type="button" className="btn btn-primary !min-h-11" onClick={() => agent.send({ type: "tenant.text", text: "1", shown: "That works" })}>
+              <button type="button" aria-label="That works: confirm the visit time" className="btn btn-primary !min-h-11" onClick={() => agent.send({ type: "tenant.text", text: "1", shown: "That works" })}>
                 That works
               </button>
-              <button type="button" className="btn btn-secondary !min-h-11" onClick={() => agent.send({ type: "tenant.text", text: "2", shown: "Another time" })}>
+              <button type="button" aria-label="Another time: ask for a different visit time" className="btn btn-secondary !min-h-11" onClick={() => agent.send({ type: "tenant.text", text: "2", shown: "Another time" })}>
                 Another time
               </button>
             </div>
