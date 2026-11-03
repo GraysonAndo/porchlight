@@ -1126,6 +1126,7 @@ const chatText = (page) => page.getByRole("log", { name: "Messages" }).innerText
   await page.getByRole("button", { name: "Reminder sent" }).waitFor(wait20);
   check("after the owner opts in, GoHome sends it on its own and says so", (await count(page, /GoHome sent it for you, as you asked/)) > 0);
   await page.goto(`${BASE}/owner/settings`);
+  await page.waitForFunction(() => [...document.querySelectorAll('[role=switch]')].some((e) => /Remind late tenants for me/.test(e.getAttribute("aria-label") ?? e.textContent ?? "") && e.getAttribute("aria-checked") === "true"), null, { timeout: 20000 }).catch(() => {});
   check("the same choice is a switch in Settings", (await page.getByRole("switch", { name: "Remind late tenants for me" }).getAttribute("aria-checked")) === "true");
   await page.getByText("See what the weekly email would say").click();
   const email = await page.locator("details", { hasText: "See what the weekly email would say" }).innerText();
