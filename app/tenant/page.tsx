@@ -31,32 +31,31 @@ export default function TenantPage() {
   const needsTime = agent.world.triage.stage === "booked" && !agent.world.triage.tenantConfirmed;
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-3 sm:space-y-4">
       <div>
         <h1 className="text-2xl font-extrabold leading-tight sm:text-3xl">Help</h1>
-        <p className="mt-1 text-ink-soft">
-          How can we help? Tell GoHome what is going on. It has your home on file, gives you safe steps, and handles the rest.{" "}
+        <p className="mt-0.5 text-ink-soft">
+          Tell GoHome what is going on. It has your home on file and handles the rest.{" "}
           <Link href="/tenant/texts" className="font-bold text-brand underline underline-offset-4">
-            See how it will feel by text
+            See how it feels by text
           </Link>
         </p>
       </div>
 
-      <p className="flex flex-wrap items-center gap-x-3 gap-y-1 rounded-2xl border border-urgent/40 bg-urgent-tint px-4 py-2 text-sm font-bold text-ink">
-        <span>Fire, gas smell, or someone hurt? Get out first and call</span>
-        <a href="tel:911" aria-label="Call 911" className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-lg bg-urgent px-4 font-extrabold text-white">
+      <p className="flex flex-wrap items-center gap-x-2 gap-y-0 rounded-xl border border-urgent/40 bg-urgent-tint px-3 py-1 text-sm font-bold text-ink">
+        <span>Fire, gas smell, or someone hurt? Get out first, then call</span>
+        <a href="tel:911" aria-label="Call 911" className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-lg bg-urgent px-3 font-extrabold text-white">
           911
         </a>
-        <span>. Then tell GoHome.</span>
       </p>
 
       {hydrated && dueCents > 0 && (
-        <section aria-label="What you owe" className={`flex flex-wrap items-center justify-between gap-3 rounded-2xl border-2 px-4 py-3 ${rentLate ? "border-urgent bg-urgent-tint" : "border-line bg-white"}`}>
-          <p className="font-bold">
+        <section aria-label="What you owe" className={`flex items-center justify-between gap-3 rounded-xl border px-3 py-1.5 ${rentLate ? "border-urgent/60 bg-urgent-tint" : "border-line bg-white"}`}>
+          <p className="text-sm font-bold">
             You owe {money(dueCents)}.{" "}
             <span className={rentLate ? "text-urgent" : "text-ink-soft"}>{rentLate ? `Rent is ${dueStatus("rent").text}` : "Due this month."}</span>
           </p>
-          <Link href="/tenant/pay" className="btn btn-primary !min-h-11">
+          <Link href="/tenant/pay" className="btn btn-primary !min-h-11 shrink-0 !px-4">
             Pay now
           </Link>
         </section>
