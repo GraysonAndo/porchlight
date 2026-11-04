@@ -93,11 +93,12 @@ export function maxNewRentFor(currentRent: number, capPercent: number, priorIncr
   return Math.floor((cents * (1000000 + capUnits)) / (1000000 + priorUnits)) / 100;
 }
 
-/** 30 days when the increase is 10% or less, otherwise 90 days. */
-export function noticeDaysFor(currentRent: number, proposedRent: number): 30 | 90 {
+/** 30 days when the increases in the last 12 months add up to 10% or less, otherwise 90 days. */
+export function noticeDaysFor(currentRent: number, proposedRent: number, priorIncreasePercent = 0): 30 | 90 {
   const current = toCents(currentRent);
   const increase = toCents(proposedRent) - current;
-  return increase * 100 <= current * 10 ? 30 : 90;
+  const prior = Math.max(0, priorIncreasePercent);
+  return increase * 100 + current * prior <= current * 10 ? 30 : 90;
 }
 
 export function exemptionFor(inputs: RentInputs): { mayBeExempt: boolean; reason: string | null } {
@@ -134,7 +135,7 @@ export function calculateRent(inputs: RentInputs): RentResult {
     increasePercent: currentCents > 0 ? (increaseCents / currentCents) * 100 : 0,
     withinCap,
     overCapBy: withinCap ? 0 : (proposedCents - maxCents) / 100,
-    noticeDays: noticeDaysFor(inputs.currentRent, inputs.proposedRent),
+    noticeDays: noticeDaysFor(inputs.currentRent, inputs.proposedRent, inputs.increasesInLast12Months > 0 ? inputs.priorIncreasePercent ?? 0 : 0),
     mayBeExempt: exemption.mayBeExempt,
     exemptionReason: exemption.reason,
     tooManyIncreases: inputs.increasesInLast12Months >= MAX_INCREASES_PER_12_MONTHS,

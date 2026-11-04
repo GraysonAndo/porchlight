@@ -30,3 +30,9 @@ describe("comingUp", () => {
     expect(inDaysText(8)).toBe("in 8 days");
   });
 });
+
+describe("comingUp follows what the owner has done", () => {
+  it("drops the notice deadline once a notice has been sent", () => {
+    expect(comingUp({ now: oct23, utilitiesPaid: true, noticeSent: true }).map((i) => i.id)).toEqual(["anniversary"]);
+  });
+});

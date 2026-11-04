@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { comingUp, inDaysText } from "@/lib/comingUp";
 import { longDate } from "@/lib/format";
+import { noticeDaysFor } from "@/lib/rent";
 import { useDemo } from "@/lib/store";
 
 /** The dates GoHome is keeping track of, so the owner does not have to. */
@@ -11,7 +12,9 @@ export function ComingUpCard() {
   // Dates depend on today, so the list waits for the browser and the server do not disagree.
   if (!hydrated) return null;
   const utilitiesPaid = state.payments.some((p) => p.kind === "utilities");
-  const items = comingUp({ utilitiesPaid });
+  const form = state.rent;
+  const noticeDays = noticeDaysFor(form.currentRent, form.proposedRent, form.increasesInLast12Months > 0 ? form.priorIncreasePercent : 0);
+  const items = comingUp({ utilitiesPaid, noticeDays, noticeSent: state.rentNotice !== null });
   if (items.length === 0) return null;
   return (
     <section aria-labelledby="coming-heading" className="card space-y-3">

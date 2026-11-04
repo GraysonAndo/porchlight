@@ -252,3 +252,12 @@ describe("the home exemption needs the notice and the lease wording", () => {
     expect(calculateRent({ ...base, exemptionNoticeGiven: true, leaseHasExemptionWording: true }).mayBeExempt).toBe(true);
   });
 });
+
+describe("noticeDaysFor counts earlier increases in the same 12 months", () => {
+  it("needs 90 days when the earlier increase and this one add up to more than 10%", () => {
+    expect(noticeDaysFor(3200, 3360, 8)).toBe(90);
+    expect(noticeDaysFor(3200, 3360, 5)).toBe(30);
+    expect(noticeDaysFor(3200, 3360, 5.01)).toBe(90);
+    expect(noticeDaysFor(3200, 3360)).toBe(30);
+  });
+});

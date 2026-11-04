@@ -433,10 +433,10 @@ function onRentNotice(w: World, kind: "increase" | "decrease", from: string, to:
     w,
     "tenant",
     kind === "decrease"
-      ? `Good news: your owner is lowering your rent from ${from} to ${to} per month, starting ${effective}. A notice is on its way by mail. You do not need to do anything.`
+      ? `Good news: your owner is lowering your rent from ${from} to ${to} per month, starting ${effective}. A written notice is on its way. You do not need to do anything.`
       : `Your owner sent you a notice by mail. Your rent changes from ${from} to ${to} per month starting ${effective}. You do not need to do anything now. Ask me here if you have questions.`,
   );
-  say(w, "owner", `Your rent notice to ${PROPERTY.tenant} is on its way by mail, and I told them by text. New rent ${to} starts ${effective}.`, { silent: true });
+  say(w, "owner", `Your rent notice to ${PROPERTY.tenant} is on its way, and I told them by text. New rent ${to} starts ${effective}.`, { silent: true });
 }
 
 /** Utilities paid by the tenant: both people get a text. */

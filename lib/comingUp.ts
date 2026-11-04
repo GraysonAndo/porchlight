@@ -23,14 +23,16 @@ export interface ComingUpInput {
   utilitiesPaid: boolean;
   /** Days of notice a rent increase needs: 30, or 90 over 10% */
   noticeDays?: number;
+  /** A rent notice has already been sent, so the deadline to send one is no longer coming up */
+  noticeSent?: boolean;
 }
 
-export function comingUp({ now = demoToday(), utilitiesPaid, noticeDays = 30 }: ComingUpInput): ComingUpItem[] {
+export function comingUp({ now = demoToday(), utilitiesPaid, noticeDays = 30, noticeSent = false }: ComingUpInput): ComingUpItem[] {
   const items: Omit<ComingUpItem, "inDays">[] = [];
   if (!utilitiesPaid) {
     items.push({ id: "utilities", date: BILL_DUE_DATES.utilities, title: "Water and trash is due", detail: "Your tenant pays this in the app. GoHome records it when it comes in." });
   }
-  items.push({
+  if (!noticeSent) items.push({
     id: "notice",
     date: addDays(LEASE_ANNIVERSARY_ISO, -noticeDays),
     title: "Last day to send a rent notice for the lease anniversary",
