@@ -68,13 +68,22 @@ function readStorage(): DemoState {
 /** The last text this tab wrote or read, so a different value in storage means another tab saved. */
 let lastRaw: string | null = null;
 
+/** False once a save has failed (storage blocked or full), so the screens can stop saying "Saved". */
+let storageWorks = true;
+
+export function isStorageSaving(): boolean {
+  return storageWorks;
+}
+
 function writeStorage(state: DemoState): void {
   try {
     const raw = JSON.stringify(toStorable(state));
     window.localStorage.setItem(STORAGE_KEY, raw);
     lastRaw = raw;
+    storageWorks = true;
   } catch {
     // Storage blocked or full. The app keeps working with in-memory state.
+    storageWorks = false;
   }
 }
 

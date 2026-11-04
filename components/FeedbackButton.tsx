@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { usePathname } from "next/navigation";
 import { ChatIcon } from "./icons";
 import { screenNameFor } from "@/lib/steps";
-import { useDemo } from "@/lib/store";
+import { isStorageSaving, useDemo } from "@/lib/store";
 
 const RATING_WORDS = ["Very unclear", "Unclear", "Okay", "Clear", "Very clear"];
 
@@ -71,7 +71,7 @@ export function FeedbackLink() {
           {saved ? (
             <div className="mt-4" role="status">
               <p className="rounded-xl bg-good-tint p-3 font-bold text-good-ink">
-                Saved. Thank you!
+                {isStorageSaving() ? "Saved. Thank you!" : "Thank you! This browser blocks storage, so the note will be gone when you leave this page."}
               </p>
               <div className="mt-4 flex justify-end">
                 <button ref={doneRef} type="button" className="btn btn-primary" onClick={close}>

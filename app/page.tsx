@@ -75,6 +75,14 @@ export default function GatePage() {
           />
         </div>
 
+        <div className="mt-6 w-full rounded-2xl border border-line bg-white p-5">
+          <p className="font-extrabold">Just want to see it work?</p>
+          <p className="mt-1 text-ink-soft">One button plays a whole repair by itself, switching between the tenant and the owner as it goes.</p>
+          <button type="button" className="btn btn-secondary mt-3" onClick={() => story.start()}>
+            <PlayIcon size={20} /> Play the whole story
+          </button>
+        </div>
+
         <section aria-labelledby="how-heading" className="mt-8 w-full text-left">
           <h2 id="how-heading" className="text-center text-sm font-extrabold uppercase tracking-widest text-ink-soft">
             How it works
@@ -94,15 +102,9 @@ export default function GatePage() {
               </li>
             ))}
           </ol>
+          <p className="mt-2 text-center text-sm text-ink-soft">This is a working sample. The texts and calls are simulated, and nothing is really sent.</p>
         </section>
 
-        <div className="mt-8 w-full rounded-2xl border border-line bg-white p-5">
-          <p className="font-extrabold">Just want to see it work?</p>
-          <p className="mt-1 text-ink-soft">One button plays a whole repair by itself, switching between the tenant and the owner as it goes.</p>
-          <button type="button" className="btn btn-secondary mt-3" onClick={() => story.start()}>
-            <PlayIcon size={20} /> Play the whole story
-          </button>
-        </div>
       </div>
 
     </div>

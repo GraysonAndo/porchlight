@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { ArrowUpIcon, CheckIcon, ClockIcon } from "@/components/icons";
 import { Badge, PlaceholderNote } from "@/components/ui";
-import { useDemo } from "@/lib/store";
+import { isStorageSaving, useDemo } from "@/lib/store";
 import { useState } from "react";
 
 type Pick = "starter" | "plus" | "pro";
@@ -150,7 +150,7 @@ export default function PricingPage() {
               <p className="mt-2 flex min-h-11 flex-wrap items-center gap-2 text-sm">
                 {chosen && (
                   <>
-                    <Badge tone="good">Saved on this device</Badge>
+                    <Badge tone={isStorageSaving() ? "good" : "caution"}>{isStorageSaving() ? "Saved on this device" : "Not saved: this browser blocks storage"}</Badge>
                     <button type="button" className="inline-flex min-h-11 items-center font-bold underline underline-offset-4" onClick={() => actions.setPricingPick(null)}>
                       Clear my pick
                     </button>
@@ -176,7 +176,7 @@ export default function PricingPage() {
           </button>
           {pick === "none" && (
             <>
-              <Badge tone="good">Saved on this device</Badge>
+              <Badge tone={isStorageSaving() ? "good" : "caution"}>{isStorageSaving() ? "Saved on this device" : "Not saved: this browser blocks storage"}</Badge>
               <button type="button" className="btn btn-ghost" onClick={() => actions.setPricingPick(null)}>
                 Clear my pick
               </button>
