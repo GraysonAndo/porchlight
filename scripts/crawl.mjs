@@ -25,6 +25,24 @@ const problems = [];
 const note = (where, what) => problems.push(`${where}: ${what}`);
 const wait = (ms) => new Promise((r) => setTimeout(r, ms));
 
+const CONTROL_SELECTOR = "button, [role=button], [role=tab], [role=switch], summary, input[type=checkbox], input[type=radio]";
+
+/** Marks every pressable control on the page with a number and lists them, so each one is clicked by its own mark and nothing can drift out of line. */
+const tagControls = (page) =>
+  page.evaluate((sel) => {
+    document.querySelectorAll("[data-crawl]").forEach((e) => e.removeAttribute("data-crawl"));
+    return [...document.querySelectorAll(sel)]
+      .filter((e) => {
+        const r = e.getBoundingClientRect();
+        return r.width > 0 && r.height > 0 && getComputedStyle(e).visibility !== "hidden";
+      })
+      .map((e, i) => {
+        e.setAttribute("data-crawl", String(i));
+        return { i, label: (e.getAttribute("aria-label") || e.textContent || e.id || e.type || "").trim().replace(/\s+/g, " ").slice(0, 50), tag: e.tagName, disabled: Boolean(e.disabled) };
+      })
+      .slice(0, 70);
+  }, CONTROL_SELECTOR);
+
 async function resetApp(page) {
   await page.goto(`${BASE}/?reset=1`);
   await page.waitForFunction(() => !window.location.search.includes("reset=1"));
@@ -66,15 +84,7 @@ async function crawlPage(context, vp, route, state) {
   }
 
   // Buttons: press each one on a fresh copy of the page and see whether anything happens.
-  const labels = await page.evaluate(() =>
-    [...document.querySelectorAll("button, [role=button], [role=tab], [role=switch], summary, input[type=checkbox], input[type=radio]")]
-      .filter((e) => {
-        const r = e.getBoundingClientRect();
-        return r.width > 0 && r.height > 0 && getComputedStyle(e).visibility !== "hidden";
-      })
-      .map((e, i) => ({ i, label: (e.getAttribute("aria-label") || e.textContent || e.id || e.type || "").trim().replace(/\s+/g, " ").slice(0, 50), tag: e.tagName, disabled: Boolean(e.disabled) }))
-      .slice(0, 70),
-  );
+  const labels = await tagControls(page);
   await page.close();
 
   for (const { i, label, tag, disabled } of labels) {
@@ -87,12 +97,19 @@ async function crawlPage(context, vp, route, state) {
     await p.goto(`${BASE}${route}`);
     await p.waitForLoadState("networkidle");
     await wait(350);
+    await tagControls(p);
     const before = await snapshot(p);
-    const target = p.locator("button, [role=button], [role=tab], [role=switch], summary, input[type=checkbox], input[type=radio]").filter({ visible: true }).nth(i);
+    const target = p.locator(`[data-crawl="${i}"]`);
     let download = false;
     p.on("download", () => (download = true));
     try {
-      await target.click({ timeout: 4000, trial: false });
+      try {
+        await target.click({ timeout: 4000, trial: false });
+      } catch (first) {
+        // A check box drawn as a styled label is pressed through its label, the way a person does.
+        if (tag !== "INPUT") throw first;
+        await target.evaluate((e) => (e.labels?.[0] ?? e).click());
+      }
     } catch (e) {
       note(where, `could not press "${label}" (${String(e.message).split("\n")[0].slice(0, 80)})`);
       await p.close();
