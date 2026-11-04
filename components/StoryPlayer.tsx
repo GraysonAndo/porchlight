@@ -85,7 +85,7 @@ export function StoryPlayer() {
     stopped.current = false;
     const myRun = s.run;
     (async () => {
-      actions.reset();
+      actions.reset({ notes: true });
       router.push("/tenant");
       await sleep(1200);
       for (let i = 0; i < STEPS.length; i++) {
@@ -111,7 +111,7 @@ export function StoryPlayer() {
     >
       <p className="eyebrow">{s.status === "done" ? "Finished" : `The whole story, step ${Math.min(s.step + 1, s.total || 1)} of ${s.total || STEPS.length}`}</p>
       <p role="status" aria-live="polite" className="mt-1 font-bold">
-        {s.status === "done" ? "That is the whole story: a leak reported, one tap to approve, the plumber booked and done, and the record updated. Use Reset sample data to run it again." : s.label}
+        {s.status === "done" ? "That is the whole story: a leak reported, one tap to approve, the plumber booked and done, and the record updated." : s.label}
       </p>
       <div className="mt-3 flex flex-wrap gap-2">
         <button

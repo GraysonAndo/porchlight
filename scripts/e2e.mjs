@@ -688,7 +688,7 @@ const chatText = (page) => page.getByRole("log", { name: "Messages" }).innerText
   check("a start date that is already too early is called out", (await page.getByText(/Too late for a January 1, 2020 start/).count()) === 1);
   await page.locator("#start-date").fill("2026-12-14");
   await page.getByRole("button", { name: "Send notice to Sample Tenant" }).click();
-  await page.getByText(/was told by text, and the notice goes by mail/).waitFor(wait20);
+  await page.getByText(/was told by text, and the notice goes by the delivery method/).waitFor(wait20);
   check("the notice can be sent from the page", (await page.getByRole("button", { name: "Notice sent" }).isDisabled()));
   await page.goto(`${BASE}/tenant`);
   await page.getByText(/Your owner sent you a notice by mail/).waitFor(wait20);
