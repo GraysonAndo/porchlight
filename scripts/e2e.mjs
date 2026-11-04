@@ -997,8 +997,8 @@ const chatText = (page) => page.getByRole("log", { name: "Messages" }).innerText
   await page.getByRole("button", { name: "Send feedback" }).click();
   await page.locator("dialog").getByText("4", { exact: true }).click();
   await page.getByRole("button", { name: "Save feedback" }).click();
-  await page.getByText(/Saved. Thank you/).waitFor();
-  check("feedback still saves in memory with storage blocked", true);
+  await page.getByText(/blocks storage, so the note will be gone/).waitFor(wait20);
+  check("feedback is kept in memory with storage blocked, and the dialog says it will not last", true);
   check("no uncaught errors with storage blocked", errors.length === 0, errors.join(" | "));
   await context.close();
 }
