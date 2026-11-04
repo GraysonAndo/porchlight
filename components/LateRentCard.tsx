@@ -24,20 +24,20 @@ export function LateRentCard() {
         {PROPERTY.tenant} owes {money(PROPERTY.rent * 100)}. It was due Oct 1.
         {feeApplies ? ` Your lease adds a ${money(PROPERTY.lateFee * 100)} late fee after a ${PROPERTY.graceDays}-day grace period, so that fee applies now.` : ""}
       </p>
-      <div className="mt-5 flex flex-col gap-3 sm:flex-row sm:items-center">
+      <div className="mt-5 flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center">
         <button
           type="button"
-          className="btn btn-primary btn-lg w-full sm:w-auto"
+          className="btn btn-primary btn-lg w-full whitespace-nowrap sm:w-auto"
           disabled={reminded}
           onClick={() => actions.agentSend({ type: "rent.remind", daysLate: days })}
         >
           <TapIcon size={22} /> {reminded ? "Reminder sent" : "Send a reminder"}
         </button>
-        <button type="button" className="btn btn-ghost w-full sm:w-auto" onClick={() => actions.setRentPaid(true)}>
+        <button type="button" className="btn btn-ghost w-full whitespace-nowrap sm:w-auto" onClick={() => actions.setRentPaid(true)}>
           Mark as paid
         </button>
         {!reminded && !state.prefs.ownerAutoRemind && (
-          <button type="button" className="btn btn-ghost w-full sm:w-auto" onClick={() => actions.setPref("ownerAutoRemind", true)}>
+          <button type="button" className="btn btn-ghost w-full whitespace-nowrap sm:w-auto" onClick={() => actions.setPref("ownerAutoRemind", true)}>
             Remind late tenants for me from now on
           </button>
         )}

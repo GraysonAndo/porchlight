@@ -14,6 +14,8 @@ const ROUTES = [
   "/tenant", "/tenant/home", "/tenant/pay", "/tenant/settings", "/tenant/texts", "/tenant/guides/heater-water-off", "/tenant/guides/breaker-reset",
   "/owner", "/owner/request", "/owner/quote", "/owner/decide", "/owner/book", "/owner/record", "/owner/forecast", "/owner/rent", "/owner/settings",
 ];
+// Set CRAWL_ROUTES="/owner,/tenant" to look at just those pages.
+const ONLY = process.env.CRAWL_ROUTES ? process.env.CRAWL_ROUTES.split(",") : null;
 const VIEWPORTS = [
   { name: "phone", width: 390, height: 844 },
   { name: "desktop", width: 1280, height: 800 },
@@ -111,6 +113,20 @@ async function crawlPage(context, vp, route, state) {
         await target.evaluate((e) => (e.labels?.[0] ?? e).click());
       }
     } catch (e) {
+      // A page that keeps updating can swap the control out from under the click. Look again before blaming the page.
+      await wait(900);
+      await tagControls(p);
+      const again = (await p.evaluate((l) => [...document.querySelectorAll("[data-crawl]")].findIndex((x) => (x.getAttribute("aria-label") || x.textContent || x.id || x.type || "").trim().replace(/\s+/g, " ").slice(0, 50) === l), label));
+      if (again >= 0) {
+        try {
+          await p.locator(`[data-crawl="${again}"]`).click({ timeout: 4000 });
+          await wait(700);
+          await p.close();
+          continue;
+        } catch {
+          // fall through to report it
+        }
+      }
       note(where, `could not press "${label}" (${String(e.message).split("\n")[0].slice(0, 80)})`);
       await p.close();
       continue;
@@ -152,6 +168,7 @@ for (const state of ["fresh", "mid-repair"]) {
     const context = await browser.newContext({ storageState: state === "fresh" ? freshState : midState });
     for (const route of ROUTES) {
       if (state === "mid-repair" && !route.startsWith("/owner") && route !== "/tenant") continue;
+      if (ONLY && !ONLY.includes(route)) continue;
       try {
         await crawlPage(context, vp, route, state);
       } catch (e) {
