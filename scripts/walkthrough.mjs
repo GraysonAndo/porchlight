@@ -119,7 +119,7 @@ async function run(browser, vp) {
   await snap(page, vp, "15-tenant-my-home");
   // ---------- Tenant: paying rent and utilities in the embedded checkout ----------
   await page.goto(`${BASE}/tenant/pay`);
-  const checkout = page.frameLocator('iframe[title="Sample checkout"]');
+  const checkout = page.frameLocator('iframe[title^="Sample checkout"]');
   await checkout.getByText("Sample checkout").waitFor(W);
   await snap(page, vp, "15b-tenant-pay");
   await checkout.getByRole("button", { name: /^Pay \$/ }).click();

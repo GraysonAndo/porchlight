@@ -407,9 +407,9 @@ const chatText = (page) => page.getByRole("log", { name: "Messages" }).innerText
   await page.goto(`${BASE}/tenant/pay`);
   check("the Pay page shows the amount due and each bill", (await count(page, "$3,292.18")) > 0 && (await count(page, "October 2026 rent")) > 0 && (await count(page, "Water and trash")) > 0);
   check("the Pay page says gas and electric are paid to the utility", (await count(page, /paid directly to your utility company/)) > 0);
-  const checkout = page.frameLocator('iframe[title="Sample checkout"]');
+  const checkout = page.frameLocator('iframe[title^="Sample checkout"]');
   await checkout.getByText("Sample checkout").waitFor(wait20);
-  check("the checkout is its own embedded page", (await page.locator('iframe[title="Sample checkout"]').getAttribute("src"))?.startsWith("/checkout") === true);
+  check("the checkout is its own embedded page", (await page.locator('iframe[title^="Sample checkout"]').getAttribute("src"))?.startsWith("/checkout") === true);
 
   // Mistakes are caught, in plain words.
   await checkout.getByRole("button", { name: /^Pay \$/ }).click();
@@ -464,7 +464,7 @@ const chatText = (page) => page.getByRole("log", { name: "Messages" }).innerText
 
   // Utilities by bank transfer, in a new checkout.
   await page.goto(`${BASE}/tenant/pay`);
-  const next = page.frameLocator('iframe[title="Sample checkout"]');
+  const next = page.frameLocator('iframe[title^="Sample checkout"]');
   await next.getByText("Water and trash").first().waitFor(wait20);
   await next.getByText("Bank account", { exact: true }).click();
   await next.getByRole("button", { name: "Use the sample bank account" }).click();

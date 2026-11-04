@@ -94,6 +94,7 @@ const chatText = (page) => page.getByRole("log", { name: "Messages" }).innerText
   await page.goto(`${BASE}/owner/record`);
   check("after the job, History names the heater as the owner corrected it", /serial 15C0412-Z/.test(await page.locator("main").innerText()));
   await page.goto(`${BASE}/owner`);
+  await page.getByText(/Installer registered the new heater/).first().waitFor(wait20).catch(() => {});
   check("the owner activity feed records that the job is done", (await page.getByText(/Installer registered the new heater/).count()) > 0);
   check("no console errors on record edits", errors.length === 0, errors.join(" | "));
   await context.close();
@@ -172,7 +173,7 @@ const chatText = (page) => page.getByRole("log", { name: "Messages" }).innerText
   const main = await page.locator("main").innerText();
   check("overdue rent is called overdue", /Overdue/.test(main) && /days? late/.test(main), main.slice(0, 300));
   check("water and trash is not styled as urgent before it is due", /Due Oct 31/.test(main));
-  const checkout = page.frameLocator('iframe[title="Sample checkout"]');
+  const checkout = page.frameLocator('iframe[title^="Sample checkout"]');
   await checkout.getByText("Sample checkout").waitFor(wait20);
   await checkout.getByLabel("October 2026 rent", { exact: false }).uncheck();
   await checkout.getByLabel("Water and trash", { exact: false }).uncheck();
