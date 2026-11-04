@@ -777,6 +777,7 @@ const chatText = (page) => page.getByRole("log", { name: "Messages" }).innerText
   await page.getByText(/Water heater updated\. Your tenant now sees the corrected details and guides\./).waitFor(wait20);
   check("a misread model can be corrected, and the record says it was", (await count(page, "HL-40G-LP")) > 0 && (await count(page, "Corrected by you")) === 1);
   await page.reload();
+  await page.getByText("HL-40G-LP").first().waitFor(wait20).catch(() => {});
   check("the correction survives a reload", (await count(page, "HL-40G-LP")) > 0);
 
   // The tenant, the guides, and what GoHome says all use the corrected record.

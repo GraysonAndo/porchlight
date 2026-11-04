@@ -220,10 +220,10 @@ function ApproveBar() {
               })
             }
           >
-            Approve {PLAN.vendorName} for {usd(PLAN.total)} (cap {usd(PLAN.notToExceed)})
+            Approve {PLAN.vendorName} for {usd(PLAN.total)} (limit {usd(PLAN.notToExceed)})
           </button>
           <p className="hint">
-            The cap is the quote plus 10%. {pick?.name ?? "The plumber"} must call you before going over it. Nothing is spent until you tap.
+            The spending limit is the quote plus 10%. {pick?.name ?? "The plumber"} must call you before going over it. Nothing is spent until you tap.
           </p>
         </>
       )}
@@ -245,7 +245,7 @@ function ApproveBar() {
           Add another quote
         </button>
         <Link href="/owner/book" className="btn btn-ghost">
-          Change the vendor, cap, or time
+          Change the vendor, spending limit, or time
         </Link>
       </div>
       {draft && runnerUp && (

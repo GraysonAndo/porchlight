@@ -39,6 +39,13 @@ export function daysUntil(iso: string, now: Date = demoToday()): number {
   return Math.round((due - today) / 86_400_000);
 }
 
+/** A sentence about the lease's late fee, or null when the rent is not past its grace period. The owner adds the fee; it is not part of the amounts above. */
+export function lateFeeNote(now: Date = demoToday()): string | null {
+  const days = -daysUntil(BILL_DUE_DATES.rent, now);
+  if (days <= PROPERTY.graceDays) return null;
+  return `Your lease also adds a ${money(PROPERTY.lateFee * 100)} late fee, which your owner adds on top.`;
+}
+
 const MONTH_NAMES = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 
 export interface DueStatus {

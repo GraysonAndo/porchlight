@@ -7,7 +7,7 @@ import { Thread } from "@/components/Thread";
 import { useAgent } from "@/lib/agents/useAgent";
 import { requestsFor } from "@/lib/agents/views";
 import { useDemo } from "@/lib/store";
-import { BILLS, dueStatus, money } from "@/lib/payments";
+import { BILLS, dueStatus, lateFeeNote, money } from "@/lib/payments";
 
 const STARTERS = [
   { label: "My water heater is leaking", text: "water heater is leaking all over the garage" },
@@ -53,7 +53,7 @@ export default function TenantPage() {
         <section aria-label="What you owe" className={`flex items-center justify-between gap-3 rounded-xl border px-3 py-1.5 ${rentLate ? "border-urgent/60 bg-urgent-tint" : "border-line bg-white"}`}>
           <p className="text-sm font-bold">
             You owe {money(dueCents)}.{" "}
-            <span className={rentLate ? "text-urgent" : "text-ink-soft"}>{rentLate ? `Rent is ${dueStatus("rent").text}` : "Due this month."}</span>
+            <span className={rentLate ? "text-urgent" : "text-ink-soft"}>{rentLate ? `Rent is ${dueStatus("rent").text} ${lateFeeNote() ?? ""}` : "Due this month."}</span>
           </p>
           <Link href="/tenant/pay" className="btn btn-primary !min-h-11 shrink-0 !px-4">
             Pay now

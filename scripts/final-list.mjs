@@ -109,6 +109,7 @@ const chatText = (page) => page.getByRole("log", { name: "Messages" }).innerText
   await page.getByRole("button", { name: "Next step" }).click();
   await page.getByRole("button", { name: "Next step" }).click();
   await page.reload();
+  await page.getByText(/step 3 of/i).first().waitFor(wait20).catch(() => {});
   check("a guide remembers its step across a reload", /step 3 of/i.test(await page.locator("main").innerText()));
   while ((await page.getByRole("button", { name: "Next step" }).count()) > 0) await page.getByRole("button", { name: "Next step" }).click();
   await page.getByRole("button", { name: /^Done/ }).click();

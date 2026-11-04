@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { Badge } from "@/components/ui";
-import { BILLS, DIRECT_UTILITIES, dueStatus, money, type PayKind } from "@/lib/payments";
+import { BILLS, DIRECT_UTILITIES, dueStatus, lateFeeNote, money, type PayKind } from "@/lib/payments";
 import { longDate } from "@/lib/format";
 import { useDemo } from "@/lib/store";
 import type { Payment } from "@/lib/types";
@@ -97,8 +97,10 @@ function PayBody() {
                     <div className="min-w-0">
                       <p className="font-bold">{b.label}</p>
                       <p className="text-sm text-ink-soft">
-                        {paid ? "Paid" : status.text} {b.detail}.
+                        {paid ? "Paid." : status.text}
                       </p>
+                      <p className="text-sm text-ink-soft">{b.kind === "rent" ? `For ${b.detail}.` : `Period: ${b.detail}.`}</p>
+                      {!paid && b.kind === "rent" && lateFeeNote() && <p className="text-sm font-bold text-urgent">{lateFeeNote()}</p>}
                     </div>
                     <div className="flex shrink-0 items-center gap-2">
                       <span className="font-extrabold">{money(b.cents)}</span>
