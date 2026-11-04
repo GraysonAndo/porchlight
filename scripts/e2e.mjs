@@ -846,7 +846,7 @@ const chatText = (page) => page.getByRole("log", { name: "Messages" }).innerText
   // 18, 19, 13: names, naming, and the future wording.
   await page.goto(`${BASE}/about`);
   const about = await page.locator("main").innerText();
-  check("the About page connects GoHome and Porchlight", /called Porchlight/.test(about));
+  check("the About page no longer shows the old internal name", !/Porchlight/.test(about));
   check("the FAQ section is called Help and FAQ everywhere", (await page.getByRole("heading", { name: "Help and FAQ" }).count()) === 1 && (await page.getByRole("link", { name: "Help and FAQ" }).count()) === 1 && !/Questions\n/.test(about));
   await page.getByRole("button", { name: "Send feedback" }).click();
   check("and the feedback sheet names the page it was opened on", (await page.locator("dialog").innerText()).includes("Screen: About"));
