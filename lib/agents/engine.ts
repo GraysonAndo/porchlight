@@ -979,6 +979,16 @@ function triageOwnerAction(w: World, action: string): void {
     });
     tool(w, "quote", "show_quotes", "code", "Showed the other quotes", "Same numbers as the decision card. Nothing has changed.");
     say(w, "owner", lines.join("\n"), {
+      card: {
+        kind: "quote",
+        title: "The other quotes",
+        summary: "All three quotes, checked the same way. Nothing has changed, and nothing is booked.",
+        facts: COLLECTED.map((c) => ({
+          label: shortName(c.vendorName),
+          value: `${usd(c.quote.total)}, ${VERDICT_WORDS[c.verdict]}${c.license ? "" : ", no license shown"}`,
+          tone: c.verdict === "fair" ? ("good" as const) : ("caution" as const),
+        })),
+      },
       actions: [
         { id: "approve", label: `Approve ${shortName(PLAN.vendorName)}` },
         { id: "call", label: "Talk it through with me" },
