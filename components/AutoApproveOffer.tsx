@@ -37,7 +37,7 @@ export function AutoApproveOffer({ lastQuote }: { lastQuote: number | null }) {
       </h2>
       <p className="mt-1 text-ink-soft">
         GoHome can book repairs on its own when the quote is at or under an amount you pick, and tell you after.
-        {lastQuote ? ` This one was ${usd(lastQuote)}.` : ""} Anything over your amount still waits for you, and emergencies always ring you.
+        {lastQuote ? ` This one was ${usd(lastQuote)}.` : ""} Anything over your amount still waits for you, and emergencies still call you while that setting is on.
       </p>
       <div className="mt-3 flex flex-wrap gap-2">
         {CHOICES.map((c) => (

@@ -377,7 +377,7 @@ function onRentPaid(w: World, paid: boolean, confirmation?: string): void {
   const ref = confirmation ? ` Confirmation ${confirmation}.` : "";
   tool(w, "chat", "record_rent_payment", "action", confirmation ? "Rent received" : "Rent marked paid", `${RENT_MONTH}: ${usd(PROPERTY.rent)}.${ref}`);
   say(w, "tenant", confirmation ? `Thanks! Your ${RENT_MONTH} rent of ${usd(PROPERTY.rent)} was received.${ref}` : `Thanks! Your ${RENT_MONTH} rent of ${usd(PROPERTY.rent)} is marked paid.`);
-  say(w, "owner", `${PROPERTY.tenant} paid ${RENT_MONTH} rent: ${usd(PROPERTY.rent)}.${ref}`, { silent: true });
+  say(w, "owner", `You marked ${RENT_MONTH} rent (${usdCents(PROPERTY.rent)}) as paid.${ref}`, { silent: true });
 }
 
 /** The owner sends a late rent reminder: the tenant is texted what is owed and the late fee from the lease. */
@@ -550,7 +550,7 @@ function emergencyPath(w: World, category: string, steps: string[], why: string)
   say(
     w,
     "tenant",
-    `This sounds like an emergency. Please do this now:\n${numbered(steps)}\nI'm calling your landlord right now. Once you are outside, call 911 if anyone is hurt, then reply here to tell me you are safe.`,
+    `This sounds like an emergency. Please do this now:\n${numbered(steps)}\nI'm calling your landlord right now. Follow the steps above. Once you are outside or somewhere safe, call 911 if you smelled gas, saw fire or smoke, or anyone is hurt. Then reply here to tell me you are safe.`,
   );
   tool(
     w,
@@ -564,13 +564,13 @@ function emergencyPath(w: World, category: string, steps: string[], why: string)
   say(
     w,
     "owner",
-    `EMERGENCY at ${PROPERTY.address}: ${category}. The tenant was told to get safe and call 911. I called you. I will not get quotes or book anyone until the home is cleared.`,
+    `EMERGENCY at ${PROPERTY.address}: ${category}. The tenant was given safety steps. I called you. I will not get quotes or book anyone until the home is cleared.`,
     {
       card: {
         kind: "emergency",
         title: `Emergency: ${category}`,
-        summary: "GoHome told your tenant to get safe and call for help, and called you. Nothing is quoted or booked until the home is clear.",
-        facts: [{ label: "Tenant was told", value: "Get out and call 911", tone: "urgent" }],
+        summary: "GoHome gave your tenant safety steps and called you. Nothing is quoted or booked until the home is clear.",
+        facts: [{ label: "Tenant was told", value: steps[0] ?? "Safety steps sent", tone: "urgent" }],
       },
       actions: [{ id: "ack", label: "I'm on it" }],
     },
@@ -645,7 +645,7 @@ function onTenantText(w: World, raw: string, shown?: string): void {
       );
       return;
     default:
-      say(w, "tenant", "Got it, I added that to your case. If anything gets worse or you smell gas, text EMERGENCY and I'll call your landlord.");
+      say(w, "tenant", "Got it, I added that to your case. If you smell gas, see smoke or fire, or anyone is hurt, leave and call 911 first. Then tell me here.");
   }
 }
 
@@ -920,7 +920,7 @@ function quotesArrive(w: World): void {
   say(
     w,
     "owner",
-    `DECISION NEEDED: ${decision.recommendation} the water heater\nWhy: ${decision.reasons.slice(0, 2).join(" ")}\n3 quotes, all checked by plain code:\n${lines}\nMy pick: ${shortName(PLAN.vendorName)}. Saves ${usd(PLAN.savedVsHighest)} vs the highest on the same scope.${PLAN.comparisons.length > 0 ? ` ${PLAN.comparisons.join(" ")}` : ""} Limit ${usd(PLAN.notToExceed)}. Visit ${windowText()}.`,
+    `DECISION NEEDED: ${decision.recommendation} the water heater\nWhy: ${decision.reasons.slice(0, 2).join(" ")}\n3 quotes, all checked by plain code:\n${lines}\nMy pick: ${shortName(PLAN.vendorName).replace(/\.$/, "")}. It saves ${usd(PLAN.savedVsHighest)} compared with the highest quote for the same work.${PLAN.comparisons.length > 0 ? ` ${PLAN.comparisons.join(" ")}` : ""} Limit ${usd(PLAN.notToExceed)}. Visit ${windowText()}.`,
     {
       card: {
         kind: "decision",
@@ -1086,7 +1086,7 @@ function jobDone(w: World): void {
     `The heater is no longer overdue. Suggested set-aside is now ${usd(forecast.setAsideLowPerMonth)} to ${usd(forecast.setAsideHighPerMonth)} a month*.`,
   );
   say(w, "tenant", "All fixed! Thanks for your patience. If anything looks off, text me here.");
-  say(w, "owner", `Done. The new ${n.manufacturer} ${n.model} is in your house record (serial ${n.serial}). Your 5-year forecast is updated. You spent ${w.stats.ownerTaps} tap and about a minute.`);
+  say(w, "owner", `Done. The new ${n.manufacturer} ${n.model} is in your house record (serial ${n.serial}). Your 5-year forecast is updated. You made ${w.stats.ownerTaps} ${w.stats.ownerTaps === 1 ? "tap" : "taps"}.`);
 }
 
 // ---------------------------------------------------------------------------

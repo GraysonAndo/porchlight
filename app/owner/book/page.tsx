@@ -119,7 +119,7 @@ function ApproveBody() {
           </p>
         </Card>
 
-        <Callout tone="good" title="✓ Approved and sent" role="status">
+        <Callout tone="good" title="Approved (sample: nothing was sent)" role="status">
           <p>
             You approved <strong>{sentVendor.name}</strong> with a limit of{" "}
             <strong>{usd(approval.notToExceed)}</strong>.

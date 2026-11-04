@@ -124,7 +124,7 @@ export default function TenantPage() {
             placeholder="What is wrong?"
             onSend={(text, shown) => agent.send({ type: "tenant.text", text, shown })}
             onPhoto={(photo) => agent.send({ type: "tenant.photo", photo })}
-            photoLabels={[["leak", "Photo of the problem"]]}
+            photoLabels={[["leak", "Use a sample photo of the leak"]]}
             suggestions={msgs.length === 0 ? STARTERS : undefined}
             via={via}
             empty="Tap one of the buttons below, or type what is going on. A photo helps."

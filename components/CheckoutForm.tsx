@@ -179,7 +179,7 @@ export function CheckoutForm({ due, paidCount }: { due: PayKind[]; paidCount: nu
           </div>
         </dl>
         <p className="text-sm text-ink-soft">
-          Paid with {receipt[0]?.method === "card" ? "card" : "bank account"} ending in {receipt[0]?.last4}. A receipt was sent to your email, and your owner was notified.
+          Paid with {receipt[0]?.method === "card" ? "card" : "bank account"} ending in {receipt[0]?.last4}. Sample checkout: nothing was charged or sent. In the full product a receipt is emailed to you and your owner is told.
         </p>
         <button type="button" className="btn btn-secondary w-full" onClick={() => window.print()}>
           Print this receipt
@@ -197,7 +197,7 @@ export function CheckoutForm({ due, paidCount }: { due: PayKind[]; paidCount: nu
     <form onSubmit={pay} noValidate className="space-y-5 p-5" aria-label="Checkout">
       <div className="flex items-center justify-between gap-2">
         <p className="flex items-center gap-2 font-extrabold">
-          <span aria-hidden="true">&#128274;</span> Secure checkout
+          <span aria-hidden="true">&#128274;</span> Sample checkout
         </p>
         <span className="rounded-full bg-cream-deep px-3 py-0.5 text-xs font-extrabold text-ink-soft">GoHome Pay</span>
       </div>

@@ -213,7 +213,7 @@ for (const vp of VIEWPORTS) {
   await report("tenant picture guide open");
   await page.locator("dialog[open]").getByRole("button", { name: "Close" }).first().click().catch(() => page.keyboard.press("Escape"));
   await page.keyboard.press("Escape");
-  await page.getByText(/Looking for licensed plumbers/).waitFor(wait20).catch(() => {});
+  await page.getByText(/Looking for plumbers/).waitFor(wait20).catch(() => {});
   await page.goto(`${BASE}/owner`);
   await page.getByRole("button", { name: /Approve/ }).first().waitFor(wait20).catch(() => {});
   await report("owner inbox with the approval card");

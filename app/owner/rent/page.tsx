@@ -186,9 +186,9 @@ export default function RentPage() {
           : result.mayBeExempt
           ? { tone: "caution", title: "May be exempt from the yearly limit", detail: "Confirm with an attorney before you send." }
           : kind === "decrease"
-            ? { tone: "good", title: "OK to send: this lowers the rent" }
+            ? { tone: "good", title: "Looks fine to send (draft check, not legal advice)" }
             : result.withinCap
-              ? { tone: "good", title: "OK to send: within the yearly limit", detail: `${usdCents(form.proposedRent)} is at or below ${usdCents(result.maxNewRent)}.` }
+              ? { tone: "good", title: "Looks within the yearly limit (draft check, not legal advice)", detail: `${usdCents(form.proposedRent)} is at or below ${usdCents(result.maxNewRent)}.` }
               : { tone: "urgent", title: `Do not send: over the limit by ${usdCents(result.overCapBy)}`, detail: `Lower the new rent to ${usdCents(result.maxNewRent)} or less.` };
   const sentIsStale = Boolean(sent) && (sent!.to !== form.proposedRent || sent!.from !== form.currentRent || sent!.effective !== startIso || sent!.kind !== kind);
 
@@ -590,7 +590,7 @@ export default function RentPage() {
                 {kind === "increase" && !tooLate && (
                   <p className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm">
                     <strong>
-                      {daysUntil(sendBy) > 0 ? `${daysUntil(sendBy)} days left to send` : daysUntil(sendBy) === 0 ? "Last day to send is today" : ""}
+                      {daysUntil(sendBy) > 0 ? `${daysUntil(sendBy)} ${daysUntil(sendBy) === 1 ? "day" : "days"} left to send` : daysUntil(sendBy) === 0 ? "Last day to send is today" : ""}
                     </strong>
                     <a
                       className="inline-flex min-h-11 items-center font-bold text-brand underline underline-offset-4"

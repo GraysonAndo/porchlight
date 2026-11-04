@@ -184,7 +184,7 @@ function PayBody() {
 
         <section aria-label="Checkout" className="overflow-hidden rounded-2xl border border-line bg-white lg:sticky lg:top-20">
           {src ? (
-            <iframe ref={frame} title="Secure checkout" src={src} style={{ height }} className="block w-full border-0" />
+            <iframe ref={frame} title="Sample checkout (nothing is charged)" src={src} style={{ height }} className="block w-full border-0" />
           ) : (
             <div className="space-y-3 p-6 text-center">
               <p className="text-xl font-extrabold">Nothing to pay right now</p>

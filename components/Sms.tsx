@@ -15,7 +15,7 @@ const PHOTO_SRC: Record<PhotoKind, string> = {
 };
 
 const PHOTO_ALT: Record<PhotoKind, string> = {
-  leak: "Photo sent by the tenant: a water heater leaking at the base, with a puddle on the garage floor",
+  leak: "Sample photo: a water heater leaking at the base, with a puddle on the garage floor",
 };
 
 const PHONE = /(1-\d{3}-\d{3}-\d{4}|\b911\b)/g;
@@ -161,7 +161,7 @@ export interface ComposerProps {
 
 const MAX_MESSAGE = 1000;
 
-const DEFAULT_PHOTOS: [PhotoKind, string][] = [["leak", "Photo of the problem"]];
+const DEFAULT_PHOTOS: [PhotoKind, string][] = [["leak", "Use a sample photo of the leak"]];
 
 /** The message box: quick replies, a photo button, and a text field. */
 export function Composer({ party, last, placeholder, onSend, onPhoto, suggestions, photoLabels = DEFAULT_PHOTOS, className = "border-t border-line bg-white/80 p-2" }: ComposerProps) {
