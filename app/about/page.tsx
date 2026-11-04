@@ -13,7 +13,7 @@ const FAQ: { q: string; a: string }[] = [
   },
   {
     q: "Does the AI set prices or the rent cap?",
-    a: "No. The AI reads photos and writes messages. Prices, repair or replace, and the California rent cap come from plain code and a hand-checked table, and each screen says so. Nothing is spent without your tap.",
+    a: "No. The AI reads photos and writes messages. Prices, repair or replace, and the California rent cap come from plain code and a hand-checked table, and each screen says so. Nothing is spent without your tap, unless you set a small limit for GoHome to approve on its own.",
   },
   {
     q: "What happens to my data?",

@@ -105,7 +105,7 @@ Who does what, shown with a small chip on every step in the owner's activity pan
 | AI | Reads photos and writes text. |
 | Fixed rule | Decides prices, rules, thresholds, and the legal cap, from hand-checked tables. Screens say "A fixed rule, not AI." next to those numbers. (In the code this engine is still called `code`.) |
 | GoHome acts | Sends, books, and notifies, inside limits the owner set. |
-| A person taps | Nothing is spent without this. |
+| A person taps | Nothing is spent without this, unless the owner sets a small limit for GoHome to approve on its own. |
 
 ## The team
 

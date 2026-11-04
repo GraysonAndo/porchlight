@@ -14,18 +14,20 @@ export function RentCard() {
   const paid = state.rentPaidAt !== null;
   const rentPayment = state.payments.find((p) => p.kind === "rent");
   const utilityPayment = state.payments.find((p) => p.kind === "utilities");
+  // Late rent already has its own red card at the top of the inbox, so it is not listed a second time here.
+  const lateShown = state.rentPaidAt === null && !rentPayment && dueStatus("rent").overdue;
 
   return (
     <Card
       title={
         <span className="flex flex-wrap items-center gap-2">
-          Rent and utilities
-          {paid ? <Badge tone="good">Rent received</Badge> : dueStatus("rent").overdue ? <Badge tone="urgent">Rent overdue</Badge> : <Badge tone="caution">Rent not received</Badge>}
+          {lateShown ? "Water and trash" : "Rent and utilities"}
+          {lateShown ? null : paid ? <Badge tone="good">Rent received</Badge> : dueStatus("rent").overdue ? <Badge tone="urgent">Rent overdue</Badge> : <Badge tone="caution">Rent not received</Badge>}
         </span>
       }
     >
       <ul className="divide-y divide-line">
-        {BILLS.map((b) => {
+        {BILLS.filter((b) => !(lateShown && b.kind === "rent")).map((b) => {
           const p = b.kind === "rent" ? rentPayment : utilityPayment;
           const done = b.kind === "rent" ? paid : Boolean(utilityPayment);
           const status = dueStatus(b.kind);

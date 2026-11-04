@@ -44,6 +44,7 @@ export function PublicHeader() {
             <Link
               key={l.href}
               href={l.href}
+              prefetch={l.href === "/about" ? false : undefined}
               aria-current={pathname === l.href ? "page" : undefined}
               className={`inline-flex min-h-11 items-center rounded-lg px-2 sm:px-3 ${pathname === l.href ? "bg-brand-tint text-brand" : "text-ink-soft hover:bg-cream-deep hover:text-ink"}`}
             >

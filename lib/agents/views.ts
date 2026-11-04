@@ -2,6 +2,7 @@
 // matter to them, in plain words, and never anything about prices, quotes, or the owner's decisions. A step with no
 // entry here is hidden from the tenant, so a new tool is private by default.
 
+import { demoToday } from "../demoDate";
 import { entryTime } from "./engine";
 import type { Engine, Entry, ToolCall, World } from "./types";
 
@@ -59,7 +60,11 @@ function jobOf(e: ToolCall, previous: string): string {
 /** Date and time together, so a saved record never has a bare "9:06 AM". */
 function stampOf(e: { at: number; revealAt?: number }): string {
   if (e.revealAt === undefined) return entryTime(e);
-  return new Date(e.revealAt).toLocaleString("en-US", { month: "short", day: "numeric", year: "numeric", hour: "numeric", minute: "2-digit" });
+  // On the sample's own calendar (lib/demoDate.ts), keeping the time of day the step really happened.
+  const real = new Date(e.revealAt);
+  const day = demoToday(real);
+  const shown = new Date(day.getFullYear(), day.getMonth(), day.getDate(), real.getHours(), real.getMinutes());
+  return shown.toLocaleString("en-US", { month: "short", day: "numeric", year: "numeric", hour: "numeric", minute: "2-digit" });
 }
 
 export function activityFor(audience: "tenant" | "owner", entries: Entry[]): ActivityItem[] {

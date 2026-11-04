@@ -12,6 +12,7 @@ import { ageOf } from "./life";
 import { money as moneyText } from "./payments";
 import { syncFromWorld } from "./agents/sync";
 import type { Ev } from "./agents/types";
+import { demoNowIso } from "./demoDate";
 import { normalizeState } from "./persist";
 import { EQUIPMENT, INITIAL_STATE, NEW_HEATER_RECORD } from "./seed";
 import type {
@@ -194,7 +195,7 @@ export interface DemoActions {
   setPricingPick(pick: "starter" | "plus" | "pro" | "none" | null): void;
   addFeedback(input: { screen: string; rating: number; note: string }): void;
   clearFeedback(): void;
-  reset(): void;
+  reset(keep?: { notes?: boolean }): void;
 }
 
 export const actions: DemoActions = {
@@ -254,10 +255,10 @@ export const actions: DemoActions = {
   completeJob: () =>
     update((s) => {
       if (s.agent.triage.stage === "booked") return runAgent(s, { type: "owner.markDone" });
-      return { ...s, jobCompletedAt: new Date().toISOString() };
+      return { ...s, jobCompletedAt: demoNowIso() };
     }),
   setRentPaid: (paid) =>
-    update((s) => runAgent({ ...s, rentPaidAt: paid ? new Date().toISOString() : null }, { type: "rent.paid", paid })),
+    update((s) => runAgent({ ...s, rentPaidAt: paid ? demoNowIso() : null }, { type: "rent.paid", paid })),
   recordPayments: (payments) =>
     update((s) => {
       let next: DemoState = { ...s, payments: [...s.payments, ...payments] };
@@ -296,7 +297,7 @@ export const actions: DemoActions = {
     }),
   sendRentNotice: (info) =>
     update((s) => {
-      const sentAt = new Date().toISOString();
+      const sentAt = demoNowIso();
       const sent = { ...info, sentAt };
       return runAgent({ ...s, rentNotice: sent, rentNoticeLog: [...s.rentNoticeLog, sent] }, { type: "rent.notice", kind: info.kind, from: moneyText(Math.round(info.from * 100)), to: moneyText(Math.round(info.to * 100)), effective: longDate(info.effective) });
     }),
@@ -316,10 +317,11 @@ export const actions: DemoActions = {
       return { ...s, feedback: [...s.feedback, entry] };
     }),
   clearFeedback: () => update((s) => ({ ...s, feedback: [] })),
-  reset: () => {
+  reset: (keep) => {
     clearStorage();
     lastRaw = null;
-    current = INITIAL_STATE;
+    // The story player starts over without throwing away the notes someone took and the pricing pick they made.
+    current = keep?.notes ? { ...INITIAL_STATE, feedback: current.feedback, pricingPick: current.pricingPick } : INITIAL_STATE;
     loaded = true;
     listeners.forEach((l) => l());
   },

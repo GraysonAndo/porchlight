@@ -18,7 +18,7 @@ export function ResetButton({ variant = "ghost" }: { variant?: "ghost" | "second
   if (asking) {
     return (
       <div role="alertdialog" aria-label="Reset the sample data?" className="flex flex-wrap items-center gap-2 rounded-xl border border-line bg-cream p-2">
-        <p className="px-1 text-sm font-bold">Clear every conversation, payment, and setting in this sample?</p>
+        <p className="px-1 text-sm font-bold">Clear every conversation, payment, setting, feedback note, and pricing pick in this sample?</p>
         <button
           type="button"
           className="btn btn-primary !min-h-10 text-sm"

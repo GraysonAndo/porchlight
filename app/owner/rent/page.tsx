@@ -144,7 +144,9 @@ export default function RentPage() {
     ownerAddress: PROPERTY.ownerAddress,
     basis: result.mayBeExempt
       ? `This property may be exempt from the yearly limit in Civil Code section 1947.12: ${result.exemptionReason ?? ""}`
-      : `This increase is within the yearly limit in Civil Code section 1947.12 (5% plus local inflation, never more than ${MAX_CAP_PERCENT}%).`,
+      : form.cpiConfirmed && result.withinCap
+        ? `This increase is within the yearly limit in Civil Code section 1947.12 (5% plus local inflation, never more than ${MAX_CAP_PERCENT}%).`
+        : `The yearly limit in Civil Code section 1947.12 applies to this increase (5% plus local inflation, never more than ${MAX_CAP_PERCENT}%).`,
   });
   const ready = missing.length === 0 && !rentOdd && !cpiOdd && Boolean(noticeDate);
   // The lease facts stay folded while they are what the lease says. They open by themselves when something needs a look.
@@ -331,7 +333,7 @@ export default function RentPage() {
               suffix="%"
               step="any"
               value={form.cpiPercent}
-              onChange={(v) => actions.setRent({ cpiPercent: roundToCents(v) })}
+              onChange={(v) => actions.setRent({ cpiPercent: roundToCents(v), cpiConfirmed: false })}
               onEmptyChange={markEmpty("cpi")}
               invalid={empty.cpi || cpiOdd}
               hint={
@@ -647,7 +649,7 @@ export default function RentPage() {
                 )}
                 {sent && !sentIsStale && (
                   <p role="status" className="mt-3 rounded-xl bg-good-tint p-3 font-bold text-good-ink">
-                    Sent on {longDate(sent.sentAt.slice(0, 10))}. {PROPERTY.tenant} was told by text, and the notice goes by mail (sample: nothing was really mailed). New rent {usdCents(sent.to)} starts {longDate(sent.effective)}.
+                    Sent on {longDate(sent.sentAt.slice(0, 10))}. {PROPERTY.tenant} was told by text, and the notice goes by the delivery method you picked (sample: nothing was really sent). New rent {usdCents(sent.to)} starts {longDate(sent.effective)}.
                   </p>
                 )}
                 {state.rentNoticeLog.length > 0 && (

@@ -16,3 +16,8 @@ export function demoToday(real: Date = new Date()): Date {
   if (iso > DEMO_WINDOW.end) return new Date(2026, 9, 30, 12);
   return real;
 }
+
+/** The time stamp for something the sample records for display, such as a payment or a finished job, on the sample's own calendar. */
+export function demoNowIso(real: Date = new Date()): string {
+  return demoToday(real).toISOString();
+}

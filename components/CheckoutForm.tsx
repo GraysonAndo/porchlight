@@ -26,6 +26,7 @@ import {
   type PayKind,
   type PayMethod,
 } from "@/lib/payments";
+import { demoNowIso } from "@/lib/demoDate";
 import type { Payment } from "@/lib/types";
 
 type Fields = { name: string; number: string; expiry: string; cvc: string; zip: string; routing: string; account: string };
@@ -125,7 +126,7 @@ export function CheckoutForm({ due, paidCount }: { due: PayKind[]; paidCount: nu
     if (!valid) return;
     setStage("processing");
     const confirmation = confirmationNumber(paidCount);
-    const paidAt = new Date().toISOString();
+    const paidAt = demoNowIso();
     const chosen = bills.filter((b) => picked.includes(b.kind));
     // The fee is charged once, so it is attached to the first item.
     const payments: Payment[] = chosen.map((b, i) => ({

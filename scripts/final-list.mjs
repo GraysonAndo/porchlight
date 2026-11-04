@@ -262,10 +262,10 @@ const chatText = (page) => page.getByRole("log", { name: "Messages" }).innerText
   await resetApp(page);
   await page.goto(`${BASE}/pricing`);
   check("each page has its own tab title", (await page.title()) === "Pricing | GoHome");
-  await page.getByLabel("How many units do you own?").fill("10");
-  const plusCard = page.locator("li.card", { hasText: "Plus" }).first();
+  await page.locator("#units-slider").fill("10");
+  const plusCard = page.locator("li.card").filter({ has: page.getByRole("heading", { name: "Plus", exact: true }) });
   check("pricing shows the whole portfolio", (await plusCard.getByText("$60 a month for 10 units").count()) === 1 && (await page.getByText("$960 a year").count()) === 1);
-  await page.getByLabel("How many units do you own?").fill("7");
+  await page.locator("#units-slider").fill("7");
   check("the units slider updates prices as it moves", (await page.getByText("$56 a month for 7 units").count()) === 1 && (await page.getByText("$504 a year").count()) === 1);
   await page.getByRole("button", { name: "I would pick Plus" }).click();
   check("the pick is confirmed next to the tier", (await page.locator("li.card", { hasText: "Plus" }).getByText("Saved on this device").count()) === 1);
@@ -421,6 +421,7 @@ const chatText = (page) => page.getByRole("log", { name: "Messages" }).innerText
   await page.goto(`${BASE}/tenant/home`);
   check("and to the tenant's My home", (await page.getByText("Clothes washer").count()) >= 1);
   await page.goto(`${BASE}/owner/forecast`);
+  await page.locator("tbody th", { hasText: "Clothes washer" }).first().waitFor(wait20).catch(() => {});
   check("and to the forecast", (await page.locator("tbody th", { hasText: "Clothes washer" }).count()) >= 1);
 
   // Adjustable autonomy. Start clean, because rent was marked paid above and that already put a message in the inbox.
