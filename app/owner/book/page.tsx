@@ -302,7 +302,7 @@ function ApproveBody() {
           <div className="grid gap-5 md:grid-cols-2">
             <NumberField
               id="nte"
-              label="Not-to-exceed amount"
+              label="Spending limit"
               prefix="$"
               step={1}
               min={vendor.total}

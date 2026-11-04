@@ -201,7 +201,7 @@ function ApproveBar() {
       </h2>
       {approved ? (
         <p role="status" className="rounded-xl bg-good-tint p-3 font-bold text-good-ink">
-          Approved: {approvedVendor?.name ?? "your vendor"}, spending cap {usd(state.approval?.notToExceed ?? 0)}.{" "}
+          Approved: {approvedVendor?.name ?? "your vendor"}, spending limit {usd(state.approval?.notToExceed ?? 0)}.{" "}
           <Link href="/owner/book" className="underline underline-offset-4">
             See the booking
           </Link>

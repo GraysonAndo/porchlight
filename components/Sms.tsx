@@ -80,7 +80,7 @@ export function Bubble({ msg, perspective, via }: { msg: Msg; perspective: Party
           <PhoneCallIcon size={20} /> Incoming call from GoHome
         </p>
         <p className="mt-1">{msg.text}</p>
-        <p className="mt-1 text-xs font-bold opacity-70">Rings through Do Not Disturb</p>
+        <p className="mt-1 text-xs font-bold opacity-70">Sample call. In the full product this rings through Do Not Disturb</p>
         <p className="mt-1 text-right text-xs font-bold opacity-60">{entryTime(msg)}</p>
       </div>
     );
@@ -112,10 +112,10 @@ export function Bubble({ msg, perspective, via }: { msg: Msg; perspective: Party
         <p className="mt-1 flex items-center justify-end gap-1.5 text-xs font-bold opacity-60">
           {msg.silent && (
             <span className="inline-flex items-center gap-1">
-              <MoonIcon size={12} /> Delivered silently
+              <MoonIcon size={12} /> Would be delivered silently
             </span>
           )}
-          {!mine && via && <span>{via === "text" ? "Text" : "In app only"}</span>}
+          {!mine && via && <span>{via === "text" ? "Sample text" : "In app only"}</span>}
           <span>{entryTime(msg)}</span>
         </p>
       </div>

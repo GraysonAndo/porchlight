@@ -229,7 +229,7 @@ describe("the decision card and the approval gate", () => {
     expect(names.indexOf("approval_gate")).toBeGreaterThan(-1);
     expect(names.indexOf("approval_gate")).toBeLessThan(names.indexOf("book_vendor"));
     expect(w.triage.stage).toBe("booked");
-    expect(textFor(w, "contractor")).toContain("Not-to-exceed $2,695");
+    expect(textFor(w, "contractor")).toContain("Spending limit $2,695");
   });
 
   it("ignores a second tap on the same card", () => {
