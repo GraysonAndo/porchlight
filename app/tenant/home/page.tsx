@@ -33,7 +33,7 @@ export default function TenantHomePage() {
           </h2>
           <p className="text-ink-soft">GoHome keeps the brand, model, and place of everything, so help for your exact equipment is always one tap away.</p>
         </div>
-        <ul className="grid gap-4 md:grid-cols-2">
+        <ul className="grid grid-cols-1 gap-4 md:grid-cols-2">
           {equipment.map((item) => {
             const guides = guidesForEquipment(item.id, equipment);
             return (
@@ -82,7 +82,7 @@ export default function TenantHomePage() {
         <h2 id="wide-heading" className="text-2xl font-extrabold">
           Quick fixes for the whole home
         </h2>
-        <ul className="grid gap-3 md:grid-cols-2">
+        <ul className="grid grid-cols-1 gap-3 md:grid-cols-2">
           {wide.map((g) => (
             <li key={g.id}>
               <Link href={`/tenant/guides/${g.id}`} className="card card-lift flex h-full flex-col gap-1">
@@ -101,7 +101,7 @@ export default function TenantHomePage() {
         <h2 id="lease-heading" className="text-2xl font-extrabold">
           Your lease and rent
         </h2>
-        <div className="grid gap-4 md:grid-cols-2">
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
           <div className="card space-y-2">
             <p className="font-extrabold">Lease basics</p>
             <dl className="grid grid-cols-[8rem_1fr] gap-y-1 text-sm">

@@ -29,7 +29,7 @@ export default function TenantSettingsPage() {
       <h1 className="text-3xl font-extrabold leading-tight sm:text-4xl">Settings</h1>
 
       <Section id="account" title="Your account">
-        <dl className="grid grid-cols-[7rem_1fr] gap-y-1.5 text-sm">
+        <dl className="grid grid-cols-[7rem_minmax(0,1fr)] gap-y-1.5 text-sm [&>dd]:break-words">
           <dt className="font-bold text-ink-soft">Name</dt>
           <dd>{PROPERTY.tenant}</dd>
           <dt className="font-bold text-ink-soft">Email</dt>

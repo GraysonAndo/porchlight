@@ -36,7 +36,7 @@ export function ApprovalCard({ msg, onTap }: { msg: Msg; onTap: (msgId: string, 
       {card && <p className="mt-2 text-lg text-ink-soft">{card.summary}</p>}
 
       {card && card.facts.length > 0 && (
-        <dl className="mt-4 grid gap-2 sm:grid-cols-2">
+        <dl className="mt-4 grid grid-cols-1 gap-2 sm:grid-cols-2">
           {card.facts.map((f) => (
             <div key={f.label} className="rounded-2xl bg-cream px-4 py-2">
               <dt className="text-sm font-bold text-ink-soft">{f.label}</dt>

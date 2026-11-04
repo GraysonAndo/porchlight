@@ -99,7 +99,7 @@ export function SiteHeader() {
               href={`/${role}/settings`}
               aria-label="Settings"
               aria-current={pathname === `/${role}/settings` ? "page" : undefined}
-              className={`inline-flex h-11 w-11 items-center justify-center rounded-lg ${pathname === `/${role}/settings` ? "bg-brand-tint text-brand" : "text-ink-soft hover:bg-cream-deep hover:text-ink"}`}
+              className={`inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-lg ${pathname === `/${role}/settings` ? "bg-brand-tint text-brand" : "text-ink-soft hover:bg-cream-deep hover:text-ink"}`}
             >
               <GearIcon size={24} />
             </Link>

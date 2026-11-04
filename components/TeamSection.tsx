@@ -41,7 +41,7 @@ export function TeamSection() {
         </h2>
         <p className="mx-auto mt-1 max-w-xl text-ink-soft">Three UCSB students building the property manager we wish small landlords had.</p>
       </div>
-      <ul className="grid gap-3 md:grid-cols-3 md:gap-4">
+      <ul className="grid grid-cols-1 gap-3 md:grid-cols-3 md:gap-4">
         {TEAM.map((m, i) => (
           <li key={m.name}>
             <FadeIn delayMs={i * 90} className="h-full">

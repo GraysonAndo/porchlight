@@ -337,7 +337,7 @@ export default function QuotePage() {
 
       <fieldset>
         <legend className="mb-2 text-xl font-extrabold">The quotes</legend>
-        <div className="grid gap-3 md:grid-cols-3">
+        <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
           {COLLECTED.map((c) => {
             const isSelected = c.vendorId === selected;
             const pick = c.vendorId === PLAN.vendorId;

@@ -225,7 +225,7 @@ function ApproveBody() {
         <p className="mt-2 text-3xl font-extrabold leading-tight sm:text-5xl">
           Book <span className="text-glow">{PLAN.vendorName}</span>
         </p>
-        <dl className="mt-4 grid gap-3 sm:grid-cols-3">
+        <dl className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-3">
           <div className="rounded-2xl bg-white/10 p-3">
             <dt className="text-sm text-cream/75">Quote</dt>
             <dd className="text-2xl font-extrabold">{usd(PLAN.total)}</dd>
@@ -269,7 +269,7 @@ function ApproveBody() {
 
       <fieldset>
         <legend className="mb-2 text-xl font-extrabold">1. Pick a vendor</legend>
-        <div className="grid gap-3 md:grid-cols-3">
+        <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
           {VENDORS.map((v) => {
             const selected = v.id === vendorId;
             const verdict = verdictFor(v.total, WATER_HEATER_JOB.marketTotal);
@@ -318,7 +318,7 @@ function ApproveBody() {
 
       <Card title="2. Set your limits">
         {vendor ? (
-          <div className="grid gap-5 md:grid-cols-2">
+          <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
             <NumberField
               id="nte"
               label="Spending limit"
@@ -378,7 +378,7 @@ function ApproveBody() {
           </div>
         ) : (
           <>
-          <div className="grid gap-5 md:grid-cols-2">
+          <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
             <div>
               <label htmlFor="vendor-message" className="mb-1 block font-extrabold">
                 To the vendor: {vendor.name}

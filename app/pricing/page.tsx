@@ -105,7 +105,7 @@ export default function PricingPage() {
         </div>
       </section>
 
-      <ul className="grid gap-4 md:grid-cols-3">
+      <ul className="grid grid-cols-1 gap-4 md:grid-cols-3">
         {TIERS.map((t) => {
           const chosen = pick === t.id;
           return (

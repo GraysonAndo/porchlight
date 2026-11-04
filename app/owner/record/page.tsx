@@ -86,7 +86,7 @@ export default function OwnerRecordPage() {
         )}
       </Card>
 
-      <ul className="grid gap-4 md:grid-cols-2">
+      <ul className="grid grid-cols-1 gap-4 md:grid-cols-2">
         {/* The items closest to the end of their life come first, so the owner sees what needs attention at the top. */}
         {[...equipment].sort((a, b) => ageOf(b) / b.typicalLifeYears - ageOf(a) / a.typicalLifeYears).map((item) => {
           const age = ageOf(item);

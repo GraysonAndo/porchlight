@@ -93,7 +93,7 @@ export default function ForecastPage() {
           Spreading the cost over five years gives {usd(forecast.setAsideLowPerMonth)} to {usd(forecast.setAsideHighPerMonth)} a month. But bills come due in
           their own years, not evenly. This walks through each year, using the high estimates to be safe.
         </p>
-        <div className="mt-3 grid gap-4 sm:grid-cols-2">
+        <div className="mt-3 grid grid-cols-1 gap-4 sm:grid-cols-2">
           <NumberField
             id="already-saved"
             label="Already set aside for repairs"

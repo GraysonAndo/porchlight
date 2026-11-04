@@ -79,7 +79,7 @@ function PayBody() {
         <p className="mt-1 text-lg text-ink-soft">1200 Example Court, San Jose, CA 95100</p>
       </div>
 
-      <div className="grid items-start gap-6 lg:grid-cols-[1fr_26rem]">
+      <div className="grid grid-cols-1 items-start gap-6 lg:grid-cols-[1fr_26rem]">
         <div className="space-y-5">
           <section aria-labelledby="due-heading" className="card space-y-3">
             <div className="flex flex-wrap items-baseline justify-between gap-2">

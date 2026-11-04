@@ -237,7 +237,7 @@ export function QuoteDetail({ quote, license, details, showNote = true }: { quot
           <Thinking message="Writing questions to ask this vendor..." />
         </div>
       ) : (
-        <div className="grid gap-5 md:grid-cols-2">
+        <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
           <Card title="Lines to look at">
             {check.data.flaggedLines.length === 0 ? (
               <p>Nothing stands out on this quote.</p>

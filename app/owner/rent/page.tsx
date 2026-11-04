@@ -245,7 +245,7 @@ export default function RentPage() {
         ).
       </p>
       <Card title="From your lease">
-        <dl className="grid gap-x-6 gap-y-1 text-sm sm:grid-cols-3">
+        <dl className="grid grid-cols-1 gap-x-6 gap-y-1 text-sm sm:grid-cols-3">
           <div>
             <dt className="font-bold text-ink-soft">Rent on your lease</dt>
             <dd className="text-lg font-extrabold">{usdCents(PROPERTY.rent)} a month</dd>
@@ -323,7 +323,7 @@ export default function RentPage() {
         <p className="text-xl font-extrabold">{verdict.title}</p>
         {verdict.detail && <p className="text-sm font-bold">{verdict.detail}</p>}
       </div>
-      <div className="grid gap-5 lg:grid-cols-2">
+      <div className="grid grid-cols-1 gap-5 lg:grid-cols-2">
         <Card title="Your numbers">
           <p className="hint mb-3">Every number here is needed. The check boxes are optional.</p>
           <div className="space-y-5">
@@ -558,7 +558,7 @@ export default function RentPage() {
 
             {ready && kind !== "none" ? (
               <>
-                <div className="mt-3 grid gap-3 sm:grid-cols-2">
+                <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2">
                   <div>
                     <label htmlFor="start-date" className="label">
                       When should the new rent start?
