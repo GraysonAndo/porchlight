@@ -87,7 +87,8 @@ export default function OwnerRecordPage() {
       </Card>
 
       <ul className="grid gap-4 md:grid-cols-2">
-        {equipment.map((item) => {
+        {/* The items closest to the end of their life come first, so the owner sees what needs attention at the top. */}
+        {[...equipment].sort((a, b) => ageOf(b) / b.typicalLifeYears - ageOf(a) / a.typicalLifeYears).map((item) => {
           const age = ageOf(item);
           const s = lifeStage(age, item.typicalLifeYears);
           const guides = guidesForEquipment(item.id, equipment);
@@ -156,7 +157,7 @@ export default function OwnerRecordPage() {
         ref={dialogRef}
         aria-labelledby="edit-dialog-title"
         onClose={() => setEditing(null)}
-        className="m-auto w-full max-w-lg rounded-2xl bg-white p-0 text-ink shadow-2xl backdrop:bg-ink/50"
+        className="m-auto max-h-[92dvh] w-[calc(100%-1.5rem)] max-w-lg rounded-2xl bg-white p-0 text-ink shadow-2xl backdrop:bg-ink/50"
       >
         {editingItem && (
           <div className="p-5">
