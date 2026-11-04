@@ -144,7 +144,7 @@ export default function PricingPage() {
                 aria-pressed={chosen}
                 onClick={() => actions.setPricingPick(t.id)}
               >
-                {chosen ? `✓ You picked ${t.name}` : `I would pick ${t.name}`}
+                {chosen && <span aria-hidden="true">✓ </span>}I would pick {t.name}
               </button>
               {/* The space is always there, so the buttons line up whether or not a tier is picked. */}
               <p className="mt-2 flex min-h-11 flex-wrap items-center gap-2 text-sm">
@@ -172,7 +172,7 @@ export default function PricingPage() {
             aria-pressed={pick === "none"}
             onClick={() => actions.setPricingPick("none")}
           >
-            {pick === "none" ? "✓ None of these" : "None of these"}
+            {pick === "none" && <span aria-hidden="true">✓ </span>}None of these
           </button>
           {pick === "none" && (
             <>

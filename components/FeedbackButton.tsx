@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { usePathname } from "next/navigation";
 import { ChatIcon } from "./icons";
 import { screenNameFor } from "@/lib/steps";
@@ -17,6 +17,12 @@ export function FeedbackLink() {
   const [note, setNote] = useState("");
   const [saved, setSaved] = useState(false);
   const [error, setError] = useState("");
+  const doneRef = useRef<HTMLButtonElement>(null);
+
+  // The form is replaced by the saved message, so focus goes to Done instead of falling back to the page.
+  useEffect(() => {
+    if (saved) doneRef.current?.focus();
+  }, [saved]);
 
   const screen = screenNameFor(pathname);
 
@@ -68,7 +74,7 @@ export function FeedbackLink() {
                 Saved. Thank you!
               </p>
               <div className="mt-4 flex justify-end">
-                <button type="button" className="btn btn-primary" onClick={close}>
+                <button ref={doneRef} type="button" className="btn btn-primary" onClick={close}>
                   Done
                 </button>
               </div>

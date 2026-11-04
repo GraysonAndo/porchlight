@@ -154,6 +154,8 @@ export function nearTopLines(quote: VendorQuote, item: QuoteItem, threshold = 0.
   for (const line of quote.lines) {
     const range = item.marketLines[line.id];
     if (!range) continue;
+    // A permit fee is set by the city, so asking about it is not useful advice.
+    if (line.id === "permit") continue;
     const position = rangePosition(line.amount, range);
     if (position >= threshold) out.push({ id: line.id, label: line.label, amount: line.amount, range, position });
   }

@@ -119,7 +119,7 @@ function PasteQuote() {
         </div>
       </Card>
 
-      {parsed && !quote && (
+      {parsed && parsed.lines.length === 0 && (
         <Callout tone="caution" title="I could not find any dollar amounts" role="alert">
           <p>Put each item on its own line with its price at the end, like &quot;Labor ........ $1,200&quot;.</p>
         </Callout>

@@ -138,10 +138,10 @@ describe("comparable scope", () => {
     expect(rangePosition(2700, item.marketTotal)).toBeGreaterThan(1);
   });
 
-  it("flags lines at or near the top of their range", () => {
+  it("flags lines at or near the top of their range, but not the city-set permit fee", () => {
     const ids = nearTopLines(WILLOW_QUOTE, item).map((l) => l.id);
     expect(ids).toContain("labor");
-    expect(ids).toContain("permit");
+    expect(ids).not.toContain("permit");
     expect(ids).not.toContain("seismic");
   });
 });

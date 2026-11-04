@@ -116,10 +116,10 @@ describe("cash flow", () => {
   it("says how much is needed now and how much each month covers the rest", () => {
     const cf = cashFlowFor(years, 0, 0);
     expect(cf.neededNow).toBe(2600);
-    // Through 2027 the bills are 11,100, and 12 months of saving covers it at 925 a month.
-    expect(cf.monthlyToCover).toBe(Math.ceil(11100 / 12));
-    // With 2026 paid from savings, that monthly amount covers 2027.
-    const covered = cashFlowFor(years, cf.monthlyToCover, 2600);
-    expect(covered.rows[1].left).toBeGreaterThanOrEqual(-2600);
+    // Once the 2,600 is on hand, 2027's bills (8,500 more) are covered by 12 months at 709 a month.
+    expect(cf.monthlyToCover).toBe(Math.ceil((11100 - 2600) / 12));
+    // Doing exactly what the advice says leaves no year short.
+    const covered = cashFlowFor(years, cf.monthlyToCover, cf.neededNow);
+    expect(covered.firstShortYear).toBeNull();
   });
 });

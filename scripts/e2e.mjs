@@ -918,7 +918,7 @@ const chatText = (page) => page.getByRole("log", { name: "Messages" }).innerText
   const { context, page, errors } = await newPage();
   await page.goto(`${BASE}/pricing`);
   await page.getByRole("button", { name: "I would pick Plus" }).click();
-  await page.getByRole("button", { name: /You picked Plus/ }).waitFor(wait20);
+  await page.getByRole("button", { name: /I would pick Plus/, pressed: true }).waitFor(wait20);
   check("pricing shows $4, $6, and $8 per unit per month", (await page.getByText("$4").count()) > 0 && (await page.getByText("$6").count()) > 0 && (await page.getByText("$8").count()) > 0 && (await count(page, "per unit per month")) >= 3);
   check("pricing says month to month and California only", (await count(page, "Month to month")) > 0 && (await count(page, "California only, for now")) > 0);
   await page.goto(`${BASE}/about`);

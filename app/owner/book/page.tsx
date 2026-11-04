@@ -104,6 +104,8 @@ function ApproveBody() {
       notToExceed,
       accessWindow,
       sentAt: new Date().toISOString(),
+      vendorText: drafts.data ? (vendorEdit && vendorEdit.base === drafts.data.vendorText ? vendorEdit.text : drafts.data.vendorText) : undefined,
+      tenantText: drafts.data ? (tenantEdit && tenantEdit.base === drafts.data.tenantText ? tenantEdit.text : drafts.data.tenantText) : undefined,
     });
   }
 
@@ -137,6 +139,23 @@ function ApproveBody() {
         <Callout tone="caution" title="Nothing was actually sent">
           <p>These are sample messages. Nothing was actually sent to a vendor or tenant, and the times above are samples.</p>
         </Callout>
+
+        {(approval.vendorText || approval.tenantText) && (
+          <Card title="The words you approved">
+            {approval.vendorText && (
+              <>
+                <p className="font-extrabold">To the vendor: {sentVendor.name}</p>
+                <p className="mt-1 whitespace-pre-line text-sm leading-relaxed">{approval.vendorText}</p>
+              </>
+            )}
+            {approval.tenantText && (
+              <>
+                <p className="mt-4 font-extrabold">To the tenant: {PROPERTY.tenant}</p>
+                <p className="mt-1 whitespace-pre-line text-sm leading-relaxed">{approval.tenantText}</p>
+              </>
+            )}
+          </Card>
+        )}
 
         <Card title="What the tenant sees">
           <p>

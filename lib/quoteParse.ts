@@ -152,7 +152,9 @@ const OTHER_JOBS: [RegExp, string][] = [
  * no verdict. It never invents a range.
  */
 export function detectQuoteJob(text: string): QuoteJob {
-  if (/water heater|hot water (heater|tank)|tankless|tank heater/i.test(text)) return { kind: "water-heater" };
+  // The price table is for a 40 gallon tank swap. A tankless unit costs differently, so it gets no verdict.
+  if (/tankless/i.test(text)) return { kind: "unknown", guess: "a tankless water heater" };
+  if (/water heater|hot water (heater|tank)|tank heater/i.test(text)) return { kind: "water-heater" };
   const other = OTHER_JOBS.find(([test]) => test.test(text));
   return { kind: "unknown", guess: other ? other[1] : null };
 }
