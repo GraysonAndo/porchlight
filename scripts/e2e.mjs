@@ -493,6 +493,8 @@ const chatText = (page) => page.getByRole("log", { name: "Messages" }).innerText
   await page.getByRole("switch", { name: "Email receipts and updates" }).click();
   check("a tenant setting can be changed", (await page.getByRole("switch", { name: "Email receipts and updates" }).getAttribute("aria-checked")) === "false");
   await page.reload();
+  await page.waitForFunction(() => document.querySelector('[role=switch][aria-label*="Email receipts"], [role=switch]')?.getAttribute("aria-checked") !== null, null, { timeout: 20000 }).catch(() => {});
+  await page.waitForFunction(() => [...document.querySelectorAll("[role=switch]")].some((e) => /Email receipts and updates/.test(e.getAttribute("aria-label") ?? e.textContent ?? "") && e.getAttribute("aria-checked") === "false"), null, { timeout: 20000 }).catch(() => {});
   check("a setting is remembered after a reload", (await page.getByRole("switch", { name: "Email receipts and updates" }).getAttribute("aria-checked")) === "false");
 
   await page.goto(`${BASE}/owner`);

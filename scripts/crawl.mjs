@@ -70,15 +70,16 @@ async function crawlPage(context, vp, route, state) {
     [...document.querySelectorAll("button, [role=button], [role=tab], [role=switch], summary, input[type=checkbox], input[type=radio]")]
       .filter((e) => {
         const r = e.getBoundingClientRect();
-        return r.width > 0 && r.height > 0 && !e.disabled && getComputedStyle(e).visibility !== "hidden";
+        return r.width > 0 && r.height > 0 && getComputedStyle(e).visibility !== "hidden";
       })
-      .map((e, i) => ({ i, label: (e.getAttribute("aria-label") || e.textContent || e.id || e.type || "").trim().replace(/\s+/g, " ").slice(0, 50), tag: e.tagName }))
+      .map((e, i) => ({ i, label: (e.getAttribute("aria-label") || e.textContent || e.id || e.type || "").trim().replace(/\s+/g, " ").slice(0, 50), tag: e.tagName, disabled: Boolean(e.disabled) }))
       .slice(0, 70),
   );
   await page.close();
 
-  for (const { i, label, tag } of labels) {
-    if (SKIP.test(label)) continue;
+  for (const { i, label, tag, disabled } of labels) {
+    // A disabled control stays in the list so the positions line up with the page, but it is not pressed.
+    if (disabled || SKIP.test(label)) continue;
     const p = await context.newPage();
     const pageErrors = [];
     p.on("pageerror", (e) => pageErrors.push(e.message));
