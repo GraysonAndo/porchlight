@@ -35,7 +35,7 @@ Other commands:
 | `node scripts/phone.mjs` | Phone-style checks in an emulated browser: a 320px phone, a landscape phone, text zoomed to 200%, and real touch taps through the first tenant steps (needs the app running). Emulation only, not iOS Safari or a real phone |
 | `node scripts/e2e.mjs` | Behavior checks: the landing page, both sides and what each can see, the guides, reload, Reset, `?reset=1`, blocked localStorage, feedback notes, old links (needs the app running) |
 
-The two scripts use Playwright with the preinstalled Chromium (never run `playwright install`). Set `BASE_URL` if the app is not on port 3000.
+The test scripts use Playwright with the preinstalled Chromium (never run `playwright install`). Set `BASE_URL` if the app is not on port 3000.
 
 Screenshots from the last run are in [`docs/screenshots`](docs/screenshots), two per screen (`-mobile` and `-desktop`).
 
@@ -52,7 +52,7 @@ The app is fully static and makes no network requests at runtime. The font (Plus
 
 **`/` The welcome page.** The name, "Your home, made easy.", and two choices: Tenant or Owner. Choosing one opens that side.
 
-**Tenant side** (tabs: Help, My home)
+**Tenant side** (tabs: Help, My home, Pay)
 
 | Screen | What it shows |
 | --- | --- |
@@ -92,7 +92,7 @@ The app is fully static and makes no network requests at runtime. The font (Plus
 
 **Phone preview.** `/tenant/texts` (linked from the tenant Help page and Settings) shows a phone mockup of how GoHome will feel by text in the full product. It runs its own copy of the agent, so it never touches the real conversation. Tap a message, type to it, or press "Play the whole story" to watch a leak go from the first text to "All fixed".
 
-**Shell.** The welcome page, About, Pricing, and Feedback share one header (About, Pricing) and one footer (Pricing for non-tenants, Our team, Help and FAQ, Contact, Send feedback, Reset sample data). Reset asks first, stays on the page, and says it is done. Texting and calling are described as "in the full product" wherever the sample does not really do them.
+**Shell.** The welcome page, About, Pricing, and Feedback share one header (About, Pricing) and one footer (Pricing, Our team, Help and FAQ, Contact, Send feedback, Reset sample data). Reset asks first, stays on the page, and says it is done. Texting and calling are described as "in the full product" wherever the sample does not really do them.
 
 **Also:** `/pricing`, `/about` (the leadership team, FAQ, and how prices work), `/feedback` (interview notes). The footer has "Send feedback", "Reset sample data", and `?reset=1` works on any page. The old demo consoles (`/live`, `/sms`) and the old label and tenant step pages redirect.
 

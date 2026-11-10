@@ -186,9 +186,9 @@ export default function RentPage() {
           : result.mayBeExempt
           ? { tone: "caution", title: "May be exempt from the yearly limit", detail: "Confirm with an attorney before you send." }
           : kind === "decrease"
-            ? { tone: "good", title: "OK to send: this lowers the rent" }
+            ? { tone: "good", title: "Looks fine to send (draft check, not legal advice)" }
             : result.withinCap
-              ? { tone: "good", title: "OK to send: within the yearly limit", detail: `${usdCents(form.proposedRent)} is at or below ${usdCents(result.maxNewRent)}.` }
+              ? { tone: "good", title: "Looks within the yearly limit (draft check, not legal advice)", detail: `${usdCents(form.proposedRent)} is at or below ${usdCents(result.maxNewRent)}.` }
               : { tone: "urgent", title: `Do not send: over the limit by ${usdCents(result.overCapBy)}`, detail: `Lower the new rent to ${usdCents(result.maxNewRent)} or less.` };
   const sentIsStale = Boolean(sent) && (sent!.to !== form.proposedRent || sent!.from !== form.currentRent || sent!.effective !== startIso || sent!.kind !== kind);
 
@@ -245,7 +245,7 @@ export default function RentPage() {
         ).
       </p>
       <Card title="From your lease">
-        <dl className="grid gap-x-6 gap-y-1 text-sm sm:grid-cols-3">
+        <dl className="grid grid-cols-1 gap-x-6 gap-y-1 text-sm sm:grid-cols-3">
           <div>
             <dt className="font-bold text-ink-soft">Rent on your lease</dt>
             <dd className="text-lg font-extrabold">{usdCents(PROPERTY.rent)} a month</dd>
@@ -323,7 +323,7 @@ export default function RentPage() {
         <p className="text-xl font-extrabold">{verdict.title}</p>
         {verdict.detail && <p className="text-sm font-bold">{verdict.detail}</p>}
       </div>
-      <div className="grid gap-5 lg:grid-cols-2">
+      <div className="grid grid-cols-1 gap-5 lg:grid-cols-2">
         <Card title="Your numbers">
           <p className="hint mb-3">Every number here is needed. The check boxes are optional.</p>
           <div className="space-y-5">
@@ -558,7 +558,7 @@ export default function RentPage() {
 
             {ready && kind !== "none" ? (
               <>
-                <div className="mt-3 grid gap-3 sm:grid-cols-2">
+                <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2">
                   <div>
                     <label htmlFor="start-date" className="label">
                       When should the new rent start?
@@ -590,7 +590,7 @@ export default function RentPage() {
                 {kind === "increase" && !tooLate && (
                   <p className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm">
                     <strong>
-                      {daysUntil(sendBy) > 0 ? `${daysUntil(sendBy)} days left to send` : daysUntil(sendBy) === 0 ? "Last day to send is today" : ""}
+                      {daysUntil(sendBy) > 0 ? `${daysUntil(sendBy)} ${daysUntil(sendBy) === 1 ? "day" : "days"} left to send` : daysUntil(sendBy) === 0 ? "Last day to send is today" : ""}
                     </strong>
                     <a
                       className="inline-flex min-h-11 items-center font-bold text-brand underline underline-offset-4"

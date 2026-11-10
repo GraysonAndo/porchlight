@@ -118,7 +118,7 @@ const chatText = (page) => page.getByRole("log", { name: "Messages" }).innerText
   const chat = await chatText(page);
   check("the tenant is never asked for a photo of a label", !/sticker|silver|label photo/i.test(chat));
   check("the tenant never sees a price or a quote", !/\$\d|\bquote/i.test(chat), chat.slice(0, 100));
-  await page.getByText(/Looking for licensed plumbers who can come soon/).waitFor(wait20);
+  await page.getByText(/Looking for plumbers who can come soon/).waitFor(wait20);
   check("the tenant's agent panel shows plain steps like finding a plumber", true);
 
   // The owner side: everything is already done.
@@ -407,9 +407,9 @@ const chatText = (page) => page.getByRole("log", { name: "Messages" }).innerText
   await page.goto(`${BASE}/tenant/pay`);
   check("the Pay page shows the amount due and each bill", (await count(page, "$3,292.18")) > 0 && (await count(page, "October 2026 rent")) > 0 && (await count(page, "Water and trash")) > 0);
   check("the Pay page says gas and electric are paid to the utility", (await count(page, /paid directly to your utility company/)) > 0);
-  const checkout = page.frameLocator('iframe[title="Secure checkout"]');
-  await checkout.getByText("Secure checkout").waitFor(wait20);
-  check("the checkout is its own embedded page", (await page.locator('iframe[title="Secure checkout"]').getAttribute("src"))?.startsWith("/checkout") === true);
+  const checkout = page.frameLocator('iframe[title^="Sample checkout"]');
+  await checkout.getByText("Sample checkout").waitFor(wait20);
+  check("the checkout is its own embedded page", (await page.locator('iframe[title^="Sample checkout"]').getAttribute("src"))?.startsWith("/checkout") === true);
 
   // Mistakes are caught, in plain words.
   await checkout.getByRole("button", { name: /^Pay \$/ }).click();
@@ -459,12 +459,12 @@ const chatText = (page) => page.getByRole("log", { name: "Messages" }).innerText
   await page.getByText(/card ending in 4242\. Confirmation GH-100042/).first().waitFor(wait20);
   check("the owner sees the rent as received, how, and the confirmation", true);
   await tabs(page, /Texts from GoHome/).click();
-  await page.getByText(/paid October 2026 rent/).first().waitFor(wait20);
+  await page.getByText(/marked October 2026 rent/).first().waitFor(wait20);
   check("the owner is texted that rent was paid", true);
 
   // Utilities by bank transfer, in a new checkout.
   await page.goto(`${BASE}/tenant/pay`);
-  const next = page.frameLocator('iframe[title="Secure checkout"]');
+  const next = page.frameLocator('iframe[title^="Sample checkout"]');
   await next.getByText("Water and trash").first().waitFor(wait20);
   await next.getByText("Bank account", { exact: true }).click();
   await next.getByRole("button", { name: "Use the sample bank account" }).click();
@@ -493,6 +493,8 @@ const chatText = (page) => page.getByRole("log", { name: "Messages" }).innerText
   await page.getByRole("switch", { name: "Email receipts and updates" }).click();
   check("a tenant setting can be changed", (await page.getByRole("switch", { name: "Email receipts and updates" }).getAttribute("aria-checked")) === "false");
   await page.reload();
+  await page.waitForFunction(() => document.querySelector('[role=switch][aria-label*="Email receipts"], [role=switch]')?.getAttribute("aria-checked") !== null, null, { timeout: 20000 }).catch(() => {});
+  await page.waitForFunction(() => [...document.querySelectorAll("[role=switch]")].some((e) => /Email receipts and updates/.test(e.getAttribute("aria-label") ?? e.textContent ?? "") && e.getAttribute("aria-checked") === "false"), null, { timeout: 20000 }).catch(() => {});
   check("a setting is remembered after a reload", (await page.getByRole("switch", { name: "Email receipts and updates" }).getAttribute("aria-checked")) === "false");
 
   await page.goto(`${BASE}/owner`);
@@ -643,7 +645,7 @@ const chatText = (page) => page.getByRole("log", { name: "Messages" }).innerText
   await page.locator("#proposed-rent").fill("3000");
   const decrease = await page.locator("pre").innerText();
   check("a rent decrease is titled as a decrease, never as an increase", decrease.includes("NOTICE OF RENT DECREASE") && !decrease.includes("RENT INCREASE"));
-  check("a decrease says it lowers the rent, and the result agrees", (await count(page, "OK to send: this lowers the rent")) >= 1);
+  check("a decrease says it lowers the rent, and the result agrees", (await count(page, "Looks fine to send")) >= 1);
   await page.locator("#proposed-rent").fill("3200");
   check("an unchanged rent has no notice to send", (await page.locator("pre").count()) === 0 && (await count(page, "same as the current rent")) > 0);
 
@@ -777,6 +779,7 @@ const chatText = (page) => page.getByRole("log", { name: "Messages" }).innerText
   await page.getByText(/Water heater updated\. Your tenant now sees the corrected details and guides\./).waitFor(wait20);
   check("a misread model can be corrected, and the record says it was", (await count(page, "HL-40G-LP")) > 0 && (await count(page, "Corrected by you")) === 1);
   await page.reload();
+  await page.getByText("HL-40G-LP").first().waitFor(wait20).catch(() => {});
   check("the correction survives a reload", (await count(page, "HL-40G-LP")) > 0);
 
   // The tenant, the guides, and what GoHome says all use the corrected record.
@@ -846,7 +849,7 @@ const chatText = (page) => page.getByRole("log", { name: "Messages" }).innerText
   // 18, 19, 13: names, naming, and the future wording.
   await page.goto(`${BASE}/about`);
   const about = await page.locator("main").innerText();
-  check("the About page connects GoHome and Porchlight", /called Porchlight/.test(about));
+  check("the About page no longer shows the old internal name", !/Porchlight/.test(about));
   check("the FAQ section is called Help and FAQ everywhere", (await page.getByRole("heading", { name: "Help and FAQ" }).count()) === 1 && (await page.getByRole("link", { name: "Help and FAQ" }).count()) === 1 && !/Questions\n/.test(about));
   await page.getByRole("button", { name: "Send feedback" }).click();
   check("and the feedback sheet names the page it was opened on", (await page.locator("dialog").innerText()).includes("Screen: About"));
@@ -918,7 +921,7 @@ const chatText = (page) => page.getByRole("log", { name: "Messages" }).innerText
   const { context, page, errors } = await newPage();
   await page.goto(`${BASE}/pricing`);
   await page.getByRole("button", { name: "I would pick Plus" }).click();
-  await page.getByRole("button", { name: /You picked Plus/ }).waitFor(wait20);
+  await page.getByRole("button", { name: /I would pick Plus/, pressed: true }).waitFor(wait20);
   check("pricing shows $4, $6, and $8 per unit per month", (await page.getByText("$4").count()) > 0 && (await page.getByText("$6").count()) > 0 && (await page.getByText("$8").count()) > 0 && (await count(page, "per unit per month")) >= 3);
   check("pricing says month to month and California only", (await count(page, "Month to month")) > 0 && (await count(page, "California only, for now")) > 0);
   await page.goto(`${BASE}/about`);
@@ -997,8 +1000,8 @@ const chatText = (page) => page.getByRole("log", { name: "Messages" }).innerText
   await page.getByRole("button", { name: "Send feedback" }).click();
   await page.locator("dialog").getByText("4", { exact: true }).click();
   await page.getByRole("button", { name: "Save feedback" }).click();
-  await page.getByText(/Saved. Thank you/).waitFor();
-  check("feedback still saves in memory with storage blocked", true);
+  await page.getByText(/blocks storage, so the note will be gone/).waitFor(wait20);
+  check("feedback is kept in memory with storage blocked, and the dialog says it will not last", true);
   check("no uncaught errors with storage blocked", errors.length === 0, errors.join(" | "));
   await context.close();
 }
@@ -1107,7 +1110,7 @@ const chatText = (page) => page.getByRole("log", { name: "Messages" }).innerText
   check("the sample figure can be confirmed from the lease card in one tap", (await page.getByRole("button", { name: /^I checked my area: use 3%/ }).count()) === 1);
   await page.getByRole("button", { name: /^I checked my area: use 3%/ }).click();
   check("that tap is the same setting as the checkbox", await page.getByLabel(/I checked this inflation figure for my area/).isChecked());
-  check("and the verdict moves on", (await count(page, "OK to send: within the yearly limit")) > 0);
+  check("and the verdict moves on", (await count(page, "Looks within the yearly limit")) > 0);
   await openLease(page);
   await page.getByLabel("The tenant was given the required written exemption notice.").check();
   check("opening the folded section reaches the exemption checks", await page.getByLabel("The tenant was given the required written exemption notice.").isChecked());

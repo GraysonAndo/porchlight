@@ -53,7 +53,7 @@ const itemName = (e: EquipmentItem) => `${e.brand} ${e.model}`;
 /** "in the garage, against the north wall" from a location like "Garage, against the north wall". */
 const inWhere = (e: EquipmentItem) => `in the ${e.location.charAt(0).toLowerCase()}${e.location.slice(1)}`;
 
-export const GAS_WARNING = "You smell gas. Leave the home right away, do not touch anything, and call 911.";
+export const GAS_WARNING = "You smell gas. Leave the home right away and do not touch anything. Once you are outside, call 911 or your gas company.";
 
 function build(equipment: EquipmentItem[]): HomeGuide[] {
   const heater = itemIn(equipment, "water-heater");

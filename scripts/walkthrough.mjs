@@ -119,8 +119,8 @@ async function run(browser, vp) {
   await snap(page, vp, "15-tenant-my-home");
   // ---------- Tenant: paying rent and utilities in the embedded checkout ----------
   await page.goto(`${BASE}/tenant/pay`);
-  const checkout = page.frameLocator('iframe[title="Secure checkout"]');
-  await checkout.getByText("Secure checkout").waitFor(W);
+  const checkout = page.frameLocator('iframe[title^="Sample checkout"]');
+  await checkout.getByText("Sample checkout").waitFor(W);
   await snap(page, vp, "15b-tenant-pay");
   await checkout.getByRole("button", { name: /^Pay \$/ }).click();
   await page.waitForTimeout(300);
@@ -173,7 +173,7 @@ async function run(browser, vp) {
   await openLease(page);
   await page.getByText("Confirm your area's inflation figure first").first().waitFor();
   await page.getByLabel(/I checked this inflation figure for my area/).check();
-  await page.getByText("OK to send: within the yearly limit").first().waitFor();
+  await page.getByText("Looks within the yearly limit").first().waitFor();
   await snap(page, vp, "25-owner-rent-ok");
   await page.locator("#proposed-rent").fill("3600");
   await page.getByText(/Do not send: over the limit by/).first().waitFor();

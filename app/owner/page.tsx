@@ -76,7 +76,7 @@ export default function OwnerHomePage() {
         </p>
       </div>
 
-      <div className="grid items-start gap-5 lg:grid-cols-2">
+      <div className="grid grid-cols-1 items-start gap-5 lg:grid-cols-2">
         <div className="space-y-5">
           <div className="hero-ink">
             <p className="eyebrow !text-white/70">Today</p>

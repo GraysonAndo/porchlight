@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { Badge } from "@/components/ui";
-import { BILLS, DIRECT_UTILITIES, dueStatus, money, type PayKind } from "@/lib/payments";
+import { BILLS, DIRECT_UTILITIES, dueStatus, lateFeeNote, money, type PayKind } from "@/lib/payments";
 import { longDate } from "@/lib/format";
 import { useDemo } from "@/lib/store";
 import type { Payment } from "@/lib/types";
@@ -79,7 +79,7 @@ function PayBody() {
         <p className="mt-1 text-lg text-ink-soft">1200 Example Court, San Jose, CA 95100</p>
       </div>
 
-      <div className="grid items-start gap-6 lg:grid-cols-[1fr_26rem]">
+      <div className="grid grid-cols-1 items-start gap-6 lg:grid-cols-[1fr_26rem]">
         <div className="space-y-5">
           <section aria-labelledby="due-heading" className="card space-y-3">
             <div className="flex flex-wrap items-baseline justify-between gap-2">
@@ -97,8 +97,10 @@ function PayBody() {
                     <div className="min-w-0">
                       <p className="font-bold">{b.label}</p>
                       <p className="text-sm text-ink-soft">
-                        {paid ? "Paid" : status.text} {b.detail}.
+                        {paid ? "Paid." : status.text}
                       </p>
+                      <p className="text-sm text-ink-soft">{b.kind === "rent" ? `For ${b.detail}.` : `Period: ${b.detail}.`}</p>
+                      {!paid && b.kind === "rent" && lateFeeNote() && <p className="text-sm font-bold text-urgent">{lateFeeNote()}</p>}
                     </div>
                     <div className="flex shrink-0 items-center gap-2">
                       <span className="font-extrabold">{money(b.cents)}</span>
@@ -184,7 +186,7 @@ function PayBody() {
 
         <section aria-label="Checkout" className="overflow-hidden rounded-2xl border border-line bg-white lg:sticky lg:top-20">
           {src ? (
-            <iframe ref={frame} title="Secure checkout" src={src} style={{ height }} className="block w-full border-0" />
+            <iframe ref={frame} title="Sample checkout (nothing is charged)" src={src} style={{ height }} className="block w-full border-0" />
           ) : (
             <div className="space-y-3 p-6 text-center">
               <p className="text-xl font-extrabold">Nothing to pay right now</p>

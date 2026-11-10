@@ -194,6 +194,9 @@ export interface Approval {
   notToExceed: number;
   accessWindow: string;
   sentAt: string;
+  /** The words the owner approved for each message, edited or not. Older saved data has none. */
+  vendorText?: string;
+  tenantText?: string;
 }
 
 export interface FeedbackNote {

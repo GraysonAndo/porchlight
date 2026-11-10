@@ -1,10 +1,10 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { usePathname } from "next/navigation";
 import { ChatIcon } from "./icons";
 import { screenNameFor } from "@/lib/steps";
-import { useDemo } from "@/lib/store";
+import { isStorageSaving, useDemo } from "@/lib/store";
 
 const RATING_WORDS = ["Very unclear", "Unclear", "Okay", "Clear", "Very clear"];
 
@@ -17,6 +17,12 @@ export function FeedbackLink() {
   const [note, setNote] = useState("");
   const [saved, setSaved] = useState(false);
   const [error, setError] = useState("");
+  const doneRef = useRef<HTMLButtonElement>(null);
+
+  // The form is replaced by the saved message, so focus goes to Done instead of falling back to the page.
+  useEffect(() => {
+    if (saved) doneRef.current?.focus();
+  }, [saved]);
 
   const screen = screenNameFor(pathname);
 
@@ -65,10 +71,10 @@ export function FeedbackLink() {
           {saved ? (
             <div className="mt-4" role="status">
               <p className="rounded-xl bg-good-tint p-3 font-bold text-good-ink">
-                Saved. Thank you!
+                {isStorageSaving() ? "Saved. Thank you!" : "Thank you! This browser blocks storage, so the note will be gone when you leave this page."}
               </p>
               <div className="mt-4 flex justify-end">
-                <button type="button" className="btn btn-primary" onClick={close}>
+                <button ref={doneRef} type="button" className="btn btn-primary" onClick={close}>
                   Done
                 </button>
               </div>

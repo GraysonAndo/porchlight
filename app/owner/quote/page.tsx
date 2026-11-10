@@ -119,7 +119,7 @@ function PasteQuote() {
         </div>
       </Card>
 
-      {parsed && !quote && (
+      {parsed && parsed.lines.length === 0 && (
         <Callout tone="caution" title="I could not find any dollar amounts" role="alert">
           <p>Put each item on its own line with its price at the end, like &quot;Labor ........ $1,200&quot;.</p>
         </Callout>
@@ -201,7 +201,7 @@ function ApproveBar() {
       </h2>
       {approved ? (
         <p role="status" className="rounded-xl bg-good-tint p-3 font-bold text-good-ink">
-          Approved: {approvedVendor?.name ?? "your vendor"}, spending cap {usd(state.approval?.notToExceed ?? 0)}.{" "}
+          Approved: {approvedVendor?.name ?? "your vendor"}, spending limit {usd(state.approval?.notToExceed ?? 0)}.{" "}
           <Link href="/owner/book" className="underline underline-offset-4">
             See the booking
           </Link>
@@ -220,10 +220,10 @@ function ApproveBar() {
               })
             }
           >
-            Approve {PLAN.vendorName} for {usd(PLAN.total)} (cap {usd(PLAN.notToExceed)})
+            Approve {PLAN.vendorName} for {usd(PLAN.total)} (limit {usd(PLAN.notToExceed)})
           </button>
           <p className="hint">
-            The cap is the quote plus 10%. {pick?.name ?? "The plumber"} must call you before going over it. Nothing is spent until you tap.
+            The spending limit is the quote plus 10%. {pick?.name ?? "The plumber"} must call you before going over it. Nothing is spent until you tap.
           </p>
         </>
       )}
@@ -245,7 +245,7 @@ function ApproveBar() {
           Add another quote
         </button>
         <Link href="/owner/book" className="btn btn-ghost">
-          Change the vendor, cap, or time
+          Change the vendor, spending limit, or time
         </Link>
       </div>
       {draft && runnerUp && (
@@ -337,7 +337,7 @@ export default function QuotePage() {
 
       <fieldset>
         <legend className="mb-2 text-xl font-extrabold">The quotes</legend>
-        <div className="grid gap-3 md:grid-cols-3">
+        <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
           {COLLECTED.map((c) => {
             const isSelected = c.vendorId === selected;
             const pick = c.vendorId === PLAN.vendorId;

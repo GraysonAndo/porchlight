@@ -97,7 +97,8 @@ export function EquipmentEditor({
         <p className="hint">The year sets its age, the 5-year forecast, and the repair or replace advice.</p>
       </div>
       <p className="hint">Your tenant and GoHome use the corrected details right away, including the how-to guides.</p>
-      <div className="flex flex-wrap gap-2">
+      {/* Stays at the bottom of the dialog, so Save is always on screen on a phone. */}
+      <div className="sticky bottom-0 -mx-5 -mb-5 flex flex-wrap gap-2 border-t border-line bg-white px-5 py-3">
         <button type="submit" className="btn btn-primary !min-h-10 text-sm">
           Save
         </button>

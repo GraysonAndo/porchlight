@@ -67,7 +67,7 @@ describe("text updates to both people", () => {
   it("texts both people when rent is paid, and nothing when it is undone", () => {
     let w = send(createWorld(), { type: "rent.paid", paid: true });
     expect(lastText(w, "tenant")).toMatch(/marked paid/);
-    expect(lastText(w, "owner")).toMatch(/paid October 2026 rent/);
+    expect(lastText(w, "owner")).toMatch(/marked October 2026 rent/);
     const count = w.timeline.length;
     w = send(w, { type: "rent.paid", paid: false });
     expect(w.timeline).toHaveLength(count);

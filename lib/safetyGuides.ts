@@ -39,7 +39,7 @@ function heaterName(ctx: HouseContext): string | null {
   return parts.length ? parts.join(" ") : null;
 }
 
-const GENERAL_GAS_WARNING = "You smell gas. Do not touch anything. Leave the home and follow the gas emergency steps.";
+const GENERAL_GAS_WARNING = "You smell gas. Leave the home right away and do not touch anything. Once you are outside, call 911 or your gas company.";
 
 const ENTRIES: GuideEntry[] = [
   // Checked first, because its text also mentions calling 911 or the gas company.

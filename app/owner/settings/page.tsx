@@ -112,7 +112,7 @@ export default function OwnerSettingsPage() {
           <p className="hint">
             {state.prefs.ownerAutoApprove === 0
               ? "Every booking waits for your tap. Move the slider to let small repairs through."
-              : `A repair quoted at ${`$${state.prefs.ownerAutoApprove.toLocaleString("en-US")}`} or less is booked for you, and you see it in the activity feed. Anything over that still waits for your tap. Emergencies always ring you.`}
+              : `A repair quoted at ${`$${state.prefs.ownerAutoApprove.toLocaleString("en-US")}`} or less is booked for you, and you see it in the activity feed. Anything over that still waits for your tap. Emergencies still call you while the emergency-call setting is on.`}
           </p>
         </div>
         <div className="mb-4">
@@ -125,7 +125,7 @@ export default function OwnerSettingsPage() {
         </div>
         <ul className="space-y-2 text-sm">
           <li>
-            <strong>Asks you first:</strong> booking a plumber over your limit above, spending any money beyond it, and sending a message to a vendor for you.
+            <strong>Asks you first:</strong> booking a plumber over your auto-approve amount above, spending any money beyond it, and replying to a vendor for you.
           </li>
           <li>
             <strong>Does on its own:</strong> asking vendors for quotes, checking each quote against typical prices, and texting your tenant safety steps and updates.

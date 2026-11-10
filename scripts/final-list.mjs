@@ -94,6 +94,7 @@ const chatText = (page) => page.getByRole("log", { name: "Messages" }).innerText
   await page.goto(`${BASE}/owner/record`);
   check("after the job, History names the heater as the owner corrected it", /serial 15C0412-Z/.test(await page.locator("main").innerText()));
   await page.goto(`${BASE}/owner`);
+  await page.getByText(/Installer registered the new heater/).first().waitFor(wait20).catch(() => {});
   check("the owner activity feed records that the job is done", (await page.getByText(/Installer registered the new heater/).count()) > 0);
   check("no console errors on record edits", errors.length === 0, errors.join(" | "));
   await context.close();
@@ -108,6 +109,7 @@ const chatText = (page) => page.getByRole("log", { name: "Messages" }).innerText
   await page.getByRole("button", { name: "Next step" }).click();
   await page.getByRole("button", { name: "Next step" }).click();
   await page.reload();
+  await page.getByText(/step 3 of/i).first().waitFor(wait20).catch(() => {});
   check("a guide remembers its step across a reload", /step 3 of/i.test(await page.locator("main").innerText()));
   while ((await page.getByRole("button", { name: "Next step" }).count()) > 0) await page.getByRole("button", { name: "Next step" }).click();
   await page.getByRole("button", { name: /^Done/ }).click();
@@ -168,12 +170,12 @@ const chatText = (page) => page.getByRole("log", { name: "Messages" }).innerText
   const page = await open();
   await resetApp(page);
   await page.goto(`${BASE}/tenant/pay`);
-  await page.getByText("Secure checkout").first().waitFor({ ...wait20, state: "attached" }).catch(() => {});
+  await page.getByText("Sample checkout").first().waitFor({ ...wait20, state: "attached" }).catch(() => {});
   const main = await page.locator("main").innerText();
   check("overdue rent is called overdue", /Overdue/.test(main) && /days? late/.test(main), main.slice(0, 300));
   check("water and trash is not styled as urgent before it is due", /Due Oct 31/.test(main));
-  const checkout = page.frameLocator('iframe[title="Secure checkout"]');
-  await checkout.getByText("Secure checkout").waitFor(wait20);
+  const checkout = page.frameLocator('iframe[title^="Sample checkout"]');
+  await checkout.getByText("Sample checkout").waitFor(wait20);
   await checkout.getByLabel("October 2026 rent", { exact: false }).uncheck();
   await checkout.getByLabel("Water and trash", { exact: false }).uncheck();
   check("Pay is disabled with nothing picked", await checkout.getByRole("button", { name: "Pick what to pay" }).isDisabled());
@@ -199,7 +201,7 @@ const chatText = (page) => page.getByRole("log", { name: "Messages" }).innerText
   const verdict = () => page.locator("[role=status].sticky").innerText();
   check("before the inflation figure is confirmed the verdict asks for it, and Send is disabled", /Confirm your area's inflation figure first/.test(await verdict()) && (await page.getByRole("button", { name: /Send notice/ }).isDisabled()));
   await page.getByLabel(/I checked this inflation figure for my area/).check();
-  check("the verdict is one big banner: OK to send", /OK to send/.test(await verdict()));
+  check("the verdict is one big banner", /Looks (fine to send|within the yearly limit)/.test(await verdict()));
   await page.locator("#proposed-rent").fill("3500");
   check("over the limit says do not send, and by how much", /Do not send: over the limit by/.test(await verdict()));
   await page.locator("#proposed-rent").fill("3360");

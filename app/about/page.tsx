@@ -36,8 +36,7 @@ export default function AboutPage() {
         <p className="eyebrow mb-2">About GoHome</p>
         <h1 className="font-display text-4xl font-extrabold leading-tight sm:text-5xl">How it works, and why you can trust it</h1>
         <p className="mt-3 text-lg text-ink-soft">
-          GoHome is built for owners with 1 to 10 rental units in California, and the tenants who live in them. It was called Porchlight while
-          we built it, so you may still see that name in the web address. Here is who we are, how the prices work, the questions people ask, and
+          GoHome is built for owners with 1 to 10 rental units in California, and the tenants who live in them. Here is who we are, how the prices work, the questions people ask, and
           how to reach us.
         </p>
       </div>

@@ -11,14 +11,14 @@ Keep that as the default focus. Do not widen a bug-fix pass into a feature build
 **In scope for version 1**
 
 - Tenant text intake and safe steps from a hand-checked library.
-- A basic home record filled in with tenant photos.
+- A basic home record filled in from each data plate and the home inspection, so no tenant is asked to photograph a label.
 - Quote checking against a price table.
 - One-tap owner approval with a spending cap.
 - An activity log with timestamps.
 
 **Later:** the five-year forecast and set-aside plan, rent increase checks and notices, a tax packet, warranty registration, a home-history report, a seasonal plan and sensors.
 
-**Not yet:** rent collection (licensing risk), listings and leasing, vendor referral fees, and expansion to other states.
+**Not yet:** holding or moving real rent (the sample has a rent payment page, but it is a sample and takes no money; real rent collection raises licensing questions), listings and leasing, vendor referral fees, and expansion to other states.
 
 The audit also suggests the rent-cap calculator could work as a low-cost standalone tool to bring in owners. That is a product decision, not a code change.
 
@@ -50,7 +50,7 @@ Each answer is the position the team can take today. "Still needed" is the evide
 | Why not Hemlane or Latchel? | They lean on human operations or sell to property managers. GoHome checks quotes and plans spending for smaller owners at a lower price | Call each as a prospective customer and check their prices, workflow and positioning (see `docs/competitor-research.md`) |
 | Does the pricing work? | Only if there is a viable base fee and human support stays close to zero (see `docs/unit-economics.md`) | Real usage, support and churn data |
 | Who actually shows up to fix the problem? | A vetted vendor list by city, paid promptly, with no pay-to-play that compromises quote fairness | At least two real vendors willing to pilot it. The vendors in the demo are fictional |
-| Is it legal without a broker license? | The owner approves every action and GoHome never holds rent | Review by a California real estate attorney (see `docs/legal-review-checklist.md`) |
+| Is it legal without a broker license? | The owner approves every action (or sets a small auto-approve amount) and GoHome does not hold rent in this sample | Review by a California real estate attorney (see `docs/legal-review-checklist.md`) |
 | What if the AI is wrong? | Safety steps come from a hand-checked library. Prices, rent caps and repair rules come from deterministic code. Spending is capped at the quote plus 10% | A licensed plumber reviews the written safety steps. Someone validates the legal and pricing rules |
 | How does the data get in? | Tenant photo walkthrough, inspection report upload, installer updates | A working version of the first data-entry workflow. The data plate demo is a start, using a sample plate |
 

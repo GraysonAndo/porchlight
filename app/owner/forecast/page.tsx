@@ -93,7 +93,7 @@ export default function ForecastPage() {
           Spreading the cost over five years gives {usd(forecast.setAsideLowPerMonth)} to {usd(forecast.setAsideHighPerMonth)} a month. But bills come due in
           their own years, not evenly. This walks through each year, using the high estimates to be safe.
         </p>
-        <div className="mt-3 grid gap-4 sm:grid-cols-2">
+        <div className="mt-3 grid grid-cols-1 gap-4 sm:grid-cols-2">
           <NumberField
             id="already-saved"
             label="Already set aside for repairs"
@@ -133,7 +133,7 @@ export default function ForecastPage() {
               {cash.rows.map((r) => (
                 <tr key={r.year} className={r.left < 0 ? "bg-urgent-tint" : ""}>
                   <th scope="row" className="px-3 py-2 font-bold">{r.year}</th>
-                  <td className="px-3 py-2 text-right">{usd(Math.max(0, r.onHand))}</td>
+                  <td className="px-3 py-2 text-right">{r.onHand < 0 ? `Owe ${usd(-r.onHand)}` : usd(r.onHand)}</td>
                   <td className="px-3 py-2 text-right">{usd(r.bills)}</td>
                   <td className={`px-3 py-2 text-right font-extrabold ${r.left < 0 ? "text-urgent" : "text-good-ink"}`}>
                     {r.left < 0 ? `Short ${usd(-r.left)}` : usd(r.left)}

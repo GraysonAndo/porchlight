@@ -141,10 +141,10 @@ export default function DecidePage() {
       <Callout tone="info" title="You decide">
         <p>GoHome recommends. The owner decides. Not sure about the numbers?</p>
         <p className="mt-2 flex flex-wrap gap-x-5 gap-y-1 font-bold">
-          <Link href="/owner/quote" className="underline underline-offset-4">
+          <Link href="/owner/quote" className="inline-flex min-h-11 items-center underline underline-offset-4">
             Add another quote (paste one you have)
           </Link>
-          <Link href="/owner/record" className="underline underline-offset-4">
+          <Link href="/owner/record" className="inline-flex min-h-11 items-center underline underline-offset-4">
             Correct the heater&apos;s age in the home record
           </Link>
         </p>

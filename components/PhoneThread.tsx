@@ -101,7 +101,7 @@ export function PhoneThread() {
   }
 
   return (
-    <div className="grid items-start gap-8 lg:grid-cols-[1fr_auto]">
+    <div className="grid grid-cols-1 items-start gap-8 lg:grid-cols-[1fr_auto]">
       <div className="space-y-4">
         <p className="rounded-xl bg-glow-tint p-3 font-bold">
           In the full product, GoHome works over text message. This phone shows how it will look. Nothing here is really sent.

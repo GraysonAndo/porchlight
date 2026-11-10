@@ -35,7 +35,7 @@ function clip(text: string, max: number): string {
 function previewOf(w: World, party: "tenant" | "owner"): FlowPromptData["preview"] {
   const msg = lastMessage(w, party);
   if (!msg) return null;
-  const text = msg.card ? `${msg.card.title}. ${msg.card.summary}` : msg.text;
+  const text = msg.card ? `${msg.card.title.replace(/[.!?]$/, "")}. ${msg.card.summary}` : msg.text;
   return { who: party === "owner" ? "The owner sees" : "The tenant sees", text: clip(text.replace(/\s+/g, " ").trim(), 240) };
 }
 

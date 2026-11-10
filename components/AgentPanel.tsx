@@ -11,7 +11,7 @@ import { useAgent } from "@/lib/agents/useAgent";
 
 const ALWAYS_ON = {
   tenant: ["Emergency safety checks, any hour", "Your home record and how-to guides", "Keeping your landlord in the loop"],
-  owner: ["Equipment age and warranty, all 6 items", "Lease dates and California rent rules", "Quotes checked against typical prices"],
+  owner: ["Equipment age and warranty for everything in your home record", "Lease dates and California rent rules", "Quotes checked against typical prices"],
 };
 
 export function AgentPanel({ audience, className = "", heightClass = "h-[clamp(13rem,calc(100dvh-34rem),34rem)]" }: { audience: "tenant" | "owner"; className?: string; heightClass?: string }) {

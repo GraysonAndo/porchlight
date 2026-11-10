@@ -14,6 +14,8 @@ const ROUTES = [
   "/tenant", "/tenant/home", "/tenant/pay", "/tenant/settings", "/tenant/texts", "/tenant/guides/heater-water-off", "/tenant/guides/breaker-reset",
   "/owner", "/owner/request", "/owner/quote", "/owner/decide", "/owner/book", "/owner/record", "/owner/forecast", "/owner/rent", "/owner/settings",
 ];
+// Set CRAWL_ROUTES="/owner,/tenant" to look at just those pages.
+const ONLY = process.env.CRAWL_ROUTES ? process.env.CRAWL_ROUTES.split(",") : null;
 const VIEWPORTS = [
   { name: "phone", width: 390, height: 844 },
   { name: "desktop", width: 1280, height: 800 },
@@ -24,6 +26,24 @@ const SKIP = /play the whole story|reset sample data|yes, reset|clear all|yes, d
 const problems = [];
 const note = (where, what) => problems.push(`${where}: ${what}`);
 const wait = (ms) => new Promise((r) => setTimeout(r, ms));
+
+const CONTROL_SELECTOR = "button, [role=button], [role=tab], [role=switch], summary, input[type=checkbox], input[type=radio]";
+
+/** Marks every pressable control on the page with a number and lists them, so each one is clicked by its own mark and nothing can drift out of line. */
+const tagControls = (page) =>
+  page.evaluate((sel) => {
+    document.querySelectorAll("[data-crawl]").forEach((e) => e.removeAttribute("data-crawl"));
+    return [...document.querySelectorAll(sel)]
+      .filter((e) => {
+        const r = e.getBoundingClientRect();
+        return r.width > 0 && r.height > 0 && getComputedStyle(e).visibility !== "hidden";
+      })
+      .map((e, i) => {
+        e.setAttribute("data-crawl", String(i));
+        return { i, label: (e.getAttribute("aria-label") || e.textContent || e.id || e.type || "").trim().replace(/\s+/g, " ").slice(0, 50), tag: e.tagName, disabled: Boolean(e.disabled) };
+      })
+      .slice(0, 70);
+  }, CONTROL_SELECTOR);
 
 async function resetApp(page) {
   await page.goto(`${BASE}/?reset=1`);
@@ -66,19 +86,12 @@ async function crawlPage(context, vp, route, state) {
   }
 
   // Buttons: press each one on a fresh copy of the page and see whether anything happens.
-  const labels = await page.evaluate(() =>
-    [...document.querySelectorAll("button, [role=button], [role=tab], [role=switch], summary, input[type=checkbox], input[type=radio]")]
-      .filter((e) => {
-        const r = e.getBoundingClientRect();
-        return r.width > 0 && r.height > 0 && !e.disabled && getComputedStyle(e).visibility !== "hidden";
-      })
-      .map((e, i) => ({ i, label: (e.getAttribute("aria-label") || e.textContent || e.id || e.type || "").trim().replace(/\s+/g, " ").slice(0, 50), tag: e.tagName }))
-      .slice(0, 70),
-  );
+  const labels = await tagControls(page);
   await page.close();
 
-  for (const { i, label, tag } of labels) {
-    if (SKIP.test(label)) continue;
+  for (const { i, label, tag, disabled } of labels) {
+    // A disabled control stays in the list so the positions line up with the page, but it is not pressed.
+    if (disabled || SKIP.test(label)) continue;
     const p = await context.newPage();
     const pageErrors = [];
     p.on("pageerror", (e) => pageErrors.push(e.message));
@@ -86,13 +99,34 @@ async function crawlPage(context, vp, route, state) {
     await p.goto(`${BASE}${route}`);
     await p.waitForLoadState("networkidle");
     await wait(350);
+    await tagControls(p);
     const before = await snapshot(p);
-    const target = p.locator("button, [role=button], [role=tab], [role=switch], summary, input[type=checkbox], input[type=radio]").filter({ visible: true }).nth(i);
+    const target = p.locator(`[data-crawl="${i}"]`);
     let download = false;
     p.on("download", () => (download = true));
     try {
-      await target.click({ timeout: 4000, trial: false });
+      try {
+        await target.click({ timeout: 4000, trial: false });
+      } catch (first) {
+        // A check box drawn as a styled label is pressed through its label, the way a person does.
+        if (tag !== "INPUT") throw first;
+        await target.evaluate((e) => (e.labels?.[0] ?? e).click());
+      }
     } catch (e) {
+      // A page that keeps updating can swap the control out from under the click. Look again before blaming the page.
+      await wait(900);
+      await tagControls(p);
+      const again = (await p.evaluate((l) => [...document.querySelectorAll("[data-crawl]")].findIndex((x) => (x.getAttribute("aria-label") || x.textContent || x.id || x.type || "").trim().replace(/\s+/g, " ").slice(0, 50) === l), label));
+      if (again >= 0) {
+        try {
+          await p.locator(`[data-crawl="${again}"]`).click({ timeout: 4000 });
+          await wait(700);
+          await p.close();
+          continue;
+        } catch {
+          // fall through to report it
+        }
+      }
       note(where, `could not press "${label}" (${String(e.message).split("\n")[0].slice(0, 80)})`);
       await p.close();
       continue;
@@ -134,6 +168,7 @@ for (const state of ["fresh", "mid-repair"]) {
     const context = await browser.newContext({ storageState: state === "fresh" ? freshState : midState });
     for (const route of ROUTES) {
       if (state === "mid-repair" && !route.startsWith("/owner") && route !== "/tenant") continue;
+      if (ONLY && !ONLY.includes(route)) continue;
       try {
         await crawlPage(context, vp, route, state);
       } catch (e) {

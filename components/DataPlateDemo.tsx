@@ -101,7 +101,7 @@ export function DataPlateDemo() {
       )}
       {stage === "reading" && <Thinking message="Reading the data plate..." />}
       {stage === "done" && (
-        <div className="grid gap-5 md:grid-cols-[minmax(0,18rem)_1fr]">
+        <div className="grid grid-cols-1 gap-5 md:grid-cols-[minmax(0,18rem)_1fr]">
           <div>
             <Plate />
             <p className="hint">Your photo, kept here so you can check the reading against it.</p>

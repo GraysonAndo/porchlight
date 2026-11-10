@@ -4,7 +4,7 @@
 // and the record updates. It moves between the tenant and owner screens as it goes, so a presenter only has to press one button.
 
 import { useEffect, useRef } from "react";
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { openOwnerMessage } from "@/lib/agents/engine";
 import { story, useStory } from "@/lib/story";
 import { actions, getDemoState } from "@/lib/store";
@@ -75,9 +75,20 @@ const sleep = (ms: number) => new Promise<void>((r) => setTimeout(r, ms));
 
 export function StoryPlayer() {
   const router = useRouter();
+  const pathname = usePathname();
   const s = useStory();
+  /** Where the story itself last sent the page, so a click somewhere else by the user can be told apart */
+  const expectedPath = useRef<string | null>(null);
   const lastRun = useRef(0);
   const stopped = useRef(false);
+
+  // If the person goes somewhere the story did not send them, they are in charge: stop pulling them back.
+  useEffect(() => {
+    if (s.status === "playing" && expectedPath.current !== null && pathname !== expectedPath.current) {
+      stopped.current = true;
+      story.stop();
+    }
+  }, [pathname, s.status]);
 
   useEffect(() => {
     if (s.status !== "playing" || s.run === lastRun.current) return;
@@ -86,12 +97,14 @@ export function StoryPlayer() {
     const myRun = s.run;
     (async () => {
       actions.reset({ notes: true });
+      expectedPath.current = "/tenant";
       router.push("/tenant");
       await sleep(1200);
       for (let i = 0; i < STEPS.length; i++) {
         if (stopped.current || lastRun.current !== myRun) return;
         const step = STEPS[i];
         story.progress(i, STEPS.length, step.label);
+        expectedPath.current = step.path;
         router.push(step.path);
         await sleep(900);
         if (stopped.current || lastRun.current !== myRun) return;
@@ -99,6 +112,7 @@ export function StoryPlayer() {
         await sleep(step.wait);
       }
       if (!stopped.current && lastRun.current === myRun) story.finish();
+      expectedPath.current = null;
     })();
   }, [s.status, s.run, router]);
 

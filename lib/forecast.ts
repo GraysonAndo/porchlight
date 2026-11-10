@@ -130,6 +130,8 @@ export function cashFlowFor(years: ForecastYear[], monthly: number, alreadySaved
   let worst = 0;
   let firstShort: number | null = null;
   let monthlyNeeded = 0;
+  // The advice says to have the first year's bills on hand now, so the monthly figure counts that top-up too.
+  const topUp = years[0] ? Math.max(0, years[0].high - alreadySaved) : 0;
   years.forEach((y, i) => {
     cumulativeBills += y.high;
     const onHand = alreadySaved + 12 * monthly * i - (cumulativeBills - y.high);
@@ -139,7 +141,7 @@ export function cashFlowFor(years: ForecastYear[], monthly: number, alreadySaved
       worst = Math.max(worst, -left);
       if (firstShort === null) firstShort = y.year;
     }
-    if (i > 0) monthlyNeeded = Math.max(monthlyNeeded, (cumulativeBills - alreadySaved) / (12 * i));
+    if (i > 0) monthlyNeeded = Math.max(monthlyNeeded, (cumulativeBills - alreadySaved - topUp) / (12 * i));
   });
   const first = years[0];
   return {

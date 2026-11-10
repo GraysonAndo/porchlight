@@ -104,6 +104,8 @@ function ApproveBody() {
       notToExceed,
       accessWindow,
       sentAt: new Date().toISOString(),
+      vendorText: drafts.data ? (vendorEdit && vendorEdit.base === drafts.data.vendorText ? vendorEdit.text : drafts.data.vendorText) : undefined,
+      tenantText: drafts.data ? (tenantEdit && tenantEdit.base === drafts.data.tenantText ? tenantEdit.text : drafts.data.tenantText) : undefined,
     });
   }
 
@@ -119,7 +121,7 @@ function ApproveBody() {
           </p>
         </Card>
 
-        <Callout tone="good" title="✓ Approved and sent" role="status">
+        <Callout tone="good" title="Approved (sample: nothing was sent)" role="status">
           <p>
             You approved <strong>{sentVendor.name}</strong> with a limit of{" "}
             <strong>{usd(approval.notToExceed)}</strong>.
@@ -137,6 +139,23 @@ function ApproveBody() {
         <Callout tone="caution" title="Nothing was actually sent">
           <p>These are sample messages. Nothing was actually sent to a vendor or tenant, and the times above are samples.</p>
         </Callout>
+
+        {(approval.vendorText || approval.tenantText) && (
+          <Card title="The words you approved">
+            {approval.vendorText && (
+              <>
+                <p className="font-extrabold">To the vendor: {sentVendor.name}</p>
+                <p className="mt-1 whitespace-pre-line text-sm leading-relaxed">{approval.vendorText}</p>
+              </>
+            )}
+            {approval.tenantText && (
+              <>
+                <p className="mt-4 font-extrabold">To the tenant: {PROPERTY.tenant}</p>
+                <p className="mt-1 whitespace-pre-line text-sm leading-relaxed">{approval.tenantText}</p>
+              </>
+            )}
+          </Card>
+        )}
 
         <Card title="What the tenant sees">
           <p>
@@ -206,7 +225,7 @@ function ApproveBody() {
         <p className="mt-2 text-3xl font-extrabold leading-tight sm:text-5xl">
           Book <span className="text-glow">{PLAN.vendorName}</span>
         </p>
-        <dl className="mt-4 grid gap-3 sm:grid-cols-3">
+        <dl className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-3">
           <div className="rounded-2xl bg-white/10 p-3">
             <dt className="text-sm text-cream/75">Quote</dt>
             <dd className="text-2xl font-extrabold">{usd(PLAN.total)}</dd>
@@ -250,7 +269,7 @@ function ApproveBody() {
 
       <fieldset>
         <legend className="mb-2 text-xl font-extrabold">1. Pick a vendor</legend>
-        <div className="grid gap-3 md:grid-cols-3">
+        <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
           {VENDORS.map((v) => {
             const selected = v.id === vendorId;
             const verdict = verdictFor(v.total, WATER_HEATER_JOB.marketTotal);
@@ -299,10 +318,10 @@ function ApproveBody() {
 
       <Card title="2. Set your limits">
         {vendor ? (
-          <div className="grid gap-5 md:grid-cols-2">
+          <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
             <NumberField
               id="nte"
-              label="Not-to-exceed amount"
+              label="Spending limit"
               prefix="$"
               step={1}
               min={vendor.total}
@@ -359,7 +378,7 @@ function ApproveBody() {
           </div>
         ) : (
           <>
-          <div className="grid gap-5 md:grid-cols-2">
+          <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
             <div>
               <label htmlFor="vendor-message" className="mb-1 block font-extrabold">
                 To the vendor: {vendor.name}

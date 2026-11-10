@@ -377,7 +377,7 @@ function onRentPaid(w: World, paid: boolean, confirmation?: string): void {
   const ref = confirmation ? ` Confirmation ${confirmation}.` : "";
   tool(w, "chat", "record_rent_payment", "action", confirmation ? "Rent received" : "Rent marked paid", `${RENT_MONTH}: ${usd(PROPERTY.rent)}.${ref}`);
   say(w, "tenant", confirmation ? `Thanks! Your ${RENT_MONTH} rent of ${usd(PROPERTY.rent)} was received.${ref}` : `Thanks! Your ${RENT_MONTH} rent of ${usd(PROPERTY.rent)} is marked paid.`);
-  say(w, "owner", `${PROPERTY.tenant} paid ${RENT_MONTH} rent: ${usd(PROPERTY.rent)}.${ref}`, { silent: true });
+  say(w, "owner", `You marked ${RENT_MONTH} rent (${usdCents(PROPERTY.rent)}) as paid.${ref}`, { silent: true });
 }
 
 /** The owner sends a late rent reminder: the tenant is texted what is owed and the late fee from the lease. */
@@ -550,7 +550,7 @@ function emergencyPath(w: World, category: string, steps: string[], why: string)
   say(
     w,
     "tenant",
-    `This sounds like an emergency. Please do this now:\n${numbered(steps)}\nI'm calling your landlord right now. Once you are outside, call 911 if anyone is hurt, then reply here to tell me you are safe.`,
+    `This sounds like an emergency. Please do this now:\n${numbered(steps)}\nI'm calling your landlord right now. Follow the steps above. Once you are outside or somewhere safe, call 911 if you smelled gas, saw fire or smoke, or anyone is hurt. Then reply here to tell me you are safe.`,
   );
   tool(
     w,
@@ -564,13 +564,13 @@ function emergencyPath(w: World, category: string, steps: string[], why: string)
   say(
     w,
     "owner",
-    `EMERGENCY at ${PROPERTY.address}: ${category}. The tenant was told to get safe and call 911. I called you. I will not get quotes or book anyone until the home is cleared.`,
+    `EMERGENCY at ${PROPERTY.address}: ${category}. The tenant was given safety steps. I called you. I will not get quotes or book anyone until the home is cleared.`,
     {
       card: {
         kind: "emergency",
         title: `Emergency: ${category}`,
-        summary: "GoHome told your tenant to get safe and call for help, and called you. Nothing is quoted or booked until the home is clear.",
-        facts: [{ label: "Tenant was told", value: "Get out and call 911", tone: "urgent" }],
+        summary: "GoHome gave your tenant safety steps and called you. Nothing is quoted or booked until the home is clear.",
+        facts: [{ label: "Tenant was told", value: steps[0] ?? "Safety steps sent", tone: "urgent" }],
       },
       actions: [{ id: "ack", label: "I'm on it" }],
     },
@@ -645,7 +645,7 @@ function onTenantText(w: World, raw: string, shown?: string): void {
       );
       return;
     default:
-      say(w, "tenant", "Got it, I added that to your case. If anything gets worse or you smell gas, text EMERGENCY and I'll call your landlord.");
+      say(w, "tenant", "Got it, I added that to your case. If you smell gas, see smoke or fire, or anyone is hurt, leave and call 911 first. Then tell me here.");
   }
 }
 
@@ -920,7 +920,7 @@ function quotesArrive(w: World): void {
   say(
     w,
     "owner",
-    `DECISION NEEDED: ${decision.recommendation} the water heater\nWhy: ${decision.reasons.slice(0, 2).join(" ")}\n3 quotes, all checked by plain code:\n${lines}\nMy pick: ${shortName(PLAN.vendorName)}. Saves ${usd(PLAN.savedVsHighest)} vs the highest on the same scope.${PLAN.comparisons.length > 0 ? ` ${PLAN.comparisons.join(" ")}` : ""} Limit ${usd(PLAN.notToExceed)}. Visit ${windowText()}.`,
+    `DECISION NEEDED: ${decision.recommendation} the water heater\nWhy: ${decision.reasons.slice(0, 2).join(" ")}\n3 quotes, each checked against a price table:\n${lines}\nMy pick: ${shortName(PLAN.vendorName).replace(/\.$/, "")}. It saves ${usd(PLAN.savedVsHighest)} compared with the highest quote for the same work.${PLAN.comparisons.length > 0 ? ` ${PLAN.comparisons.join(" ")}` : ""} Limit ${usd(PLAN.notToExceed)}. Visit ${windowText()}.`,
     {
       card: {
         kind: "decision",
@@ -979,6 +979,16 @@ function triageOwnerAction(w: World, action: string): void {
     });
     tool(w, "quote", "show_quotes", "code", "Showed the other quotes", "Same numbers as the decision card. Nothing has changed.");
     say(w, "owner", lines.join("\n"), {
+      card: {
+        kind: "quote",
+        title: "The other quotes",
+        summary: "All three quotes, checked the same way. Nothing has changed, and nothing is booked.",
+        facts: COLLECTED.map((c) => ({
+          label: shortName(c.vendorName),
+          value: `${usd(c.quote.total)}, ${VERDICT_WORDS[c.verdict]}${c.license ? "" : ", no license shown"}`,
+          tone: c.verdict === "fair" ? ("good" as const) : ("caution" as const),
+        })),
+      },
       actions: [
         { id: "approve", label: `Approve ${shortName(PLAN.vendorName)}` },
         { id: "call", label: "Talk it through with me" },
@@ -1005,13 +1015,13 @@ function triageOwnerAction(w: World, action: string): void {
     "approval_gate",
     "human",
     "Owner tapped Approve",
-    `One-tap token for ${vendor.name}, limit ${usd(pick.notToExceed)}, expires in 24 hours. Nothing was spent before this tap.`,
+    `You approved ${vendor.name} with a spending limit of ${usd(pick.notToExceed)}. This approval is good for 24 hours. Nothing was spent before this tap.`,
   );
-  tool(w, "triage", "book_vendor", "action", `Booked ${vendor.name}`, `${pick.accessWindow}. Not-to-exceed ${usd(pick.notToExceed)}: the vendor must call the owner before going over.`);
+  tool(w, "triage", "book_vendor", "action", `Booked ${vendor.name}`, `${pick.accessWindow}. Spending limit ${usd(pick.notToExceed)}: the vendor must call the owner before going over.`);
   say(
     w,
     "contractor",
-    `Booking confirmed: ${vendor.name}, ${windowText(pick.accessWindow)}, ${PROPERTY.address}. Quoted ${usd(vendor.total)}. Not-to-exceed ${usd(pick.notToExceed)}. Please call the owner before going over.`,
+    `Booking confirmed: ${vendor.name}, ${windowText(pick.accessWindow)}, ${PROPERTY.address}. Quoted ${usd(vendor.total)}. Spending limit ${usd(pick.notToExceed)}. Please call the owner before going over.`,
     { attachment: { title: "Message sent to the vendor", body: vendorMessage(w, vendor.name, vendor.total, pick.notToExceed, pick.accessWindow) } },
   );
   say(
@@ -1086,7 +1096,7 @@ function jobDone(w: World): void {
     `The heater is no longer overdue. Suggested set-aside is now ${usd(forecast.setAsideLowPerMonth)} to ${usd(forecast.setAsideHighPerMonth)} a month*.`,
   );
   say(w, "tenant", "All fixed! Thanks for your patience. If anything looks off, text me here.");
-  say(w, "owner", `Done. The new ${n.manufacturer} ${n.model} is in your house record (serial ${n.serial}). Your 5-year forecast is updated. You spent ${w.stats.ownerTaps} tap and about a minute.`);
+  say(w, "owner", `Done. The new ${n.manufacturer} ${n.model} is in your house record (serial ${n.serial}). Your 5-year forecast is updated. You made ${w.stats.ownerTaps} ${w.stats.ownerTaps === 1 ? "tap" : "taps"}.`);
 }
 
 // ---------------------------------------------------------------------------
@@ -1142,7 +1152,7 @@ function auditMessage(w: World, quote: VendorQuote, draft: string, intro: string
   say(
     w,
     "owner",
-    `${intro}\nAUDIT (plain code):\n${bullets.map((b) => `- ${b}`).join("\n")}\nI drafted a reply for you (attached). Nothing is sent until you say so.`,
+    `${intro}\nPRICE CHECK (done by fixed rules, not AI):\n${bullets.map((b) => `- ${b}`).join("\n")}\nI drafted a reply for you (attached). Nothing is sent until you say so.`,
     {
       card: {
         kind: "quote",
@@ -1340,6 +1350,7 @@ function onLeaseCheck(w: World): void {
     noticeDate: noticeToday(),
     noticeDays: result.noticeDays,
     startDate: LEASE_ANNIVERSARY_ISO,
+    serviceMethod: "certified mail",
   });
   tool(w, "sentinel", "build_notice", "code", "Built the notice", "A plain-language notice from a template, stamped as a draft. The AI does not decide what is legal.");
   w.sentinel = { stage: "awaiting_owner", proposed };
@@ -1364,7 +1375,7 @@ function onLeaseCheck(w: World): void {
           ...(w.rentPaid ? [] : [{ label: "Heads up", value: `${RENT_MONTH} rent has not come in yet`, tone: "caution" as const }]),
         ],
         note: w.cpiConfirmed
-          ? `Tap an amount and the notice is mailed with proof of service, and ${PROPERTY.tenant} is told. Nothing is mailed before that.`
+          ? `Tap an amount and the notice is mailed with proof of service, and ${PROPERTY.tenant} is told. Nothing is mailed before that. (Sample: nothing is really mailed.)`
           : "Confirm your area's inflation figure on the rent page first. The maximum shown here uses a sample figure, so nothing is mailed from this card.",
       },
       attachment: { title: "Draft rent notice", body: notice },
@@ -1407,7 +1418,7 @@ function sentinelOwnerAction(w: World, action: string): void {
     { "lease.notice": `Mailed ${longDate(mailedOn)}, new rent ${usdCents(newRent)} from ${longDate(effective)}` },
     `Rent notice mailed for ${usdCents(newRent)}`,
   );
-  say(w, "owner", `Done. Notice mailed certified for ${usdCents(newRent)}, effective ${longDate(effective)} (${check.noticeDays} days). I'll text you when it's delivered and save proof of service.`);
+  say(w, "owner", `Done (sample: nothing was really mailed). Notice mailed certified for ${usdCents(newRent)}, effective ${longDate(effective)} (${check.noticeDays} days). I'll text you when it's delivered and save proof of service.`);
   w.stats.ownerTaps += 1;
   w.sentinel.stage = "mailed";
   w.sentinel.proposed = newRent;
@@ -1418,8 +1429,8 @@ function sentinelOwnerAction(w: World, action: string): void {
 function noticeDelivered(w: World): void {
   if (w.sentinel.stage !== "mailed") return;
   w.sentinel.stage = "delivered";
-  const delivered = addDays(w.sentinel.mailedOn ?? noticeToday(), 3);
-  tool(w, "sentinel", "track_delivery", "action", "Notice delivered", `Certified mail shows delivered ${longDate(delivered)}. Proof of service saved to the house record.`);
+  const delivered = addDays(w.sentinel.mailedOn ?? noticeToday(), 2);
+  tool(w, "sentinel", "track_delivery", "action", "Notice delivered", `Sample tracking shows delivered ${longDate(delivered)}. Proof of service saved to the house record.`);
   record(w, { "lease.notice": `Delivered ${longDate(delivered)}, proof saved` }, "Rent notice delivered. Proof of service saved.");
   say(w, "owner", `Delivered ${longDate(delivered)}. Proof of service is saved in your house record.`, { silent: true });
 }

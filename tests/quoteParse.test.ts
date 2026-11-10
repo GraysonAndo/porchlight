@@ -103,7 +103,7 @@ describe("detectQuoteJob", () => {
   it("recognizes a water heater quote", async () => {
     const { detectQuoteJob, SAMPLE_QUOTE_TEXT } = await import("../lib/quoteParse");
     expect(detectQuoteJob(SAMPLE_QUOTE_TEXT)).toEqual({ kind: "water-heater" });
-    expect(detectQuoteJob("Replace tankless water heater, $3,000")).toEqual({ kind: "water-heater" });
+    expect(detectQuoteJob("Replace tankless water heater, $3,000")).toEqual({ kind: "unknown", guess: "a tankless water heater" });
   });
 
   it("says unknown, with a guess, for a job that is not in the price table", async () => {

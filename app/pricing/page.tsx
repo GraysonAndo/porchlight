@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { ArrowUpIcon, CheckIcon, ClockIcon } from "@/components/icons";
 import { Badge, PlaceholderNote } from "@/components/ui";
-import { useDemo } from "@/lib/store";
+import { isStorageSaving, useDemo } from "@/lib/store";
 import { useState } from "react";
 
 type Pick = "starter" | "plus" | "pro";
@@ -105,7 +105,7 @@ export default function PricingPage() {
         </div>
       </section>
 
-      <ul className="grid gap-4 md:grid-cols-3">
+      <ul className="grid grid-cols-1 gap-4 md:grid-cols-3">
         {TIERS.map((t) => {
           const chosen = pick === t.id;
           return (
@@ -144,13 +144,13 @@ export default function PricingPage() {
                 aria-pressed={chosen}
                 onClick={() => actions.setPricingPick(t.id)}
               >
-                {chosen ? `✓ You picked ${t.name}` : `I would pick ${t.name}`}
+                {chosen && <span aria-hidden="true">✓ </span>}I would pick {t.name}
               </button>
               {/* The space is always there, so the buttons line up whether or not a tier is picked. */}
               <p className="mt-2 flex min-h-11 flex-wrap items-center gap-2 text-sm">
                 {chosen && (
                   <>
-                    <Badge tone="good">Saved on this device</Badge>
+                    <Badge tone={isStorageSaving() ? "good" : "caution"}>{isStorageSaving() ? "Saved on this device" : "Not saved: this browser blocks storage"}</Badge>
                     <button type="button" className="inline-flex min-h-11 items-center font-bold underline underline-offset-4" onClick={() => actions.setPricingPick(null)}>
                       Clear my pick
                     </button>
@@ -172,11 +172,11 @@ export default function PricingPage() {
             aria-pressed={pick === "none"}
             onClick={() => actions.setPricingPick("none")}
           >
-            {pick === "none" ? "✓ None of these" : "None of these"}
+            {pick === "none" && <span aria-hidden="true">✓ </span>}None of these
           </button>
           {pick === "none" && (
             <>
-              <Badge tone="good">Saved on this device</Badge>
+              <Badge tone={isStorageSaving() ? "good" : "caution"}>{isStorageSaving() ? "Saved on this device" : "Not saved: this browser blocks storage"}</Badge>
               <button type="button" className="btn btn-ghost" onClick={() => actions.setPricingPick(null)}>
                 Clear my pick
               </button>

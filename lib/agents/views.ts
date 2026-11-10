@@ -25,11 +25,11 @@ const TENANT_TEXT: Record<string, (t: ToolCall) => string> = {
   skip_fix_steps: () => "Decided not to ask you to fix anything. Getting safe comes first.",
   send_guide: () => "Opened the picture guide made for your exact heater",
   save_photo: () => "Saved your photo to the case",
-  notify_owner: () => "Let your landlord know",
+  notify_owner: () => "Told your landlord",
   call_owner: () => "Called your landlord right away",
   place_call: () => "Called your landlord right away",
   nudge_owner: () => "Reminded your landlord",
-  check_vendor_availability: () => "Looking for licensed plumbers who can come soon",
+  check_vendor_availability: () => "Looking for plumbers who can come soon",
   book_vendor: () => "Booked a plumber and set up your visit",
   confirm_visit: () => "Confirmed the visit time with you",
   request_new_time: () => "Asking the plumber for a different time",
@@ -46,7 +46,7 @@ const CONTRACTOR_TOOLS = new Set(["read_quote", "check_quote_contractor", "flag_
 const PAYMENT_TOOLS = new Set(["record_rent_payment", "record_utility_payment", "remind_rent", "send_notice"]);
 
 /** Which job a tool call belongs to. Approvals take the job of the step before them. */
-function jobOf(e: ToolCall, previous: string): string {
+function jobOf(e: ToolCall, previous: string, repair: string): string {
   if (e.agent === "sentinel") return "Rent increase";
   if (e.agent === "gate") return previous;
   if (PAYMENT_TOOLS.has(e.tool)) return "Rent and payments";
@@ -54,7 +54,7 @@ function jobOf(e: ToolCall, previous: string): string {
   if (CONTRACTOR_TOOLS.has(e.tool)) return "A contractor's quote";
   // The repair's own checks and the quote it collected, but not a quote that came in on its own.
   if (e.agent === "quote" && e.tool === "check_quote" && /counter|total is/i.test(e.title)) return "A contractor's quote";
-  return "Water heater repair";
+  return repair;
 }
 
 /** Date and time together, so a saved record never has a bare "9:06 AM". */
@@ -70,9 +70,13 @@ function stampOf(e: { at: number; revealAt?: number }): string {
 export function activityFor(audience: "tenant" | "owner", entries: Entry[]): ActivityItem[] {
   const out: ActivityItem[] = [];
   let previous = "Water heater repair";
+  let repair = "Water heater repair";
   for (const e of entries) {
     if (e.kind === "tool") {
-      const job = jobOf(e, previous);
+      // An emergency names its own job ("Gas smell"), so it is not filed under the water heater.
+      const matched = /^Emergency rule matched: (.+)$/.exec(e.title);
+      if (matched) repair = matched[1];
+      const job = jobOf(e, previous, repair);
       previous = job;
       if (audience === "owner") {
         out.push({ id: e.id, job, clock: entryTime(e), stamp: stampOf(e), title: e.title, detail: e.detail, engine: e.engine });

@@ -15,7 +15,7 @@ const PHOTO_SRC: Record<PhotoKind, string> = {
 };
 
 const PHOTO_ALT: Record<PhotoKind, string> = {
-  leak: "Photo sent by the tenant: a water heater leaking at the base, with a puddle on the garage floor",
+  leak: "Sample photo: a water heater leaking at the base, with a puddle on the garage floor",
 };
 
 const PHONE = /(1-\d{3}-\d{3}-\d{4}|\b911\b)/g;
@@ -80,7 +80,7 @@ export function Bubble({ msg, perspective, via }: { msg: Msg; perspective: Party
           <PhoneCallIcon size={20} /> Incoming call from GoHome
         </p>
         <p className="mt-1">{msg.text}</p>
-        <p className="mt-1 text-xs font-bold opacity-70">Rings through Do Not Disturb</p>
+        <p className="mt-1 text-xs font-bold opacity-70">Sample call. In the full product this rings through Do Not Disturb</p>
         <p className="mt-1 text-right text-xs font-bold opacity-60">{entryTime(msg)}</p>
       </div>
     );
@@ -112,10 +112,10 @@ export function Bubble({ msg, perspective, via }: { msg: Msg; perspective: Party
         <p className="mt-1 flex items-center justify-end gap-1.5 text-xs font-bold opacity-60">
           {msg.silent && (
             <span className="inline-flex items-center gap-1">
-              <MoonIcon size={12} /> Delivered silently
+              <MoonIcon size={12} /> Would be delivered silently
             </span>
           )}
-          {!mine && via && <span>{via === "text" ? "Text" : "In app only"}</span>}
+          {!mine && via && <span>{via === "text" ? "Sample text" : "In app only"}</span>}
           <span>{entryTime(msg)}</span>
         </p>
       </div>
@@ -161,7 +161,7 @@ export interface ComposerProps {
 
 const MAX_MESSAGE = 1000;
 
-const DEFAULT_PHOTOS: [PhotoKind, string][] = [["leak", "Photo of the problem"]];
+const DEFAULT_PHOTOS: [PhotoKind, string][] = [["leak", "Use a sample photo of the leak"]];
 
 /** The message box: quick replies, a photo button, and a text field. */
 export function Composer({ party, last, placeholder, onSend, onPhoto, suggestions, photoLabels = DEFAULT_PHOTOS, className = "border-t border-line bg-white/80 p-2" }: ComposerProps) {
